@@ -1,0 +1,307 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  MODERATOR
+  PLAYER
+}
+
+enum LevelStatus {
+  RANKED
+  LEGACY
+  PENDING
+  REJECTED
+  REMOVED
+}
+
+enum DifficultyCategory {
+  ENTRY
+  ADVANCED
+  EXTREME
+  MYTHIC
+  ASCENT
+}
+
+enum RecordStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  NEEDS_CHANGES
+}
+
+enum LevelSuggestionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  NEEDS_CHANGES
+}
+
+enum ModerationActionType {
+  SUBMISSION_CREATED
+  SUBMISSION_ACCEPTED
+  SUBMISSION_REJECTED
+  SUBMISSION_NEEDS_CHANGES
+  LEVEL_SUGGESTION_CREATED
+  LEVEL_SUGGESTION_APPROVED
+  LEVEL_SUGGESTION_REJECTED
+  LEVEL_SUGGESTION_NEEDS_CHANGES
+  LEVEL_SUGGESTION_CONVERTED
+  LEVEL_CREATED
+  LEVEL_UPDATED
+  USER_ROLE_UPDATED
+  RULES_UPDATED
+  CHANGELOG_CREATED
+}
+
+model User {
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
+  emailVerifiedAt         DateTime?
+  passwordHash            String
+  playerName              String                   @unique
+  displayName             String
+  role                    Role                     @default(PLAYER)
+  bio                     String?
+  isDemo                  Boolean                  @default(false)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  sessions                Session[]
+  submissions             RecordSubmission[]       @relation("SubmissionPlayer")
+  reviewedSubmissions     RecordSubmission[]       @relation("SubmissionReviewer")
+  levelSuggestions        LevelSuggestion[]        @relation("LevelSuggestionSubmitter")
+  reviewedLevelSuggestions LevelSuggestion[]       @relation("LevelSuggestionReviewer")
+  records                 Record[]                 @relation("RecordPlayer")
+  moderationActions       ModerationAction[]       @relation("ModerationActor")
+  levelHistory            LevelHistory[]           @relation("LevelHistoryActor")
+  changelogPosts          ChangelogPost[]          @relation("ChangelogAuthor")
+  emailVerificationTokens EmailVerificationToken[]
+
+  @@index([role])
+  @@index([isDemo])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  email     String
+  tokenHash String    @unique
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([email, expiresAt])
+  @@index([usedAt])
+}
+
+model Level {
+  id            String             @id @default(cuid())
+  rank          Int?               @unique
+  slug          String             @unique
+  name          String
+  originalName  String
+  gdLevelId     String
+  publisher     String
+  nerfCreator   String
+  verifier      String
+  thumbnailUrl  String
+  showcaseUrl   String
+  placementDate DateTime?
+  status        LevelStatus        @default(PENDING)
+  difficulty    DifficultyCategory
+  points        Int                @default(0)
+  description   String
+  versionNotes  String?
+  isDemo        Boolean            @default(false)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  submissions   RecordSubmission[]
+  records       Record[]
+  history       LevelHistory[]
+  createdFromSuggestion LevelSuggestion? @relation("SuggestionCreatedLevel")
+
+  @@index([status, rank])
+  @@index([difficulty])
+  @@index([isDemo])
+}
+
+model RecordSubmission {
+  id                    String       @id @default(cuid())
+  playerId              String
+  levelId               String
+  videoUrl              String
+  rawFootageUrl         String?
+  proofImageUrl         String?
+  fps                   Int
+  cbfUsed               Boolean      @default(false)
+  clickAudioIncluded    Boolean      @default(false)
+  separateMicClickTrack Boolean      @default(false)
+  gameAudioIncluded     Boolean      @default(false)
+  rawFootageIncluded    Boolean      @default(false)
+  fpsOverlayVisible     Boolean      @default(false)
+  cpsCounterVisible     Boolean      @default(false)
+  cheatIndicatorVisible Boolean      @default(false)
+  microphoneModel       String?
+  inputDevice           String       @default("")
+  proofNotes            String?
+  clickAudioNotes       String
+  deviceNotes           String
+  comments              String?
+  status                RecordStatus @default(PENDING)
+  moderatorNotes        String?
+  isDemo                Boolean      @default(false)
+  submittedAt           DateTime     @default(now())
+  reviewedAt            DateTime?
+  reviewerId            String?
+  player                User         @relation("SubmissionPlayer", fields: [playerId], references: [id], onDelete: Cascade)
+  level                 Level        @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  reviewer              User?        @relation("SubmissionReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  record                Record?
+
+  @@index([status, submittedAt])
+  @@index([playerId])
+  @@index([levelId])
+  @@index([isDemo])
+}
+
+model Record {
+  id            String            @id @default(cuid())
+  playerId      String
+  levelId       String
+  submissionId  String?           @unique
+  videoUrl      String
+  rawFootageUrl String?
+  fps           Int
+  cbfUsed       Boolean           @default(false)
+  pointsAwarded Int
+  isDemo        Boolean           @default(false)
+  acceptedAt    DateTime          @default(now())
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  player        User              @relation("RecordPlayer", fields: [playerId], references: [id], onDelete: Cascade)
+  level         Level             @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  submission    RecordSubmission? @relation(fields: [submissionId], references: [id], onDelete: SetNull)
+
+  @@index([playerId])
+  @@index([levelId])
+  @@index([acceptedAt])
+  @@index([isDemo])
+}
+
+model LevelSuggestion {
+  id                 String                @id @default(cuid())
+  submitterId        String
+  reviewerId         String?
+  createdLevelId     String?               @unique
+  name               String
+  originalName       String
+  gdLevelId          String
+  publisher          String
+  nerfCreator        String
+  verifier           String
+  showcaseUrl        String
+  thumbnailUrl       String?
+  versionNotes       String?
+  compatibilityNotes String
+  status             LevelSuggestionStatus @default(PENDING)
+  moderatorNotes     String?
+  isDemo             Boolean               @default(false)
+  submittedAt        DateTime              @default(now())
+  reviewedAt         DateTime?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  submitter          User                  @relation("LevelSuggestionSubmitter", fields: [submitterId], references: [id], onDelete: Cascade)
+  reviewer           User?                 @relation("LevelSuggestionReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  createdLevel       Level?                @relation("SuggestionCreatedLevel", fields: [createdLevelId], references: [id], onDelete: SetNull)
+
+  @@index([status, submittedAt])
+  @@index([submitterId])
+  @@index([reviewerId])
+  @@index([createdLevelId])
+  @@index([isDemo])
+}
+
+model RateLimitAttempt {
+  id         String   @id @default(cuid())
+  action     String
+  key        String
+  occurredAt DateTime @default(now())
+
+  @@index([action, key, occurredAt])
+  @@index([occurredAt])
+}
+
+model ModerationAction {
+  id         String               @id @default(cuid())
+  actorId    String
+  type       ModerationActionType
+  targetType String
+  targetId   String
+  summary    String
+  metadata   Json?
+  createdAt  DateTime             @default(now())
+  actor      User                 @relation("ModerationActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@index([type, createdAt])
+}
+
+model LevelHistory {
+  id        String   @id @default(cuid())
+  levelId   String
+  actorId   String?
+  action    String
+  notes     String
+  createdAt DateTime @default(now())
+  level     Level    @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  actor     User?    @relation("LevelHistoryActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([levelId, createdAt])
+}
+
+model ChangelogPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String
+  isDemo      Boolean  @default(false)
+  publishedAt DateTime @default(now())
+  authorId    String?
+  author      User?    @relation("ChangelogAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([publishedAt])
+  @@index([isDemo])
+}
+
+model RulesDocument {
+  id          String   @id @default(cuid())
+  version     String
+  content     String
+  isActive    Boolean  @default(false)
+  publishedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+}

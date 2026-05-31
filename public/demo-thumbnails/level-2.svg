@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="Demo Solar Drift abstract thumbnail">
+  <defs>
+    <linearGradient id="bg2" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".6" stop-color="#e4fbff"/>
+      <stop offset="1" stop-color="#c8f3ee"/>
+    </linearGradient>
+    <pattern id="grid2" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0v40" fill="none" stroke="#0f766e" stroke-opacity=".15"/>
+    </pattern>
+  </defs>
+  <rect width="960" height="540" fill="url(#bg2)"/>
+  <rect width="960" height="540" fill="url(#grid2)"/>
+  <path d="M64 348c112-86 214-98 306-40s178 66 284-14 184-88 244-28" fill="none" stroke="#0891b2" stroke-width="18"/>
+  <path d="M88 420h784" stroke="#0f766e" stroke-width="10" stroke-opacity=".55"/>
+  <path d="M620 82h194l60 60-60 60H620l-60-60z" fill="#ffffff" stroke="#14b8a6" stroke-width="4"/>
+  <text x="640" y="158" fill="#0f172a" font-family="Arial, sans-serif" font-size="42" font-weight="900">DEMO</text>
+  <text x="80" y="122" fill="#0f172a" font-family="Arial, sans-serif" font-size="48" font-weight="900">Solar Drift</text>
+</svg>

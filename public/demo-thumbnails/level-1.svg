@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="Demo Abyssal Mercy abstract thumbnail">
+  <defs>
+    <linearGradient id="bg1" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#f8fdff"/>
+      <stop offset=".55" stop-color="#dff7ff"/>
+      <stop offset="1" stop-color="#c7eef8"/>
+    </linearGradient>
+    <pattern id="grid1" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0v48" fill="none" stroke="#0891b2" stroke-opacity=".18"/>
+    </pattern>
+  </defs>
+  <rect width="960" height="540" fill="url(#bg1)"/>
+  <rect width="960" height="540" fill="url(#grid1)"/>
+  <path d="M92 402 246 134l122 196 92-142 126 214 96-150 186 150" fill="none" stroke="#0e7490" stroke-width="20" stroke-linejoin="bevel"/>
+  <path d="M116 430h728" stroke="#14b8a6" stroke-opacity=".55" stroke-width="10"/>
+  <path d="M112 92h228l42 42-42 42H112z" fill="#ffffff" stroke="#06b6d4" stroke-width="4"/>
+  <text x="140" y="152" fill="#0f172a" font-family="Arial, sans-serif" font-size="42" font-weight="900">DEMO</text>
+  <text x="118" y="492" fill="#0f172a" font-family="Arial, sans-serif" font-size="44" font-weight="900">Abyssal Mercy</text>
+</svg>

@@ -1,0 +1,268 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+
+import { ModerationActionType } from "@/generated/prisma/enums";
+import { requireAdmin, requireModerator, requireUser } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import {
+  createLevelSuggestionFormErrorState,
+  type LevelSuggestionFormState,
+  validateLevelSuggestionFormSubmission,
+} from "@/lib/level-suggestion-form-state";
+import {
+  levelStatusForConversion,
+  moderationActionForSuggestionStatus,
+} from "@/lib/level-suggestion-workflow";
+import {
+  createLevelWithRank,
+  LevelRankingError,
+} from "@/lib/level-ranking";
+import { FALLBACK_THUMBNAIL_SRC } from "@/lib/media";
+import {
+  checkRateLimit,
+  userRateLimitKey,
+} from "@/lib/rate-limit";
+import { slugify } from "@/lib/slug";
+import {
+  cleanupUploads,
+  isUsableFile,
+  saveThumbnailUpload,
+} from "@/lib/upload-storage";
+import {
+  formDataToObject,
+  levelSuggestionConvertSchema,
+  levelSuggestionReviewSchema,
+} from "@/lib/validation";
+
+export async function submitLevelSuggestionAction(
+  _prevState: LevelSuggestionFormState,
+  formData: FormData,
+): Promise<LevelSuggestionFormState> {
+  const user = await requireUser();
+  const parsed = validateLevelSuggestionFormSubmission(formData);
+
+  if (!parsed.success) {
+    return parsed.state;
+  }
+
+  const rateLimit = await checkRateLimit(
+    prisma,
+    "level-suggestion",
+    userRateLimitKey(user.id),
+  );
+
+  if (!rateLimit.allowed) {
+    return createLevelSuggestionFormErrorState(parsed.values, {
+      formErrors: [rateLimit.message],
+    });
+  }
+
+  const thumbnailFile = formData.get("thumbnailFile");
+  let thumbnailUrl: string | null = null;
+  const uploadedPaths: string[] = [];
+
+  if (isUsableFile(thumbnailFile)) {
+    const upload = await saveThumbnailUpload(thumbnailFile, parsed.data.name);
+
+    if (!upload.ok) {
+      return createLevelSuggestionFormErrorState(parsed.values, {
+        fieldErrors: {
+          thumbnailFile: [upload.error],
+        },
+      });
+    }
+
+    thumbnailUrl = upload.publicPath;
+    uploadedPaths.push(upload.absolutePath);
+  }
+
+  try {
+    const suggestion = await prisma.levelSuggestion.create({
+      data: {
+        submitterId: user.id,
+        name: parsed.data.name,
+        originalName: parsed.data.originalName,
+        gdLevelId: parsed.data.gdLevelId,
+        publisher: parsed.data.publisher,
+        nerfCreator: parsed.data.nerfCreator,
+        verifier: parsed.data.verifier,
+        showcaseUrl: parsed.data.showcaseUrl,
+        thumbnailUrl,
+        versionNotes: parsed.data.versionNotes,
+        compatibilityNotes: parsed.data.compatibilityNotes,
+      },
+    });
+
+    await prisma.moderationAction.create({
+      data: {
+        actorId: user.id,
+        type: ModerationActionType.LEVEL_SUGGESTION_CREATED,
+        targetType: "LevelSuggestion",
+        targetId: suggestion.id,
+        summary: `${user.displayName} suggested ${suggestion.name}.`,
+      },
+    });
+  } catch {
+    await cleanupUploads(uploadedPaths);
+    return createLevelSuggestionFormErrorState(parsed.values, {
+      formErrors: ["That level suggestion could not be saved. Refresh and try again."],
+    });
+  }
+
+  revalidatePath("/level-suggestions");
+  revalidatePath("/moderation");
+  revalidatePath("/admin");
+  redirect("/level-suggestions?created=1");
+}
+
+export async function reviewLevelSuggestionAction(formData: FormData) {
+  const moderator = await requireModerator();
+  const parsed = levelSuggestionReviewSchema.safeParse(formDataToObject(formData));
+
+  if (!parsed.success) {
+    redirect("/moderation?error=invalid");
+  }
+
+  const suggestion = await prisma.levelSuggestion.findUnique({
+    where: {
+      id: parsed.data.suggestionId,
+    },
+    include: {
+      submitter: true,
+    },
+  });
+
+  if (!suggestion) {
+    redirect("/moderation?error=missing");
+  }
+
+  if (suggestion.createdLevelId) {
+    redirect("/moderation?error=transition");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.levelSuggestion.update({
+      where: {
+        id: suggestion.id,
+      },
+      data: {
+        status: parsed.data.status,
+        moderatorNotes: parsed.data.moderatorNotes,
+        reviewerId: moderator.id,
+        reviewedAt: new Date(),
+      },
+    });
+
+    await tx.moderationAction.create({
+      data: {
+        actorId: moderator.id,
+        type: moderationActionForSuggestionStatus(parsed.data.status),
+        targetType: "LevelSuggestion",
+        targetId: suggestion.id,
+        summary: `${moderator.displayName} marked ${suggestion.name} as ${parsed.data.status.toLowerCase().replace("_", " ")}.`,
+      },
+    });
+  });
+
+  revalidatePath("/moderation");
+  revalidatePath("/level-suggestions");
+  revalidatePath("/admin");
+  redirect("/moderation?reviewed=1");
+}
+
+export async function convertLevelSuggestionAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const parsed = levelSuggestionConvertSchema.safeParse(formDataToObject(formData));
+
+  if (!parsed.success) {
+    redirect("/moderation?error=invalid");
+  }
+
+  const suggestion = await prisma.levelSuggestion.findUnique({
+    where: {
+      id: parsed.data.suggestionId,
+    },
+  });
+
+  if (!suggestion || suggestion.status !== "APPROVED") {
+    redirect("/moderation?error=missing");
+  }
+
+  if (suggestion.createdLevelId) {
+    redirect("/moderation?error=transition");
+  }
+
+  try {
+    const mutation = await prisma.$transaction(async (tx) => {
+      const status = levelStatusForConversion(parsed.data.status);
+      const result = await createLevelWithRank(tx, {
+        name: suggestion.name,
+        originalName: suggestion.originalName,
+        gdLevelId: suggestion.gdLevelId,
+        publisher: suggestion.publisher,
+        nerfCreator: suggestion.nerfCreator,
+        verifier: suggestion.verifier,
+        thumbnailUrl: suggestion.thumbnailUrl ?? FALLBACK_THUMBNAIL_SRC,
+        showcaseUrl: suggestion.showcaseUrl,
+        placementDate: undefined,
+        rank: parsed.data.rank,
+        status,
+        difficulty: "EXTREME",
+        description:
+          suggestion.versionNotes ??
+          `Community-suggested nerfed version of ${suggestion.originalName}.`,
+        versionNotes: suggestion.compatibilityNotes,
+        slug: `${slugify(suggestion.name)}-${Date.now().toString(36)}`,
+      });
+
+      await tx.levelSuggestion.update({
+        where: {
+          id: suggestion.id,
+        },
+        data: {
+          createdLevelId: result.level.id,
+        },
+      });
+
+      await tx.levelHistory.create({
+        data: {
+          levelId: result.level.id,
+          actorId: admin.id,
+          action: "Converted",
+          notes: "Created from an approved level suggestion.",
+        },
+      });
+
+      await tx.moderationAction.create({
+        data: {
+          actorId: admin.id,
+          type: ModerationActionType.LEVEL_SUGGESTION_CONVERTED,
+          targetType: "LevelSuggestion",
+          targetId: suggestion.id,
+          summary: `${admin.displayName} converted ${suggestion.name} into a level.`,
+        },
+      });
+
+      return result;
+    });
+
+    revalidatePath("/");
+    revalidatePath("/players");
+    revalidatePath("/moderation");
+    revalidatePath("/admin");
+    revalidatePath("/admin/levels");
+    for (const slug of mutation.affectedSlugs) {
+      revalidatePath(`/levels/${slug}`);
+    }
+  } catch (error) {
+    if (error instanceof LevelRankingError) {
+      redirect(`/moderation?error=${error.code}`);
+    }
+
+    throw error;
+  }
+
+  redirect("/moderation?converted=1");
+}

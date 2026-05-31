@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="NDL thumbnail fallback">
+  <rect width="640" height="360" fill="#0f172a"/>
+  <path d="M0 280 640 120v240H0z" fill="#083344"/>
+  <path d="M64 64h512v232H64z" fill="none" stroke="#155e75" stroke-width="6"/>
+  <path d="M116 250 256 102l78 92 58-62 132 118" fill="none" stroke="#22d3ee" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M96 88h448M96 132h448M96 176h448M96 220h448M144 64v232M216 64v232M288 64v232M360 64v232M432 64v232M504 64v232" stroke="#164e63" stroke-width="2" opacity=".55"/>
+  <text x="320" y="318" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="800" fill="#e0f2fe">NDL THUMBNAIL</text>
+</svg>
