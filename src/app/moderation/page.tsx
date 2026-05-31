@@ -4,11 +4,9 @@ import {
   Layers3,
   LinkIcon,
 } from "lucide-react";
+import Link from "next/link";
 
-import {
-  convertLevelSuggestionAction,
-  reviewLevelSuggestionAction,
-} from "@/actions/level-suggestions";
+import { reviewLevelSuggestionAction } from "@/actions/level-suggestions";
 import { reviewSubmissionAction } from "@/actions/submissions";
 import { PageMessage } from "@/components/message";
 import { StatusBadge } from "@/components/status-badge";
@@ -49,8 +47,9 @@ export default async function ModerationPage({
     prisma.levelSuggestion.findMany({
       where: {
         status: {
-          in: ["PENDING", "NEEDS_CHANGES"],
+          in: ["PENDING", "NEEDS_CHANGES", "APPROVED"],
         },
+        createdLevelId: null,
       },
       include: {
         submitter: true,
@@ -88,7 +87,7 @@ export default async function ModerationPage({
       take: 5,
       where: {
         status: {
-          in: ["APPROVED", "REJECTED"],
+          in: ["APPROVED", "REJECTED", "CONVERTED"],
         },
       },
       include: {
@@ -470,64 +469,51 @@ function SuggestionReviewCard({
         ) : null}
       </div>
 
-      <form
-        action={reviewLevelSuggestionAction}
-        className="grid gap-3 border-t border-slate-300 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-950/60"
-      >
-        <input type="hidden" name="suggestionId" value={suggestion.id} />
-        <div className="grid gap-3 md:grid-cols-[14rem_1fr]">
-          <FieldLabel label="Decision">
-            <select name="status" required className={inputClass}>
-              <option value="APPROVED">Approve</option>
-              <option value="REJECTED">Reject</option>
-              <option value="NEEDS_CHANGES">Needs changes</option>
-            </select>
-          </FieldLabel>
-          <FieldLabel label="Moderator notes">
-            <input
-              name="moderatorNotes"
-              required
-              className={inputClass}
-              placeholder="Required suggestion note"
-            />
-          </FieldLabel>
-        </div>
-        <SubmitButton>Save suggestion review</SubmitButton>
-      </form>
-
-      {canConvert && suggestion.status === "APPROVED" && !suggestion.createdLevel ? (
+      {suggestion.status !== "APPROVED" ? (
         <form
-          action={convertLevelSuggestionAction}
-          className="grid gap-3 border-t border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-500/50 dark:bg-emerald-950/30"
+          action={reviewLevelSuggestionAction}
+          className="grid gap-3 border-t border-slate-300 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-950/60"
         >
           <input type="hidden" name="suggestionId" value={suggestion.id} />
-          <div className="flex items-center gap-2 font-black text-emerald-900 dark:text-emerald-100">
-            <Layers3 className="h-5 w-5" />
-            Convert approved suggestion into a level
-          </div>
-          <div className="grid gap-3 md:grid-cols-[12rem_12rem_1fr]">
-            <FieldLabel label="Level status">
-              <select name="status" required defaultValue="PENDING" className={inputClass}>
-                <option value="PENDING">Pending</option>
-                <option value="RANKED">Ranked</option>
-                <option value="LEGACY">Legacy</option>
+          <div className="grid gap-3 md:grid-cols-[14rem_1fr]">
+            <FieldLabel label="Decision">
+              <select name="status" required className={inputClass}>
+                <option value="APPROVED">Approve</option>
+                <option value="REJECTED">Reject</option>
+                <option value="NEEDS_CHANGES">Needs changes</option>
               </select>
             </FieldLabel>
-            <FieldLabel label="Rank">
+            <FieldLabel label="Moderator notes">
               <input
-                name="rank"
-                type="number"
-                min={1}
+                name="moderatorNotes"
+                required
                 className={inputClass}
-                placeholder="Only ranked"
+                placeholder="Required suggestion note"
               />
             </FieldLabel>
-            <div className="flex items-end">
-              <SubmitButton>Create level</SubmitButton>
-            </div>
           </div>
+          <SubmitButton>Save suggestion review</SubmitButton>
         </form>
-      ) : null}
+      ) : (
+        <div className="grid gap-3 border-t border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-500/50 dark:bg-emerald-950/30">
+          <div className="flex items-center gap-2 font-black text-emerald-900 dark:text-emerald-100">
+            <Layers3 className="h-5 w-5" />
+            Approved suggestion
+          </div>
+          {canConvert ? (
+            <Link
+              href={`/admin/levels?suggestionId=${suggestion.id}#add-level`}
+              className="inline-flex min-h-10 w-fit items-center justify-center rounded-md border border-emerald-700 bg-emerald-700 px-4 py-2 text-sm font-black text-white transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-emerald-300 dark:bg-emerald-300 dark:text-slate-950 dark:hover:bg-emerald-200"
+            >
+              Convert to ranked level
+            </Link>
+          ) : (
+            <p className="text-sm font-bold leading-6 text-emerald-900 dark:text-emerald-100">
+              An admin must convert this approved suggestion into a level.
+            </p>
+          )}
+        </div>
+      )}
     </SectionPanel>
   );
 }

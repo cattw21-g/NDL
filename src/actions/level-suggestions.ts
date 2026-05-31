@@ -12,19 +12,13 @@ import {
   validateLevelSuggestionFormSubmission,
 } from "@/lib/level-suggestion-form-state";
 import {
-  levelStatusForConversion,
+  levelSuggestionConversionGate,
   moderationActionForSuggestionStatus,
 } from "@/lib/level-suggestion-workflow";
-import {
-  createLevelWithRank,
-  LevelRankingError,
-} from "@/lib/level-ranking";
-import { FALLBACK_THUMBNAIL_SRC } from "@/lib/media";
 import {
   checkRateLimit,
   userRateLimitKey,
 } from "@/lib/rate-limit";
-import { slugify } from "@/lib/slug";
 import {
   cleanupUploads,
   isUsableFile,
@@ -138,7 +132,7 @@ export async function reviewLevelSuggestionAction(formData: FormData) {
     redirect("/moderation?error=missing");
   }
 
-  if (suggestion.createdLevelId) {
+  if (suggestion.createdLevelId || suggestion.status === "CONVERTED") {
     redirect("/moderation?error=transition");
   }
 
@@ -185,84 +179,11 @@ export async function convertLevelSuggestionAction(formData: FormData) {
       id: parsed.data.suggestionId,
     },
   });
+  const gate = levelSuggestionConversionGate(admin.role, suggestion);
 
-  if (!suggestion || suggestion.status !== "APPROVED") {
-    redirect("/moderation?error=missing");
+  if (!gate.allowed) {
+    redirect(`/moderation?error=${gate.code}`);
   }
 
-  if (suggestion.createdLevelId) {
-    redirect("/moderation?error=transition");
-  }
-
-  try {
-    const mutation = await prisma.$transaction(async (tx) => {
-      const status = levelStatusForConversion(parsed.data.status);
-      const result = await createLevelWithRank(tx, {
-        name: suggestion.name,
-        originalName: suggestion.originalName,
-        gdLevelId: suggestion.gdLevelId,
-        publisher: suggestion.publisher,
-        nerfCreator: suggestion.nerfCreator,
-        verifier: suggestion.verifier,
-        thumbnailUrl: suggestion.thumbnailUrl ?? FALLBACK_THUMBNAIL_SRC,
-        showcaseUrl: suggestion.showcaseUrl,
-        placementDate: undefined,
-        rank: parsed.data.rank,
-        status,
-        difficulty: "EXTREME",
-        description:
-          suggestion.versionNotes ??
-          `Community-suggested nerfed version of ${suggestion.originalName}.`,
-        versionNotes: suggestion.compatibilityNotes,
-        slug: `${slugify(suggestion.name)}-${Date.now().toString(36)}`,
-      });
-
-      await tx.levelSuggestion.update({
-        where: {
-          id: suggestion.id,
-        },
-        data: {
-          createdLevelId: result.level.id,
-        },
-      });
-
-      await tx.levelHistory.create({
-        data: {
-          levelId: result.level.id,
-          actorId: admin.id,
-          action: "Converted",
-          notes: "Created from an approved level suggestion.",
-        },
-      });
-
-      await tx.moderationAction.create({
-        data: {
-          actorId: admin.id,
-          type: ModerationActionType.LEVEL_SUGGESTION_CONVERTED,
-          targetType: "LevelSuggestion",
-          targetId: suggestion.id,
-          summary: `${admin.displayName} converted ${suggestion.name} into a level.`,
-        },
-      });
-
-      return result;
-    });
-
-    revalidatePath("/");
-    revalidatePath("/players");
-    revalidatePath("/moderation");
-    revalidatePath("/admin");
-    revalidatePath("/admin/levels");
-    for (const slug of mutation.affectedSlugs) {
-      revalidatePath(`/levels/${slug}`);
-    }
-  } catch (error) {
-    if (error instanceof LevelRankingError) {
-      redirect(`/moderation?error=${error.code}`);
-    }
-
-    throw error;
-  }
-
-  redirect("/moderation?converted=1");
+  redirect(`/admin/levels?suggestionId=${parsed.data.suggestionId}#add-level`);
 }

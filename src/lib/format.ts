@@ -19,6 +19,22 @@ export function formatDateTime(date: Date | string | null | undefined) {
   }).format(new Date(date));
 }
 
+export function formatDateInputValue(
+  date: Date | string | null | undefined,
+) {
+  if (!date) {
+    return "";
+  }
+
+  const parsed = date instanceof Date ? date : new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+
+  return parsed.toISOString().slice(0, 10);
+}
+
 export function statusLabel(value: string) {
   return value
     .toLowerCase()

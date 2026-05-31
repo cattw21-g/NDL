@@ -12,6 +12,7 @@ import {
   SectionPanel,
   textareaClass,
 } from "@/components/ui";
+import { fieldHelp } from "@/lib/field-help";
 import {
   createLevelSuggestionFormState,
   type LevelSuggestionField,
@@ -66,6 +67,7 @@ export function LevelSuggestionForm({
             <TextInput
               name="originalName"
               label="Original level"
+              help={fieldHelp.originalName}
               defaultValue={values.originalName}
               errors={state.fieldErrors.originalName}
             />
@@ -78,18 +80,21 @@ export function LevelSuggestionForm({
             <TextInput
               name="publisher"
               label="Publisher/host"
+              help={fieldHelp.publisher}
               defaultValue={values.publisher}
               errors={state.fieldErrors.publisher}
             />
             <TextInput
               name="nerfCreator"
               label="Nerf creator"
+              help={fieldHelp.nerfCreator}
               defaultValue={values.nerfCreator}
               errors={state.fieldErrors.nerfCreator}
             />
             <TextInput
               name="verifier"
               label="Verifier"
+              help={fieldHelp.verifier}
               defaultValue={values.verifier}
               errors={state.fieldErrors.verifier}
             />
@@ -104,6 +109,7 @@ export function LevelSuggestionForm({
             <TextInput
               name="showcaseUrl"
               label="Showcase link"
+              help={fieldHelp.showcaseUrl}
               type="url"
               defaultValue={values.showcaseUrl}
               errors={state.fieldErrors.showcaseUrl}
@@ -111,6 +117,7 @@ export function LevelSuggestionForm({
             <FileInput
               name="thumbnailFile"
               label="Thumbnail upload"
+              help={fieldHelp.thumbnailFile}
               disabled={!imageUploadsEnabled}
               hint={`Optional PNG, JPG, or WebP up to ${maxImageMb} MB.`}
               errors={state.fieldErrors.thumbnailFile}
@@ -119,6 +126,7 @@ export function LevelSuggestionForm({
           <TextArea
             name="versionNotes"
             label="Version notes"
+            help={fieldHelp.versionNotes}
             defaultValue={values.versionNotes}
             errors={state.fieldErrors.versionNotes}
           />
@@ -131,6 +139,7 @@ export function LevelSuggestionForm({
           <TextArea
             name="compatibilityNotes"
             label="Macro/replay compatibility notes"
+            help={fieldHelp.compatibilityNotes}
             defaultValue={values.compatibilityNotes}
             errors={state.fieldErrors.compatibilityNotes}
           />
@@ -154,17 +163,19 @@ function TextInput({
   type = "text",
   defaultValue,
   errors,
+  help,
 }: {
   name: LevelSuggestionField;
   label: string;
   type?: string;
   defaultValue: string;
   errors?: string[];
+  help?: string;
 }) {
   const hasErrors = Boolean(errors?.length);
 
   return (
-    <FieldLabel label={label}>
+    <FieldLabel label={label} help={help}>
       <input
         name={name}
         type={type}
@@ -184,17 +195,19 @@ function FileInput({
   disabled,
   hint,
   errors,
+  help,
 }: {
   name: LevelSuggestionField;
   label: string;
   disabled: boolean;
   hint: string;
   errors?: string[];
+  help?: string;
 }) {
   const hasErrors = Boolean(errors?.length);
 
   return (
-    <FieldLabel label={label}>
+    <FieldLabel label={label} help={help}>
       <input
         name={name}
         type="file"
@@ -220,16 +233,18 @@ function TextArea({
   label,
   defaultValue,
   errors,
+  help,
 }: {
   name: LevelSuggestionField;
   label: string;
   defaultValue: string;
   errors?: string[];
+  help?: string;
 }) {
   const hasErrors = Boolean(errors?.length);
 
   return (
-    <FieldLabel label={label}>
+    <FieldLabel label={label} help={help}>
       <textarea
         name={name}
         rows={4}

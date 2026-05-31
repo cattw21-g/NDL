@@ -18,6 +18,11 @@ import {
   LevelRankingError,
   updateLevelWithRank,
 } from "@/lib/level-ranking";
+import {
+  assertCanConvertLevelSuggestion,
+  LevelSuggestionConversionError,
+  levelSuggestionConversionGate,
+} from "@/lib/level-suggestion-workflow";
 import { slugify } from "@/lib/slug";
 import {
   cleanupUploads,
@@ -48,6 +53,24 @@ export async function createLevelAction(
 
   const baseSlug = slugify(parsed.data.name);
   const slug = `${baseSlug}-${Date.now().toString(36)}`;
+  const sourceSuggestion = parsed.data.sourceSuggestionId
+    ? await prisma.levelSuggestion.findUnique({
+        where: {
+          id: parsed.data.sourceSuggestionId,
+        },
+      })
+    : null;
+
+  if (parsed.data.sourceSuggestionId) {
+    const gate = levelSuggestionConversionGate(admin.role, sourceSuggestion);
+
+    if (!gate.allowed) {
+      return createLevelFormErrorState(parsed.values, {
+        formErrors: [gate.message],
+      });
+    }
+  }
+
   const upload = await applyThumbnailUpload(formData, parsed.values, parsed.data);
 
   if (!upload.ok) {
@@ -56,17 +79,46 @@ export async function createLevelAction(
 
   const result = await runLevelMutation(() =>
     prisma.$transaction(async (tx) => {
+      if (parsed.data.sourceSuggestionId) {
+        const suggestion = await tx.levelSuggestion.findUnique({
+          where: {
+            id: parsed.data.sourceSuggestionId,
+          },
+        });
+
+        assertCanConvertLevelSuggestion(admin.role, suggestion);
+      }
+
       const mutation = await createLevelWithRank(tx, {
         ...upload.data,
         slug,
       });
 
+      if (parsed.data.sourceSuggestionId) {
+        await tx.levelSuggestion.update({
+          where: {
+            id: parsed.data.sourceSuggestionId,
+          },
+          data: {
+            status: "CONVERTED",
+            createdLevelId: mutation.level.id,
+            reviewerId: admin.id,
+            reviewedAt: new Date(),
+            moderatorNotes:
+              sourceSuggestion?.moderatorNotes ??
+              "Converted into an NDL level by an admin.",
+          },
+        });
+      }
+
       await tx.levelHistory.create({
         data: {
           levelId: mutation.level.id,
           actorId: admin.id,
-          action: "Created",
-          notes: "Level added from the admin console.",
+          action: parsed.data.sourceSuggestionId ? "Converted" : "Created",
+          notes: parsed.data.sourceSuggestionId
+            ? "Level created from an approved level suggestion."
+            : "Level added from the admin console.",
         },
       });
 
@@ -76,9 +128,23 @@ export async function createLevelAction(
           type: ModerationActionType.LEVEL_CREATED,
           targetType: "Level",
           targetId: mutation.level.id,
-          summary: `${admin.displayName} created ${mutation.level.name}.`,
+          summary: parsed.data.sourceSuggestionId
+            ? `${admin.displayName} converted ${mutation.level.name} from an approved suggestion.`
+            : `${admin.displayName} created ${mutation.level.name}.`,
         },
       });
+
+      if (parsed.data.sourceSuggestionId) {
+        await tx.moderationAction.create({
+          data: {
+            actorId: admin.id,
+            type: ModerationActionType.LEVEL_SUGGESTION_CONVERTED,
+            targetType: "LevelSuggestion",
+            targetId: parsed.data.sourceSuggestionId,
+            summary: `${admin.displayName} converted ${mutation.level.name} into a level.`,
+          },
+        });
+      }
 
       return mutation;
     }),
@@ -91,11 +157,18 @@ export async function createLevelAction(
 
   revalidatePath("/");
   revalidatePath("/players");
+  revalidatePath("/moderation");
+  revalidatePath("/level-suggestions");
+  revalidatePath("/admin");
   revalidatePath("/admin/levels");
   for (const slug of result.value.affectedSlugs) {
     revalidatePath(`/levels/${slug}`);
   }
-  redirect("/admin/levels?created=1");
+  redirect(
+    parsed.data.sourceSuggestionId
+      ? "/admin/levels?converted=1"
+      : "/admin/levels?created=1",
+  );
 }
 
 export async function updateLevelAction(
@@ -214,6 +287,13 @@ async function runLevelMutation<T>(
     await cleanupUploads(uploadedPaths);
 
     if (error instanceof LevelRankingError) {
+      return {
+        ok: false as const,
+        error: error.code,
+      };
+    }
+
+    if (error instanceof LevelSuggestionConversionError) {
       return {
         ok: false as const,
         error: error.code,

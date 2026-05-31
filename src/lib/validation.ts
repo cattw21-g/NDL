@@ -141,26 +141,11 @@ export const levelSuggestionReviewSchema = z.object({
 
 export const levelSuggestionConvertSchema = z.object({
   suggestionId: z.string().min(1),
-  rank: z.preprocess(
-    (value) => {
-      const trimmed = emptyToUndefined(value);
-      if (typeof trimmed === "string" && /^\d+$/.test(trimmed)) {
-        return Number(trimmed);
-      }
-      return trimmed;
-    },
-    z
-      .number({ error: rankMessage })
-      .int(rankMessage)
-      .min(1, rankMessage)
-      .max(500, rankMessage)
-      .optional(),
-  ),
-  status: z.enum(["PENDING", "RANKED", "LEGACY"]),
 });
 
 export const levelSchema = z.object({
   id: z.preprocess(emptyToUndefined, z.string().optional()),
+  sourceSuggestionId: z.preprocess(emptyToUndefined, z.string().optional()),
   name: requiredText("Level name is required.", 120),
   originalName: requiredText("Original level is required.", 120),
   gdLevelId: z

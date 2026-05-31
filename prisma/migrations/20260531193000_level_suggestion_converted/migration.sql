@@ -1,0 +1,1 @@
+ALTER TYPE "LevelSuggestionStatus" ADD VALUE IF NOT EXISTS 'CONVERTED';

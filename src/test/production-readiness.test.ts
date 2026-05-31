@@ -84,6 +84,12 @@ describe("production readiness guardrails", () => {
     expect(source("app/moderation/page.tsx")).toContain(
       "levelSuggestion.findMany",
     );
+    expect(source("app/moderation/page.tsx")).toContain(
+      "Convert to ranked level",
+    );
+    expect(source("app/admin/levels/page.tsx")).toContain("suggestionId");
+    expect(source("actions/admin.ts")).toContain("sourceSuggestionId");
+    expect(source("actions/admin.ts")).toContain("CONVERTED");
     expect(source("components/app-shell.tsx")).toContain("/suggest-level");
   });
 
@@ -93,6 +99,13 @@ describe("production readiness guardrails", () => {
     expect(source("lib/auth.ts")).toContain("createHmac");
     expect(source("lib/upload-storage.ts")).toContain(
       "productionLocalUploadsDisabledReason",
+    );
+    expect(source("lib/upload-storage.ts")).toContain("BLOB_READ_WRITE_TOKEN");
+    expect(source("app/api/admin/blob-thumbnail-upload/route.ts")).toContain(
+      "isAdminRole",
+    );
+    expect(source("app/api/admin/blob-thumbnail-upload/route.ts")).toContain(
+      "handleUpload",
     );
     expect(rootSource("prisma.config.ts")).toContain(
       "DATABASE_URL is required for Prisma commands.",
@@ -138,6 +151,22 @@ describe("production readiness guardrails", () => {
     expect(adminForm).toContain("URL.revokeObjectURL");
     expect(adminForm).toContain("allowObjectUrl");
     expect(adminForm).toContain("onValueChange={setThumbnailUrlValue}");
+    expect(adminForm).toContain("blobThumbnailPathname");
+    expect(adminForm).toContain("handleUploadUrl");
+  });
+
+  it("keeps accessible field help tooltips wired into affected forms", () => {
+    expect(source("components/help-tooltip.tsx")).toContain("role=\"tooltip\"");
+    expect(source("components/ui.tsx")).toContain("HelpTooltip");
+    expect(source("components/admin-level-form.tsx")).toContain(
+      "fieldHelp.rank",
+    );
+    expect(source("components/level-suggestion-form.tsx")).toContain(
+      "fieldHelp.compatibilityNotes",
+    );
+    expect(source("components/submit-record-form.tsx")).toContain(
+      "fieldHelp.rawFootageUrl",
+    );
   });
 
   it("keeps server-action forms on React-managed encoding", () => {

@@ -13,6 +13,7 @@ import {
   SectionPanel,
   textareaClass,
 } from "@/components/ui";
+import { fieldHelp } from "@/lib/field-help";
 import {
   createSubmissionFormState,
   type SubmissionFormField,
@@ -100,6 +101,7 @@ export function SubmitRecordForm({
             <TextInput
               name="rawFootageUrl"
               label="Raw footage link"
+              help={fieldHelp.rawFootageUrl}
               defaultValue={values.rawFootageUrl}
               errors={state.fieldErrors.rawFootageUrl}
             />
@@ -168,6 +170,7 @@ export function SubmitRecordForm({
             <TextInput
               name="fps"
               label="FPS used"
+              help={fieldHelp.fps}
               type="number"
               defaultValue={values.fps}
               required
@@ -176,6 +179,7 @@ export function SubmitRecordForm({
             <CheckboxField
               name="cbfUsed"
               label="CBF was used"
+              help={fieldHelp.cbfUsed}
               defaultChecked={values.cbfUsed === "true"}
               errors={state.fieldErrors.cbfUsed}
             />
@@ -194,6 +198,7 @@ export function SubmitRecordForm({
             <CheckboxField
               name="cheatIndicatorVisible"
               label="Cheat indicator is visible"
+              help={fieldHelp.cheatIndicatorVisible}
               defaultChecked={values.cheatIndicatorVisible === "true"}
               errors={state.fieldErrors.cheatIndicatorVisible}
             />
@@ -214,6 +219,7 @@ export function SubmitRecordForm({
             <CheckboxField
               name="separateMicClickTrack"
               label="Separate mic/click track is included"
+              help={fieldHelp.separateMicClickTrack}
               defaultChecked={values.separateMicClickTrack === "true"}
               errors={state.fieldErrors.separateMicClickTrack}
             />
@@ -282,6 +288,7 @@ function TextInput({
   required = false,
   defaultValue,
   errors,
+  help,
 }: {
   name: SubmissionFormField;
   label: string;
@@ -289,11 +296,12 @@ function TextInput({
   required?: boolean;
   defaultValue: string;
   errors?: string[];
+  help?: string;
 }) {
   const hasErrors = Boolean(errors?.length);
 
   return (
-    <FieldLabel label={label}>
+    <FieldLabel label={label} help={help}>
       <input
         name={name}
         type={type}
@@ -312,18 +320,20 @@ function SelectField({
   label,
   defaultValue,
   errors,
+  help,
   children,
 }: {
   name: SubmissionFormField;
   label: string;
   defaultValue: string;
   errors?: string[];
+  help?: string;
   children: React.ReactNode;
 }) {
   const hasErrors = Boolean(errors?.length);
 
   return (
-    <FieldLabel label={label}>
+    <FieldLabel label={label} help={help}>
       <select
         name={name}
         required
@@ -343,14 +353,16 @@ function CheckboxField({
   label,
   defaultChecked,
   errors,
+  help,
 }: {
   name: SubmissionFormField;
   label: string;
   defaultChecked: boolean;
   errors?: string[];
+  help?: string;
 }) {
   return (
-    <FieldLabel label={label}>
+    <FieldLabel label={label} help={help}>
       <label className="flex min-h-10 items-center gap-3 rounded-md border border-slate-400 bg-white px-3 transition focus-within:border-cyan-700 focus-within:ring-2 focus-within:ring-cyan-200 dark:border-slate-600 dark:bg-slate-950 dark:focus-within:border-cyan-400 dark:focus-within:ring-cyan-500/30">
         <input
           name={name}

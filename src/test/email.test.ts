@@ -88,4 +88,14 @@ describe("verification email delivery", () => {
       `NDL email verification code: ${verificationEmail.code}`,
     );
   });
+
+  it("returns a clear production error when SMTP is absent", async () => {
+    await expect(
+      sendVerificationEmail(verificationEmail, {
+        NODE_ENV: "production",
+      }),
+    ).rejects.toThrow(
+      "SMTP configuration is required in production to send verification email.",
+    );
+  });
 });

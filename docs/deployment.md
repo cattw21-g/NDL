@@ -42,6 +42,8 @@ Required production variables:
 | `NEXT_PUBLIC_SITE_URL` | Canonical public URL for metadata and social previews. Usually the same as `APP_URL`. |
 | `SESSION_SECRET` | Strong random secret, at least 32 characters. |
 | `UPLOAD_MODE` | Use `disabled` for Vercel production. |
+| `BLOB_READ_WRITE_TOKEN` | Optional Vercel Blob token for production admin thumbnail uploads. |
+| `MAX_IMAGE_UPLOAD_MB` | Optional thumbnail image upload limit, default `5`. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` | Required for production email verification. |
 | `SMTP_USER`, `SMTP_PASSWORD` | Required if your SMTP provider uses auth. |
 | `SMTP_SECURE` | `true` for implicit TLS, usually port 465; otherwise `false`. |
@@ -98,7 +100,7 @@ This sets `ENABLE_DEMO_SEED=true` and `NDL_SEED_RESET=true`, clears the demo wor
 
 ## 5. SMTP Email Verification
 
-Production registration requires SMTP. Without SMTP, development logs verification links and codes to the terminal, but production throws a clear error instead of silently failing.
+Production registration requires SMTP. Without SMTP, development logs verification links and codes to the terminal, but production redirects users back to the verification page with a clear email-configuration error instead of crashing.
 
 Typical SMTP variables:
 
@@ -114,6 +116,11 @@ $env:SMTP_SECURE="false"
 
 Use a verified sender address with your SMTP provider.
 
+Two low-cost setup paths:
+
+- Brevo free SMTP: create a Brevo account, verify a sender/domain, copy the SMTP login/key, use `smtp-relay.brevo.com`, port `587`, and `SMTP_SECURE=false`.
+- Gmail app-password SMTP: enable 2-Step Verification, create an app password, use `smtp.gmail.com`, port `587`, and `SMTP_SECURE=false`. For port `465`, set `SMTP_SECURE=true`.
+
 ## 6. Uploads
 
 For Vercel production, set:
@@ -124,6 +131,15 @@ UPLOAD_MODE=disabled
 
 NDL will continue to support proof links. Local filesystem uploads are for local development or self-hosted persistent servers only. Vercel/serverless filesystems are not reliable storage for uploaded thumbnails, proof images, or videos.
 
+For production admin thumbnail uploads on Vercel:
+
+1. In Vercel, open Storage and create or connect a Blob store.
+2. Copy the generated `BLOB_READ_WRITE_TOKEN` into the project Environment Variables.
+3. Keep `UPLOAD_MODE=disabled`.
+4. Redeploy. `/admin/levels` will allow admins to upload PNG/JPG/WebP thumbnails from their PC, save the returned public Blob URL on the level, and keep manual Thumbnail URL entry available.
+
+If `BLOB_READ_WRITE_TOKEN` is missing, production upload controls stay disabled and admins must use a direct image URL.
+
 If you self-host and intentionally want local image uploads in production, set both:
 
 ```text
@@ -131,7 +147,7 @@ UPLOAD_MODE=local
 ALLOW_LOCAL_UPLOADS_IN_PRODUCTION=true
 ```
 
-MP4 uploads remain disabled in production until a real persistent storage provider is added.
+MP4 uploads remain disabled in production. Record completion videos and raw footage should be submitted as YouTube/Drive-style links.
 
 ## 7. Namecheap Domain Notes
 
@@ -148,13 +164,15 @@ Set `APP_URL` and `NEXT_PUBLIC_SITE_URL` to the final HTTPS domain after the dom
 1. `DATABASE_URL` points at Neon production.
 2. `SESSION_SECRET` is strong and not a placeholder.
 3. `UPLOAD_MODE=disabled` on Vercel.
-4. SMTP variables send real verification email.
-5. `ENABLE_DEMO_SEED` is unset or `false`.
-6. Migrations have been run with `npm.cmd run db:migrate:deploy`.
-7. Baseline seed has been run with `npm.cmd run db:seed`.
-8. First admin can log in.
-9. `public/og-image.svg` and `src/app/favicon.ico` have been replaced with final launch assets if desired.
-10. `/admin` shows no hidden demo warning, or any hidden demo rows have been intentionally removed before public launch.
+4. `BLOB_READ_WRITE_TOKEN` is set if admins should upload thumbnails; otherwise Thumbnail URL is the production path.
+5. SMTP variables send real verification email.
+6. `APP_URL` and `NEXT_PUBLIC_SITE_URL` are `https://nerfeddemonlist.net`.
+7. `ENABLE_DEMO_SEED` is unset or `false`.
+8. Migrations have been run with `npm.cmd run db:migrate:deploy`.
+9. Baseline seed has been run with `npm.cmd run db:seed`.
+10. First admin can log in.
+11. `public/og-image.svg` and `src/app/favicon.ico` have been replaced with final launch assets if desired.
+12. `/admin` shows no hidden demo warning, or any hidden demo rows have been intentionally removed before public launch.
 
 ## 9. Pre-Launch QA
 
@@ -177,7 +195,7 @@ Manual QA checklist:
 3. Submit a record with links only; confirm it appears in `/submissions` and `/moderation`.
 4. Accept the record; confirm the level page and player leaderboard update.
 5. Submit a level suggestion; confirm it appears in `/level-suggestions` and `/moderation`.
-6. Approve the level suggestion as staff and convert it as admin.
+6. Approve the level suggestion as staff, confirm `/moderation` shows the admin-only conversion button, and convert it as admin from the prefilled `/admin/levels` form.
 7. Confirm `/admin` and `/moderation` reject normal player accounts.
 8. Confirm rejected and needs-changes records/suggestions are visible only to submitter and staff.
 9. Toggle light, dark, and system theme across public, auth, submit, moderation, and admin routes.

@@ -1,10 +1,14 @@
 "use client";
 
+import { upload } from "@vercel/blob/client";
 import {
   type ChangeEvent,
+  type FormEvent,
+  type RefObject,
   useActionState,
   useEffect,
   useId,
+  useRef,
   useState,
 } from "react";
 
@@ -18,11 +22,17 @@ import {
   inputClass,
   textareaClass,
 } from "@/components/ui";
+import { fieldHelp } from "@/lib/field-help";
 import {
   createLevelFormState,
   type LevelFormField,
   type LevelFormValues,
 } from "@/lib/level-form-state";
+import {
+  blobThumbnailPathname,
+  validateThumbnailUploadCandidate,
+} from "@/lib/thumbnail-upload";
+import type { ImageUploadProvider } from "@/lib/upload-storage";
 
 const statuses = ["RANKED", "LEGACY", "PENDING", "REJECTED", "REMOVED"];
 const invalidClass =
@@ -31,11 +41,19 @@ const invalidClass =
 export function AdminLevelForm({
   mode,
   initialValues,
+  imageUploadProvider,
+  maxImageMb,
 }: {
   mode: "create" | "edit";
   initialValues?: Partial<LevelFormValues>;
+  imageUploadProvider: ImageUploadProvider;
+  maxImageMb: number;
 }) {
   const formId = useId();
+  const formRef = useRef<HTMLFormElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const thumbnailUrlInputRef = useRef<HTMLInputElement>(null);
+  const skipBlobUploadRef = useRef(false);
   const action = mode === "edit" ? updateLevelAction : createLevelAction;
   const [state, formAction, pending] = useActionState(
     action,
@@ -43,6 +61,8 @@ export function AdminLevelForm({
   );
   const values = state.values;
   const [thumbnailUrlValue, setThumbnailUrlValue] = useState(values.thumbnailUrl);
+  const [clientError, setClientError] = useState<string | null>(null);
+  const [blobUploading, setBlobUploading] = useState(false);
   const [uploadedPreview, setUploadedPreview] = useState<{
     url: string;
     name: string;
@@ -57,21 +77,89 @@ export function AdminLevelForm({
     };
   }, [uploadedPreview]);
 
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    if (imageUploadProvider !== "blob" || skipBlobUploadRef.current) {
+      skipBlobUploadRef.current = false;
+      return;
+    }
+
+    const file = fileInputRef.current?.files?.[0] ?? null;
+
+    if (!file) {
+      return;
+    }
+
+    event.preventDefault();
+    setClientError(null);
+
+    const maxBytes = maxImageMb * 1024 * 1024;
+    const validationError = validateThumbnailUploadCandidate(file, maxBytes);
+
+    if (validationError) {
+      setClientError(validationError);
+      return;
+    }
+
+    try {
+      setBlobUploading(true);
+      const blob = await upload(
+        blobThumbnailPathname(values.name || thumbnailUrlValue || file.name, file),
+        file,
+        {
+          access: "public",
+          handleUploadUrl: "/api/admin/blob-thumbnail-upload",
+          contentType: file.type,
+          multipart: file.size > 4 * 1024 * 1024,
+        },
+      );
+
+      setThumbnailUrlValue(blob.url);
+      if (thumbnailUrlInputRef.current) {
+        thumbnailUrlInputRef.current.value = blob.url;
+      }
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      setUploadedPreview(null);
+      skipBlobUploadRef.current = true;
+      formRef.current?.requestSubmit();
+    } catch (error) {
+      console.error("Blob thumbnail upload failed.", error);
+      setClientError("Thumbnail upload failed. Try again or use an image URL.");
+    } finally {
+      setBlobUploading(false);
+    }
+  }
+
   return (
     <form
+      ref={formRef}
       action={formAction}
+      onSubmit={handleSubmit}
       noValidate
-      aria-busy={pending}
+      aria-busy={pending || blobUploading}
       className="mt-4 grid gap-4"
     >
       {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
+      {values.sourceSuggestionId ? (
+        <input
+          type="hidden"
+          name="sourceSuggestionId"
+          value={values.sourceSuggestionId}
+        />
+      ) : null}
       <input type="hidden" name="difficulty" value={values.difficulty || "EXTREME"} />
-      {state.summary ? (
+      {state.summary || clientError ? (
         <div
           role="alert"
           className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800 dark:border-red-500/50 dark:bg-red-950/40 dark:text-red-200"
         >
-          <p className="font-black">{state.summary}</p>
+          <p className="font-black">
+            {state.summary ?? "Fix the highlighted fields below."}
+          </p>
+          {clientError ? <p className="mt-2">{clientError}</p> : null}
           {state.formErrors.length > 0 ? (
             <ul className="mt-2 list-disc space-y-1 pl-5">
               {state.formErrors.map((error) => (
@@ -95,6 +183,7 @@ export function AdminLevelForm({
             formId={formId}
             name="originalName"
             label="Original level"
+            help={fieldHelp.originalName}
             defaultValue={values.originalName}
             errors={state.fieldErrors.originalName}
           />
@@ -109,6 +198,7 @@ export function AdminLevelForm({
             formId={formId}
             name="publisher"
             label="Publisher/host"
+            help={fieldHelp.publisher}
             defaultValue={values.publisher}
             errors={state.fieldErrors.publisher}
           />
@@ -116,6 +206,7 @@ export function AdminLevelForm({
             formId={formId}
             name="nerfCreator"
             label="Nerf creator"
+            help={fieldHelp.nerfCreator}
             defaultValue={values.nerfCreator}
             errors={state.fieldErrors.nerfCreator}
           />
@@ -123,6 +214,7 @@ export function AdminLevelForm({
             formId={formId}
             name="verifier"
             label="Verifier"
+            help={fieldHelp.verifier}
             defaultValue={values.verifier}
             errors={state.fieldErrors.verifier}
           />
@@ -150,12 +242,18 @@ export function AdminLevelForm({
             </p>
           </div>
           <FileField
+            inputRef={fileInputRef}
             formId={formId}
             name="thumbnailFile"
             label="Upload thumbnail"
+            help={fieldHelp.thumbnailFile}
             accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
             errors={state.fieldErrors.thumbnailFile}
+            disabled={imageUploadProvider === "disabled"}
+            provider={imageUploadProvider}
+            maxImageMb={maxImageMb}
             onFileChange={(file) => {
+              setClientError(null);
               setUploadedPreview(
                 file
                   ? {
@@ -166,7 +264,10 @@ export function AdminLevelForm({
               );
             }}
           />
-          <details className="rounded-md border border-slate-300 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/60 md:col-span-2">
+          <details
+            open={imageUploadProvider === "disabled"}
+            className="rounded-md border border-slate-300 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/60 md:col-span-2"
+          >
             <summary className="cursor-pointer text-sm font-black text-slate-800 dark:text-slate-200">
               Advanced: use image URL instead
             </summary>
@@ -175,8 +276,10 @@ export function AdminLevelForm({
                 formId={formId}
                 name="thumbnailUrl"
                 label="Thumbnail URL"
+                help={fieldHelp.thumbnailUrl}
                 defaultValue={values.thumbnailUrl}
                 value={thumbnailUrlValue}
+                inputRef={thumbnailUrlInputRef}
                 onValueChange={setThumbnailUrlValue}
                 errors={state.fieldErrors.thumbnailUrl}
               />
@@ -186,6 +289,7 @@ export function AdminLevelForm({
             formId={formId}
             name="showcaseUrl"
             label="Showcase URL"
+            help={fieldHelp.showcaseUrl}
             defaultValue={values.showcaseUrl}
             errors={state.fieldErrors.showcaseUrl}
           />
@@ -201,6 +305,7 @@ export function AdminLevelForm({
             formId={formId}
             name="rank"
             label="Rank"
+            help={fieldHelp.rank}
             type="number"
             defaultValue={values.rank}
             errors={state.fieldErrors.rank}
@@ -209,6 +314,7 @@ export function AdminLevelForm({
             formId={formId}
             name="status"
             label="Status"
+            help={fieldHelp.status}
             defaultValue={values.status}
             options={statuses}
             errors={state.fieldErrors.status}
@@ -232,6 +338,7 @@ export function AdminLevelForm({
           formId={formId}
           name="versionNotes"
           label="Version notes"
+          help={fieldHelp.versionNotes}
           defaultValue={values.versionNotes}
           rows={3}
           placeholder="Document route fidelity, matching FPS/CBF or physics assumptions, and any approved exception such as bugfixes, impossible original transitions, or necessary 2.2 compatibility changes."
@@ -239,7 +346,13 @@ export function AdminLevelForm({
         />
       </FormSection>
 
-      <SubmitButton>{mode === "edit" ? "Update level" : "Create level"}</SubmitButton>
+      <SubmitButton>
+        {blobUploading
+          ? "Uploading thumbnail..."
+          : mode === "edit"
+            ? "Update level"
+            : "Create level"}
+      </SubmitButton>
     </form>
   );
 }
@@ -251,8 +364,10 @@ function Field({
   type = "text",
   defaultValue,
   value,
+  inputRef,
   onValueChange,
   errors,
+  help,
 }: {
   formId: string;
   name: LevelFormField;
@@ -260,15 +375,18 @@ function Field({
   type?: string;
   defaultValue: string;
   value?: string;
+  inputRef?: RefObject<HTMLInputElement | null>;
   onValueChange?: (value: string) => void;
   errors?: string[];
+  help?: string;
 }) {
   const errorId = `${formId}-${name}-error`;
   const hasErrors = Boolean(errors?.length);
 
   return (
-    <FieldLabel label={label}>
+    <FieldLabel label={label} help={help}>
       <input
+        ref={inputRef}
         name={name}
         type={type}
         {...(value === undefined
@@ -288,40 +406,96 @@ function Field({
 }
 
 function FileField({
+  inputRef,
   formId,
   name,
   label,
+  help,
   accept,
   errors,
+  disabled,
+  provider,
+  maxImageMb,
   onFileChange,
 }: {
+  inputRef: RefObject<HTMLInputElement | null>;
   formId: string;
   name: LevelFormField;
   label: string;
+  help?: string;
   accept: string;
   errors?: string[];
+  disabled: boolean;
+  provider: ImageUploadProvider;
+  maxImageMb: number;
   onFileChange?: (file: File | null) => void;
 }) {
   const errorId = `${formId}-${name}-error`;
   const hasErrors = Boolean(errors?.length);
 
+  const disabledMessage =
+    "Production uploads are disabled. Use an image URL or configure Vercel Blob.";
+  const enabledHint =
+    provider === "blob"
+      ? `Drop or choose a PNG, JPG, or WebP up to ${maxImageMb} MB. Uploads go to Vercel Blob and the URL is saved on submit.`
+      : `Drop or choose a PNG, JPG, or WebP up to ${maxImageMb} MB. Upload wins over the URL on submit.`;
+
+  function applyFile(file: File | null) {
+    if (!inputRef.current || !file) {
+      onFileChange?.(file);
+      return;
+    }
+
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    inputRef.current.files = transfer.files;
+    onFileChange?.(file);
+  }
+
   return (
-    <FieldLabel label={label}>
-      <input
-        name={name}
-        type="file"
-        accept={accept}
-        aria-invalid={hasErrors}
-        aria-describedby={hasErrors ? errorId : undefined}
+    <FieldLabel label={label} help={help}>
+      <div
+        onDragOver={(event) => {
+          if (!disabled) {
+            event.preventDefault();
+          }
+        }}
+        onDrop={(event) => {
+          if (disabled) {
+            return;
+          }
+
+          event.preventDefault();
+          applyFile(event.dataTransfer.files?.[0] ?? null);
+        }}
         className={cx(
-          inputClass,
-          "file:mr-3 file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-black file:text-white dark:file:bg-cyan-300 dark:file:text-slate-950",
+          "rounded-md border border-dashed border-slate-400 bg-white p-3 transition dark:border-slate-600 dark:bg-slate-950",
+          !disabled &&
+            "hover:border-cyan-500 focus-within:border-cyan-700 focus-within:ring-2 focus-within:ring-cyan-200 dark:focus-within:border-cyan-400 dark:focus-within:ring-cyan-500/30",
+          disabled && "opacity-80",
           hasErrors && invalidClass,
         )}
-        onChange={(event) =>
-          onFileChange?.(event.currentTarget.files?.[0] ?? null)
-        }
-      />
+      >
+        <input
+          ref={inputRef}
+          name={name}
+          type="file"
+          accept={accept}
+          disabled={disabled}
+          aria-invalid={hasErrors}
+          aria-describedby={hasErrors ? errorId : undefined}
+          className={cx(
+            inputClass,
+            "w-full min-w-0 max-w-full text-xs file:mr-3 file:max-w-[9rem] file:truncate file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-black file:text-white disabled:cursor-not-allowed disabled:opacity-60 dark:file:bg-cyan-300 dark:file:text-slate-950",
+          )}
+          onChange={(event) =>
+            onFileChange?.(event.currentTarget.files?.[0] ?? null)
+          }
+        />
+        <p className="mt-2 text-xs font-semibold leading-5 text-slate-500 dark:text-slate-400">
+          {disabled ? disabledMessage : enabledHint}
+        </p>
+      </div>
       <FieldErrors id={errorId} errors={errors} />
     </FieldLabel>
   );
@@ -331,6 +505,7 @@ function SelectField({
   formId,
   name,
   label,
+  help,
   defaultValue,
   options,
   errors,
@@ -338,6 +513,7 @@ function SelectField({
   formId: string;
   name: LevelFormField;
   label: string;
+  help?: string;
   defaultValue: string;
   options: string[];
   errors?: string[];
@@ -346,7 +522,7 @@ function SelectField({
   const hasErrors = Boolean(errors?.length);
 
   return (
-    <FieldLabel label={label}>
+    <FieldLabel label={label} help={help}>
       <select
         name={name}
         defaultValue={defaultValue}
@@ -369,6 +545,7 @@ function TextArea({
   formId,
   name,
   label,
+  help,
   defaultValue,
   rows,
   placeholder,
@@ -377,6 +554,7 @@ function TextArea({
   formId: string;
   name: LevelFormField;
   label: string;
+  help?: string;
   defaultValue: string;
   rows: number;
   placeholder?: string;
@@ -386,7 +564,7 @@ function TextArea({
   const hasErrors = Boolean(errors?.length);
 
   return (
-    <FieldLabel label={label}>
+    <FieldLabel label={label} help={help}>
       <textarea
         name={name}
         defaultValue={defaultValue}

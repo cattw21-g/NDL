@@ -1,5 +1,7 @@
 import { AlertTriangle, type LucideIcon } from "lucide-react";
 
+import { HelpTooltip } from "@/components/help-tooltip";
+
 export function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
@@ -224,14 +226,19 @@ export const textareaClass =
 
 export function FieldLabel({
   label,
+  help,
   children,
 }: {
   label: string;
+  help?: string;
   children: React.ReactNode;
 }) {
   return (
     <label className="grid gap-2">
-      <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{label}</span>
+      <span className="inline-flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
+        {label}
+        {help ? <HelpTooltip text={help} /> : null}
+      </span>
       {children}
     </label>
   );

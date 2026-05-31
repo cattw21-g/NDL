@@ -6,6 +6,7 @@ export const LEVEL_FORM_SUMMARY = "Fix the highlighted fields below.";
 
 export const levelFormFields = [
   "id",
+  "sourceSuggestionId",
   "name",
   "originalName",
   "gdLevelId",
@@ -48,6 +49,7 @@ export type LevelFormValidationResult =
 
 export const emptyLevelFormValues: LevelFormValues = {
   id: "",
+  sourceSuggestionId: "",
   name: "",
   originalName: "",
   gdLevelId: "",
@@ -177,6 +179,20 @@ export function levelMutationErrorState(
   if (error === "missing") {
     return createLevelFormErrorState(values, {
       formErrors: ["The requested level was not found."],
+    });
+  }
+
+  if (error === "forbidden") {
+    return createLevelFormErrorState(values, {
+      formErrors: ["Only admins can convert approved level suggestions."],
+    });
+  }
+
+  if (error === "transition") {
+    return createLevelFormErrorState(values, {
+      formErrors: [
+        "Only approved, unconverted level suggestions can become levels.",
+      ],
     });
   }
 

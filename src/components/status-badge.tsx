@@ -7,6 +7,7 @@ const toneByStatus: Record<string, string> = {
   NEEDS_CHANGES: "border-orange-300 bg-white text-orange-800 dark:border-orange-500/50 dark:bg-orange-950/40 dark:text-orange-200",
   ACCEPTED: "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-200",
   APPROVED: "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-200",
+  CONVERTED: "border-blue-300 bg-white text-blue-800 dark:border-blue-500/50 dark:bg-blue-950/40 dark:text-blue-200",
   REJECTED: "border-red-300 bg-white text-red-700 dark:border-red-500/50 dark:bg-red-950/40 dark:text-red-200",
   REMOVED: "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200",
   ADMIN: "border-blue-300 bg-white text-blue-800 dark:border-blue-500/50 dark:bg-blue-950/40 dark:text-blue-200",

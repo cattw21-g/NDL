@@ -4,11 +4,14 @@ import path from "node:path";
 
 import { uploadImageExtensionPattern } from "./media";
 import {
+  isProduction,
   productionLocalUploadsDisabledReason,
   type EnvMap,
 } from "./production-env";
+import { thumbnailExtensionForFile } from "./thumbnail-upload";
 
 export type UploadKind = "thumbnail" | "proof-image" | "completion-video" | "raw-footage";
+export type ImageUploadProvider = "local" | "blob" | "disabled";
 
 export type UploadResult =
   | {
@@ -48,6 +51,37 @@ export function uploadMode(env: EnvMap = process.env) {
   }
 
   return env.NODE_ENV === "production" ? "disabled" : "local";
+}
+
+export function blobReadWriteToken(env: EnvMap = process.env) {
+  return env.BLOB_READ_WRITE_TOKEN?.trim() || null;
+}
+
+export function imageUploadProvider(env: EnvMap = process.env): ImageUploadProvider {
+  if (isProduction(env)) {
+    return blobReadWriteToken(env) ? "blob" : "disabled";
+  }
+
+  return localUploadsEnabled(env) ? "local" : "disabled";
+}
+
+export function imageUploadsEnabled(env: EnvMap = process.env) {
+  return imageUploadProvider(env) !== "disabled";
+}
+
+export function imageUploadUnavailableMessage(
+  provider: ImageUploadProvider,
+  env: EnvMap = process.env,
+) {
+  if (provider !== "disabled") {
+    return null;
+  }
+
+  if (isProduction(env)) {
+    return "Production uploads are disabled. Use an image URL or configure Vercel Blob.";
+  }
+
+  return "Image uploads are disabled on this NDL instance.";
 }
 
 export function publicUploadBasePath() {
@@ -228,19 +262,7 @@ function extensionForFile(file: File, allowed: "image" | "mp4") {
     return extension;
   }
 
-  if (name.endsWith(".png")) {
-    return ".png";
-  }
-
-  if (name.endsWith(".jpg") || name.endsWith(".jpeg")) {
-    return ".jpg";
-  }
-
-  if (name.endsWith(".webp")) {
-    return ".webp";
-  }
-
-  return null;
+  return thumbnailExtensionForFile({ name, type: file.type });
 }
 
 function absolutePublicPath(publicPath: string) {

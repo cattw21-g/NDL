@@ -13,10 +13,16 @@ import {
   saveProofImageUpload,
   saveThumbnailUpload,
   saveVideoUpload,
+  imageUploadProvider,
   localUploadsEnabled,
   uploadMode,
   videoUploadsEnabled,
 } from "../lib/upload-storage";
+import {
+  blobThumbnailPathname,
+  isValidBlobThumbnailPathname,
+  validateThumbnailUploadCandidate,
+} from "../lib/thumbnail-upload";
 
 if (typeof globalThis.File === "undefined") {
   Object.defineProperty(globalThis, "File", {
@@ -30,6 +36,7 @@ const originalEnv = {
   PUBLIC_UPLOAD_BASE_PATH: process.env.PUBLIC_UPLOAD_BASE_PATH,
   MAX_IMAGE_UPLOAD_MB: process.env.MAX_IMAGE_UPLOAD_MB,
   MAX_VIDEO_UPLOAD_MB: process.env.MAX_VIDEO_UPLOAD_MB,
+  BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN,
   ALLOW_LOCAL_UPLOADS_IN_PRODUCTION:
     process.env.ALLOW_LOCAL_UPLOADS_IN_PRODUCTION,
 };
@@ -53,6 +60,11 @@ describe("safe thumbnail media handling", () => {
   it("accepts placehold.co and local thumbnail paths", () => {
     expect(isValidThumbnailSource("https://placehold.co/320x180.png")).toBe(true);
     expect(isValidThumbnailSource("/uploads/thumbnails/demo.webp")).toBe(true);
+    expect(
+      isValidThumbnailSource(
+        "https://store.public.blob.vercel-storage.com/thumbnails/demo.webp",
+      ),
+    ).toBe(true);
   });
 
   it("falls back for unsupported external thumbnails", () => {
@@ -93,6 +105,7 @@ describe("local upload storage", () => {
       "ALLOW_LOCAL_UPLOADS_IN_PRODUCTION",
       originalEnv.ALLOW_LOCAL_UPLOADS_IN_PRODUCTION,
     );
+    restoreEnv("BLOB_READ_WRITE_TOKEN", originalEnv.BLOB_READ_WRITE_TOKEN);
     await cleanupUploads();
   });
 
@@ -171,6 +184,48 @@ describe("local upload storage", () => {
     expect(uploadMode()).toBe("local");
     expect(localUploadsEnabled()).toBe(true);
     expect(videoUploadsEnabled()).toBe(false);
+  });
+
+  it("uses Vercel Blob for production image uploads when configured", () => {
+    setEnv("NODE_ENV", "production");
+    restoreEnv("ALLOW_LOCAL_UPLOADS_IN_PRODUCTION", undefined);
+    setEnv("BLOB_READ_WRITE_TOKEN", "vercel_blob_rw_store_example_secret");
+
+    expect(imageUploadProvider()).toBe("blob");
+
+    restoreEnv("BLOB_READ_WRITE_TOKEN", undefined);
+
+    expect(imageUploadProvider()).toBe("disabled");
+  });
+
+  it("validates Blob thumbnail pathnames and file candidates", () => {
+    const pathname = blobThumbnailPathname("Demo Level", {
+      name: "thumbnail.webp",
+      type: "image/webp",
+    });
+
+    expect(pathname).toBe("thumbnails/demo-level.webp");
+    expect(isValidBlobThumbnailPathname(pathname)).toBe(true);
+    expect(isValidBlobThumbnailPathname("/thumbnails/demo-level.webp")).toBe(false);
+    expect(isValidBlobThumbnailPathname("raw-footage/demo-level.webp")).toBe(false);
+    expect(
+      validateThumbnailUploadCandidate(
+        { name: "thumbnail.webp", type: "image/webp", size: 128 },
+        1024,
+      ),
+    ).toBeNull();
+    expect(
+      validateThumbnailUploadCandidate(
+        { name: "thumbnail.svg", type: "image/svg+xml", size: 128 },
+        1024,
+      ),
+    ).toContain("PNG, JPG, or WebP");
+    expect(
+      validateThumbnailUploadCandidate(
+        { name: "thumbnail.png", type: "image/png", size: 2048 },
+        1024,
+      ),
+    ).toContain("MB or smaller");
   });
 });
 

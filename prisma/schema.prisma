@@ -41,6 +41,7 @@ enum LevelSuggestionStatus {
   APPROVED
   REJECTED
   NEEDS_CHANGES
+  CONVERTED
 }
 
 enum ModerationActionType {

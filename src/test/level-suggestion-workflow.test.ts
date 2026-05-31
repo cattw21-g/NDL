@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { LevelStatus, ModerationActionType } from "../generated/prisma/enums";
 import {
   canSeeLevelSuggestion,
+  levelSuggestionConversionGate,
   levelStatusForConversion,
   moderationActionForSuggestionStatus,
 } from "../lib/level-suggestion-workflow";
@@ -96,5 +97,46 @@ describe("level suggestion workflow", () => {
     expect(levelStatusForConversion("PENDING")).toBe(LevelStatus.PENDING);
     expect(levelStatusForConversion("RANKED")).toBe(LevelStatus.RANKED);
     expect(levelStatusForConversion("LEGACY")).toBe(LevelStatus.LEGACY);
+  });
+
+  it("allows only admins to convert approved unconverted suggestions", () => {
+    expect(
+      levelSuggestionConversionGate("ADMIN", {
+        status: "APPROVED",
+        createdLevelId: null,
+      }).allowed,
+    ).toBe(true);
+
+    expect(
+      levelSuggestionConversionGate("MODERATOR", {
+        status: "APPROVED",
+        createdLevelId: null,
+      }),
+    ).toMatchObject({ allowed: false, code: "forbidden" });
+
+    expect(
+      levelSuggestionConversionGate("PLAYER", {
+        status: "APPROVED",
+        createdLevelId: null,
+      }),
+    ).toMatchObject({ allowed: false, code: "forbidden" });
+  });
+
+  it("blocks non-approved and already converted suggestions", () => {
+    for (const status of ["PENDING", "REJECTED", "NEEDS_CHANGES", "CONVERTED"]) {
+      expect(
+        levelSuggestionConversionGate("ADMIN", {
+          status,
+          createdLevelId: null,
+        }),
+      ).toMatchObject({ allowed: false, code: "transition" });
+    }
+
+    expect(
+      levelSuggestionConversionGate("ADMIN", {
+        status: "APPROVED",
+        createdLevelId: "level-1",
+      }),
+    ).toMatchObject({ allowed: false, code: "transition" });
   });
 });

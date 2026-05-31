@@ -68,6 +68,7 @@ describe("submission validation", () => {
 });
 
 const validLevel = {
+  sourceSuggestionId: "",
   name: "Demo Level",
   originalName: "Original Demo",
   gdLevelId: "123456",
