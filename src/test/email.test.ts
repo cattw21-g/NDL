@@ -85,13 +85,22 @@ describe("verification email delivery", () => {
     expect(message.text).toContain(verificationEmail.verificationUrl);
     expect(message.text).toContain(verificationEmail.code);
     expect(message.text).toContain("If you did not create this account");
+    expect(message.text.match(/https:\/\/ndl\.example/g)).toHaveLength(1);
+    expect(message.text.match(/123456/g)).toHaveLength(1);
     expect(message.html).toContain("<html>");
     expect(message.html).toContain(
-      'src="https://nerfeddemonlist.net/icon.png"',
+      'src="https://nerfeddemonlist.net/email-logo.png"',
     );
+    expect(message.html).toContain('width="56"');
+    expect(message.html).toContain('height="56"');
     expect(message.html).toContain('alt="Nerfed Demonlist"');
+    expect(message.html).toContain(
+      'style="display:block;width:56px;height:56px;border-radius:12px;"',
+    );
     expect(message.html).toContain("Verify account");
     expect(message.html).toContain(verificationEmail.code);
+    expect(message.html.match(/<a href=/g)).toHaveLength(1);
+    expect(message.html.match(/123456/g)).toHaveLength(1);
     expect(message.html.match(/https:\/\/ndl\.example/g)).toHaveLength(1);
     expect(verificationEmailText(verificationEmail)).not.toContain("<img");
   });
@@ -199,11 +208,20 @@ describe("password reset email delivery", () => {
     expect(message.text).toContain(passwordResetEmail.resetUrl);
     expect(message.text).toContain(passwordResetEmail.code);
     expect(message.text).toContain("If you did not request this");
+    expect(message.text.match(/https:\/\/ndl\.example/g)).toHaveLength(1);
+    expect(message.text.match(/654321/g)).toHaveLength(1);
     expect(message.html).toContain("Reset password");
     expect(message.html).toContain(
-      'src="https://nerfeddemonlist.net/icon.png"',
+      'src="https://nerfeddemonlist.net/email-logo.png"',
+    );
+    expect(message.html).toContain('width="56"');
+    expect(message.html).toContain('height="56"');
+    expect(message.html).toContain(
+      'style="display:block;width:56px;height:56px;border-radius:12px;"',
     );
     expect(message.html).toContain(passwordResetEmail.code);
+    expect(message.html.match(/<a href=/g)).toHaveLength(1);
+    expect(message.html.match(/654321/g)).toHaveLength(1);
     expect(message.html.match(/https:\/\/ndl\.example/g)).toHaveLength(1);
     expect(passwordResetEmailText(passwordResetEmail)).not.toContain("<img");
   });

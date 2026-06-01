@@ -288,7 +288,7 @@ function emailLogoHtml(env: EnvMap) {
     return "";
   }
 
-  return `<img src="${escapeHtml(logoUrl)}" width="48" height="48" alt="Nerfed Demonlist" style="display:block;width:48px;height:48px;border-radius:8px;margin:0 0 16px;" />`;
+  return `<div style="margin:0 0 16px;"><img src="${escapeHtml(logoUrl)}" width="56" height="56" alt="Nerfed Demonlist" style="display:block;width:56px;height:56px;border-radius:12px;" /></div>`;
 }
 
 function buildEmailLogoUrl(env: EnvMap) {
@@ -299,7 +299,7 @@ function buildEmailLogoUrl(env: EnvMap) {
   }
 
   try {
-    return new URL("/icon.png", appUrl).toString();
+    return new URL("/email-logo.png", appUrl).toString();
   } catch {
     return null;
   }

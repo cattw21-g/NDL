@@ -96,7 +96,7 @@ $env:SMTP_SECURE="false"
 $env:SMTP_DISABLE_TRACKING_HINT="true"
 ```
 
-Brevo documents `smtp-relay.brevo.com` as the SMTP server and notes that port 465 uses SSL/TLS; use port 587 with `SMTP_SECURE=false` unless your Brevo settings say otherwise. Inbox placement and delivery speed also depend on the verified sender/domain, SPF, DKIM, DMARC, domain reputation, recipient spam filters, and Brevo account reputation. NDL sends a minimal transactional email with a small body logo when `APP_URL` is configured, but delivery delays, mailbox sender avatars, and junk-folder placement are partly outside the app's control.
+Brevo documents `smtp-relay.brevo.com` as the SMTP server and notes that port 465 uses SSL/TLS; use port 587 with `SMTP_SECURE=false` unless your Brevo settings say otherwise. Inbox placement and delivery speed also depend on the verified sender/domain, SPF, DKIM, DMARC, domain reputation, recipient spam filters, and Brevo account reputation. NDL sends a minimal transactional email with a small body logo from `APP_URL/email-logo.png` when `APP_URL` is configured, but delivery delays, mailbox sender avatars, and junk-folder placement are partly outside the app's control.
 
 Production email checklist:
 

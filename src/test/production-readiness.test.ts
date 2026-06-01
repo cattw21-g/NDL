@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
@@ -123,6 +123,21 @@ describe("production readiness guardrails", () => {
     expect(layout).toContain("openGraph");
     expect(layout).toContain("/og-image.svg");
     expect(layout).toContain("/favicon.ico");
+  });
+
+  it("keeps dedicated email logo asset and email templates wired", () => {
+    const emailLogo = statSync(
+      new URL("../../public/email-logo.png", import.meta.url),
+    );
+    const emailSource = source("lib/email.ts");
+
+    expect(emailLogo.isFile()).toBe(true);
+    expect(emailLogo.size).toBeGreaterThan(1000);
+    expect(emailSource).toContain("/email-logo.png");
+    expect(emailSource).not.toContain('new URL("/icon.png"');
+    expect(emailSource).toContain('width="56"');
+    expect(emailSource).toContain('height="56"');
+    expect(emailSource).toContain('alt="Nerfed Demonlist"');
   });
 
   it("keeps the theme system wired for light, dark, and system modes", () => {
