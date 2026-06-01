@@ -5,6 +5,7 @@ import {
   emailRateLimitKey,
   userRateLimitKey,
 } from "../lib/rate-limit";
+import { EMAIL_RESEND_COOLDOWN_MESSAGE } from "../lib/email-cooldown";
 
 type Attempt = {
   action: string;
@@ -20,14 +21,15 @@ function createClient(attempts: Attempt[] = []) {
         where: {
           action: string;
           key: string;
-          occurredAt: { gte: Date };
+          occurredAt: { gt?: Date; gte?: Date };
         };
       }) =>
         attempts.filter(
           (attempt) =>
             attempt.action === args.where.action &&
             attempt.key === args.where.key &&
-            attempt.occurredAt >= args.where.occurredAt.gte,
+            attempt.occurredAt >
+              (args.where.occurredAt.gt ?? args.where.occurredAt.gte!),
         ).length,
       create: async (args: { data: Attempt }) => {
         attempts.push(args.data);
@@ -70,38 +72,81 @@ describe("rate limiting", () => {
     }
   });
 
-  it("blocks repeated verification resend attempts during cooldown", async () => {
-    const attempts = [
-      {
-        action: "verification-resend",
-        key: emailRateLimitKey("player@example.com"),
-        occurredAt: new Date("2026-05-31T00:00:00.000Z"),
-      },
-    ];
-    const result = await checkRateLimit(
-      createClient(attempts),
+  it("allows the first verification resend and blocks a second within 80 seconds", async () => {
+    const attempts: Attempt[] = [];
+    const client = createClient(attempts);
+    const key = emailRateLimitKey("player@example.com");
+    const first = await checkRateLimit(
+      client,
       "verification-resend",
-      emailRateLimitKey("player@example.com"),
-      new Date("2026-05-31T00:00:30.000Z"),
+      key,
+      new Date("2026-05-31T00:00:00.000Z"),
+    );
+    const second = await checkRateLimit(
+      client,
+      "verification-resend",
+      key,
+      new Date("2026-05-31T00:01:19.000Z"),
     );
 
-    expect(result.allowed).toBe(false);
+    expect(first.allowed).toBe(true);
+    expect(second.allowed).toBe(false);
+    if (!second.allowed) {
+      expect(second.retryAfterSeconds).toBe(80);
+      expect(second.message).toBe(EMAIL_RESEND_COOLDOWN_MESSAGE);
+    }
   });
 
-  it("blocks repeated password reset requests", async () => {
-    const attempts = Array.from({ length: 3 }, () => ({
-      action: "password-reset-request",
-      key: emailRateLimitKey("player@example.com"),
-      occurredAt: new Date("2026-05-31T00:00:00.000Z"),
-    }));
-    const result = await checkRateLimit(
-      createClient(attempts),
-      "password-reset-request",
-      emailRateLimitKey("player@example.com"),
-      new Date("2026-05-31T00:30:00.000Z"),
+  it("allows verification resend after 80 seconds", async () => {
+    const attempts: Attempt[] = [];
+    const client = createClient(attempts);
+    const key = emailRateLimitKey("player@example.com");
+    await checkRateLimit(
+      client,
+      "verification-resend",
+      key,
+      new Date("2026-05-31T00:00:00.000Z"),
     );
 
-    expect(result.allowed).toBe(false);
+    const result = await checkRateLimit(
+      client,
+      "verification-resend",
+      key,
+      new Date("2026-05-31T00:01:20.000Z"),
+    );
+
+    expect(result.allowed).toBe(true);
+  });
+
+  it("uses the same 80-second cooldown for password reset email requests", async () => {
+    const attempts: Attempt[] = [];
+    const client = createClient(attempts);
+    const key = emailRateLimitKey("player@example.com");
+    const first = await checkRateLimit(
+      client,
+      "password-reset-request",
+      key,
+      new Date("2026-05-31T00:00:00.000Z"),
+    );
+    const second = await checkRateLimit(
+      client,
+      "password-reset-request",
+      key,
+      new Date("2026-05-31T00:01:19.000Z"),
+    );
+    const third = await checkRateLimit(
+      client,
+      "password-reset-request",
+      key,
+      new Date("2026-05-31T00:01:20.000Z"),
+    );
+
+    expect(first.allowed).toBe(true);
+    expect(second.allowed).toBe(false);
+    if (!second.allowed) {
+      expect(second.message).toBe(EMAIL_RESEND_COOLDOWN_MESSAGE);
+    }
+    expect(third.allowed).toBe(true);
   });
 
   it("blocks repeated password reset attempts", async () => {

@@ -8,7 +8,7 @@ import {
 
 export const PASSWORD_RESET_FORM_SUMMARY = "Fix the highlighted fields below.";
 export const PASSWORD_RESET_GENERIC_SUCCESS =
-  "If an account exists for that email, a reset code has been sent.";
+  "If an account exists for that email, a reset code has been sent. If you do not see it, check your spam or junk folder.";
 
 export const forgotPasswordFields = ["email"] as const;
 export const resetPasswordFields = [

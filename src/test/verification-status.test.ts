@@ -61,7 +61,7 @@ describe("verification status messages", () => {
 
     expect(status).toMatchObject({
       tone: "amber",
-      message: "Wait a bit before requesting another verification email.",
+      message: "Please wait 80 seconds before requesting another email.",
     });
   });
 });

@@ -1,6 +1,10 @@
 import { headers } from "next/headers";
 
 import type { PrismaClient } from "../generated/prisma/client";
+import {
+  EMAIL_RESEND_COOLDOWN_MESSAGE,
+  EMAIL_RESEND_COOLDOWN_SECONDS,
+} from "./email-cooldown";
 
 export type RateLimitAction =
   | "login"
@@ -17,11 +21,22 @@ export type RateLimitDecision =
 
 type RateLimitClient = Pick<PrismaClient, "rateLimitAttempt">;
 
-const rules: Record<RateLimitAction, { limit: number; windowMs: number }> = {
+const rules: Record<
+  RateLimitAction,
+  { limit: number; windowMs: number; message?: string }
+> = {
   login: { limit: 10, windowMs: 15 * 60 * 1000 },
   register: { limit: 3, windowMs: 60 * 60 * 1000 },
-  "verification-resend": { limit: 1, windowMs: 60 * 1000 },
-  "password-reset-request": { limit: 3, windowMs: 60 * 60 * 1000 },
+  "verification-resend": {
+    limit: 1,
+    windowMs: EMAIL_RESEND_COOLDOWN_SECONDS * 1000,
+    message: EMAIL_RESEND_COOLDOWN_MESSAGE,
+  },
+  "password-reset-request": {
+    limit: 1,
+    windowMs: EMAIL_RESEND_COOLDOWN_SECONDS * 1000,
+    message: EMAIL_RESEND_COOLDOWN_MESSAGE,
+  },
   "password-reset-attempt": { limit: 8, windowMs: 15 * 60 * 1000 },
   "record-submission": { limit: 8, windowMs: 60 * 60 * 1000 },
   "level-suggestion": { limit: 5, windowMs: 24 * 60 * 60 * 1000 },
@@ -65,7 +80,7 @@ export async function checkRateLimit(
       action,
       key,
       occurredAt: {
-        gte: windowStart,
+        gt: windowStart,
       },
     },
   });
@@ -74,7 +89,7 @@ export async function checkRateLimit(
     return {
       allowed: false,
       retryAfterSeconds: Math.ceil(rule.windowMs / 1000),
-      message: "Too many attempts. Wait a bit and try again.",
+      message: rule.message ?? "Too many attempts. Wait a bit and try again.",
     };
   }
 

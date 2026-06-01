@@ -113,7 +113,7 @@ export async function sendVerificationEmail(
     to: email.to,
     subject: "Verify your Nerfed Demonlist account",
     text: verificationEmailText(email),
-    html: verificationEmailHtml(email),
+    html: verificationEmailHtml(email, env),
   };
 
   await sendViaSmtp(config, message, options.createTransport);
@@ -150,7 +150,7 @@ export async function sendPasswordResetEmail(
     to: email.to,
     subject: "Reset your Nerfed Demonlist password",
     text: passwordResetEmailText(email),
-    html: passwordResetEmailHtml(email),
+    html: passwordResetEmailHtml(email, env),
   };
 
   await sendViaSmtp(config, message, options.createTransport);
@@ -173,15 +173,20 @@ export function verificationEmailText(email: VerificationEmail) {
   ].join("\n");
 }
 
-export function verificationEmailHtml(email: VerificationEmail) {
+export function verificationEmailHtml(
+  email: VerificationEmail,
+  env: EnvMap = process.env,
+) {
   const url = escapeHtml(email.verificationUrl);
   const code = escapeHtml(email.code);
   const expiry = escapeHtml(formatExpiry(email.expiresAt));
+  const logo = emailLogoHtml(env);
 
   return `<!doctype html>
 <html>
   <body style="margin:0;background:#f8fafc;color:#0f172a;font-family:Arial,Helvetica,sans-serif;">
     <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
+      ${logo}
       <h1 style="margin:0 0 12px;font-size:24px;line-height:1.2;color:#0f172a;">Nerfed Demonlist</h1>
       <p style="margin:0 0 20px;font-size:15px;line-height:1.6;">Verify your account to submit records and manage your NDL activity.</p>
       <p style="margin:0 0 24px;">
@@ -211,15 +216,20 @@ export function passwordResetEmailText(email: PasswordResetEmail) {
   ].join("\n");
 }
 
-export function passwordResetEmailHtml(email: PasswordResetEmail) {
+export function passwordResetEmailHtml(
+  email: PasswordResetEmail,
+  env: EnvMap = process.env,
+) {
   const url = escapeHtml(email.resetUrl);
   const code = escapeHtml(email.code);
   const expiry = escapeHtml(formatExpiry(email.expiresAt));
+  const logo = emailLogoHtml(env);
 
   return `<!doctype html>
 <html>
   <body style="margin:0;background:#f8fafc;color:#0f172a;font-family:Arial,Helvetica,sans-serif;">
     <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
+      ${logo}
       <h1 style="margin:0 0 12px;font-size:24px;line-height:1.2;color:#0f172a;">Nerfed Demonlist</h1>
       <p style="margin:0 0 20px;font-size:15px;line-height:1.6;">Use this password reset link and code to choose a new password for your NDL account.</p>
       <p style="margin:0 0 24px;">
@@ -269,6 +279,30 @@ async function sendViaSmtp(
 
 function formatExpiry(date: Date) {
   return date.toISOString().replace(".000Z", "Z");
+}
+
+function emailLogoHtml(env: EnvMap) {
+  const logoUrl = buildEmailLogoUrl(env);
+
+  if (!logoUrl) {
+    return "";
+  }
+
+  return `<img src="${escapeHtml(logoUrl)}" width="48" height="48" alt="Nerfed Demonlist" style="display:block;width:48px;height:48px;border-radius:8px;margin:0 0 16px;" />`;
+}
+
+function buildEmailLogoUrl(env: EnvMap) {
+  const appUrl = env.APP_URL?.trim();
+
+  if (!appUrl) {
+    return null;
+  }
+
+  try {
+    return new URL("/icon.png", appUrl).toString();
+  } catch {
+    return null;
+  }
 }
 
 function escapeHtml(value: string) {

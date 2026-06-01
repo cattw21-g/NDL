@@ -252,8 +252,24 @@ describe("production readiness guardrails", () => {
   });
 
   it("keeps password reset flow wired through hashed single-use tokens", () => {
+    const passwordResetMigration = rootSource(
+      "prisma/migrations/20260601120000_add_password_reset_tokens/migration.sql",
+    );
+
     expect(rootSource("prisma/schema.prisma")).toContain(
       "model PasswordResetToken",
+    );
+    expect(passwordResetMigration).toContain(
+      'CREATE TABLE "PasswordResetToken"',
+    );
+    expect(passwordResetMigration).toContain(
+      'CREATE UNIQUE INDEX "PasswordResetToken_tokenHash_key"',
+    );
+    expect(rootSource("package.json")).toContain(
+      '"db:migrate:deploy": "prisma migrate deploy"',
+    );
+    expect(rootSource("docs/deployment.md")).toContain(
+      "After deploying the password reset release",
     );
     expect(source("actions/password-reset.ts")).toContain(
       "requestPasswordResetAction",

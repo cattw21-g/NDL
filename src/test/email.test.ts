@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  passwordResetEmailText,
   sendPasswordResetEmail,
   sendVerificationEmail,
   type TransportFactory,
+  verificationEmailText,
 } from "../lib/email";
 
 const verificationEmail = {
@@ -48,6 +50,7 @@ describe("verification email delivery", () => {
         SMTP_REPLY_TO: "staff@example.com",
         SMTP_SECURE: "false",
         SMTP_DISABLE_TRACKING_HINT: "true",
+        APP_URL: "https://nerfeddemonlist.net",
       },
       {
         createTransport,
@@ -83,9 +86,14 @@ describe("verification email delivery", () => {
     expect(message.text).toContain(verificationEmail.code);
     expect(message.text).toContain("If you did not create this account");
     expect(message.html).toContain("<html>");
+    expect(message.html).toContain(
+      'src="https://nerfeddemonlist.net/icon.png"',
+    );
+    expect(message.html).toContain('alt="Nerfed Demonlist"');
     expect(message.html).toContain("Verify account");
     expect(message.html).toContain(verificationEmail.code);
     expect(message.html.match(/https:\/\/ndl\.example/g)).toHaveLength(1);
+    expect(verificationEmailText(verificationEmail)).not.toContain("<img");
   });
 
   it("logs verification link and code in development when SMTP is absent", async () => {
@@ -140,6 +148,7 @@ describe("verification email delivery", () => {
         SMTP_PORT: "587",
         SMTP_FROM: "Nerfed Demonlist <noreply@nerfeddemonlist.net>",
         SMTP_SECURE: "false",
+        APP_URL: "https://nerfeddemonlist.net",
       },
       {
         createTransport,
@@ -168,6 +177,7 @@ describe("password reset email delivery", () => {
         SMTP_PORT: "587",
         SMTP_FROM: "Nerfed Demonlist <noreply@nerfeddemonlist.net>",
         SMTP_SECURE: "false",
+        APP_URL: "https://nerfeddemonlist.net",
       },
       {
         createTransport,
@@ -190,8 +200,12 @@ describe("password reset email delivery", () => {
     expect(message.text).toContain(passwordResetEmail.code);
     expect(message.text).toContain("If you did not request this");
     expect(message.html).toContain("Reset password");
+    expect(message.html).toContain(
+      'src="https://nerfeddemonlist.net/icon.png"',
+    );
     expect(message.html).toContain(passwordResetEmail.code);
     expect(message.html.match(/https:\/\/ndl\.example/g)).toHaveLength(1);
+    expect(passwordResetEmailText(passwordResetEmail)).not.toContain("<img");
   });
 
   it("logs reset link and code in development when SMTP is absent", async () => {
@@ -215,5 +229,31 @@ describe("password reset email delivery", () => {
     expect(logger.log).toHaveBeenCalledWith(
       `NDL password reset code: ${passwordResetEmail.code}`,
     );
+  });
+
+  it("omits email body logos without APP_URL instead of crashing", async () => {
+    let sent: unknown;
+    const createTransport: TransportFactory = () => ({
+      sendMail: async (message) => {
+        sent = message;
+        return {};
+      },
+    });
+
+    await sendPasswordResetEmail(
+      passwordResetEmail,
+      {
+        NODE_ENV: "production",
+        SMTP_HOST: "smtp-relay.brevo.com",
+        SMTP_PORT: "587",
+        SMTP_FROM: "Nerfed Demonlist <noreply@nerfeddemonlist.net>",
+        SMTP_SECURE: "false",
+      },
+      {
+        createTransport,
+      },
+    );
+
+    expect((sent as { html: string }).html).not.toContain("<img");
   });
 });

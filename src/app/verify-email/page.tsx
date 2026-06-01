@@ -5,6 +5,7 @@ import {
   resendVerificationAction,
   verifyEmailCodeAction,
 } from "@/actions/verification";
+import { CooldownSubmitButton } from "@/components/cooldown-submit-button";
 import { SubmitButton } from "@/components/submit-button";
 import {
   Eyebrow,
@@ -13,6 +14,7 @@ import {
   PageHeader,
   SectionPanel,
 } from "@/components/ui";
+import { EMAIL_RESEND_COOLDOWN_SECONDS } from "@/lib/email-cooldown";
 import { verificationStatusFromParams } from "@/lib/verification-status";
 
 export default async function VerifyEmailPage({
@@ -97,7 +99,12 @@ export default async function VerifyEmailPage({
                 className={inputClass}
               />
             </FieldLabel>
-            <SubmitButton className="w-full">Send a new code</SubmitButton>
+            <CooldownSubmitButton
+              cooldownSeconds={EMAIL_RESEND_COOLDOWN_SECONDS}
+              className="w-full"
+            >
+              Send a new code
+            </CooldownSubmitButton>
             <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
               If you do not see it, check your spam or junk folder.
             </p>

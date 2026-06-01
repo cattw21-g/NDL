@@ -4,6 +4,7 @@ import {
   levelMutationErrorState,
   validateLevelFormSubmission,
 } from "../lib/level-form-state";
+import { createForgotPasswordSuccessState } from "../lib/password-reset-form-state";
 import {
   validateRegisterFormSubmission,
 } from "../lib/register-form-state";
@@ -205,6 +206,12 @@ describe("password reset validation", () => {
         "Enter the six digit reset code.",
       );
     }
+  });
+
+  it("uses production-safe spam-folder guidance for reset email requests", () => {
+    expect(createForgotPasswordSuccessState().successMessage).toBe(
+      "If an account exists for that email, a reset code has been sent. If you do not see it, check your spam or junk folder.",
+    );
   });
 });
 

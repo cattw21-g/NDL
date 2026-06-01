@@ -53,7 +53,7 @@ const statusMessages: Record<string, VerificationStatusMessage> = {
   "resend-rate-limited": {
     key: "resend-rate-limited",
     tone: "amber",
-    message: "Wait a bit before requesting another verification email.",
+    message: "Please wait 80 seconds before requesting another email.",
   },
   verified: {
     key: "verified",

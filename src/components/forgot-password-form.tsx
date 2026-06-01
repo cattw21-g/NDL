@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useActionState } from "react";
 
 import { requestPasswordResetAction } from "@/actions/password-reset";
-import { SubmitButton } from "@/components/submit-button";
+import { CooldownSubmitButton } from "@/components/cooldown-submit-button";
 import { cx, FieldLabel, inputClass, SectionPanel } from "@/components/ui";
+import { EMAIL_RESEND_COOLDOWN_SECONDS } from "@/lib/email-cooldown";
 import {
   createForgotPasswordFormState,
   type ForgotPasswordField,
@@ -53,7 +54,12 @@ export function ForgotPasswordForm() {
           defaultValue={state.values.email}
           errors={state.fieldErrors.email}
         />
-        <SubmitButton className="w-full">Send reset code</SubmitButton>
+        <CooldownSubmitButton
+          cooldownSeconds={EMAIL_RESEND_COOLDOWN_SECONDS}
+          className="w-full"
+        >
+          Send reset code
+        </CooldownSubmitButton>
         <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
           The email includes a reset link and six-digit code. If you do not see
           it, check your spam or junk folder.

@@ -24,6 +24,8 @@ npm.cmd run db:migrate:deploy
 
 If Neon recommends different direct and pooled URLs, use the direct URL for one-off migration commands and the pooled/runtime URL for Vercel.
 
+Production must use `npm.cmd run db:migrate:deploy`, not `prisma migrate dev`. After deploying the password reset release, run `npm.cmd run db:migrate:deploy` once so Neon creates the `PasswordResetToken` table before users request reset emails. If this migration is skipped, password reset requests will fail at runtime because the table does not exist.
+
 ## 3. Vercel Deployment
 
 1. Import the GitHub repo in Vercel.
@@ -125,7 +127,7 @@ Two low-cost setup paths:
 - Brevo free SMTP: create a Brevo account, verify a sender/domain, copy the SMTP login/key, use `smtp-relay.brevo.com`, port `587`, and `SMTP_SECURE=false`.
 - Gmail app-password SMTP: enable 2-Step Verification, create an app password, use `smtp.gmail.com`, port `587`, and `SMTP_SECURE=false`. For port `465`, set `SMTP_SECURE=true`.
 
-Inbox placement and delivery speed are not fully controlled by NDL. They depend on sender/domain verification, SPF, DKIM, DMARC, domain reputation, recipient spam filters, and Brevo account reputation. The app sends a simple transactional email with one verification link, a six-digit fallback code, text and HTML bodies, and no images. If email still lands in junk or takes around a minute, check provider reputation/settings and DNS authentication first.
+Inbox placement and delivery speed are not fully controlled by NDL. They depend on sender/domain verification, SPF, DKIM, DMARC, domain reputation, recipient spam filters, and Brevo account reputation. The app sends a simple transactional email with one verification link, a six-digit fallback code, text and HTML bodies, and a small body logo loaded from `APP_URL/icon.png` when `APP_URL` is configured. This body logo does not control the Outlook/Gmail sender avatar. If email still lands in junk or takes around a minute, check provider reputation/settings and DNS authentication first.
 
 Production Brevo checklist:
 

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import {
+  createForgotPasswordErrorState,
   createForgotPasswordSuccessState,
   createResetPasswordErrorState,
   createResetPasswordSuccessState,
@@ -36,7 +37,9 @@ export async function requestPasswordResetAction(
   );
 
   if (!rateLimit.allowed) {
-    return createForgotPasswordSuccessState(parsed.values);
+    return createForgotPasswordErrorState(parsed.values, {
+      formErrors: [rateLimit.message],
+    });
   }
 
   await requestPasswordResetForEmail(prisma, parsed.data.email).catch((error) => {
