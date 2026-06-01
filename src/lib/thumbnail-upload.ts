@@ -55,13 +55,42 @@ export function blobThumbnailPathname(
   nameHint: string,
   file: Pick<ThumbnailUploadCandidate, "name" | "type">,
 ) {
-  const extension = thumbnailExtensionForFile(file) ?? ".png";
-  return `thumbnails/${safeUploadSlug(nameHint || file.name)}${extension}`;
+  return blobThumbnailPathnameForPrefix("thumbnails", nameHint, file);
 }
 
 export function isValidBlobThumbnailPathname(pathname: string) {
+  return isValidBlobThumbnailPathnameForPrefix(pathname, "thumbnails");
+}
+
+export function suggestionBlobThumbnailPathname(
+  nameHint: string,
+  file: Pick<ThumbnailUploadCandidate, "name" | "type">,
+) {
+  return blobThumbnailPathnameForPrefix("suggestion-thumbnails", nameHint, file);
+}
+
+export function isValidSuggestionBlobThumbnailPathname(pathname: string) {
+  return isValidBlobThumbnailPathnameForPrefix(
+    pathname,
+    "suggestion-thumbnails",
+  );
+}
+
+function blobThumbnailPathnameForPrefix(
+  prefix: "thumbnails" | "suggestion-thumbnails",
+  nameHint: string,
+  file: Pick<ThumbnailUploadCandidate, "name" | "type">,
+) {
+  const extension = thumbnailExtensionForFile(file) ?? ".png";
+  return `${prefix}/${safeUploadSlug(nameHint || file.name)}${extension}`;
+}
+
+function isValidBlobThumbnailPathnameForPrefix(
+  pathname: string,
+  prefix: "thumbnails" | "suggestion-thumbnails",
+) {
   return (
-    pathname.startsWith("thumbnails/") &&
+    pathname.startsWith(`${prefix}/`) &&
     !pathname.startsWith("/") &&
     !pathname.includes("\\") &&
     !pathname.includes("..") &&

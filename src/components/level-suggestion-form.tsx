@@ -1,6 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
+import { upload } from "@vercel/blob/client";
+import {
+  type FormEvent,
+  type RefObject,
+  useActionState,
+  useRef,
+  useState,
+} from "react";
 
 import { submitLevelSuggestionAction } from "@/actions/level-suggestions";
 import { SubmitButton } from "@/components/submit-button";
@@ -17,31 +24,116 @@ import {
   createLevelSuggestionFormState,
   type LevelSuggestionField,
 } from "@/lib/level-suggestion-form-state";
+import {
+  suggestionBlobThumbnailPathname,
+  validateThumbnailUploadCandidate,
+} from "@/lib/thumbnail-upload";
+import type { ImageUploadProvider } from "@/lib/upload-storage";
 
 const invalidClass =
   "border-red-500 focus:border-red-600 focus:ring-red-200 dark:border-red-400 dark:focus:border-red-300 dark:focus:ring-red-500/30";
 
 export function LevelSuggestionForm({
-  imageUploadsEnabled,
+  imageUploadProvider,
   maxImageMb,
 }: {
-  imageUploadsEnabled: boolean;
+  imageUploadProvider: ImageUploadProvider;
   maxImageMb: number;
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const thumbnailUrlInputRef = useRef<HTMLInputElement>(null);
+  const skipBlobUploadRef = useRef(false);
   const [state, formAction, pending] = useActionState(
     submitLevelSuggestionAction,
     createLevelSuggestionFormState(),
   );
+  const [clientError, setClientError] = useState<string | null>(null);
+  const [blobUploading, setBlobUploading] = useState(false);
+  const [thumbnailFileError, setThumbnailFileError] = useState<string | null>(
+    null,
+  );
   const values = state.values;
+  const uploadsAvailable = imageUploadProvider !== "disabled";
+  const thumbnailFileErrors = thumbnailFileError
+    ? [thumbnailFileError]
+    : state.fieldErrors.thumbnailFile;
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    if (imageUploadProvider !== "blob" || skipBlobUploadRef.current) {
+      skipBlobUploadRef.current = false;
+      return;
+    }
+
+    const file = fileInputRef.current?.files?.[0] ?? null;
+
+    if (!file) {
+      return;
+    }
+
+    event.preventDefault();
+    setClientError(null);
+    setThumbnailFileError(null);
+
+    const maxBytes = maxImageMb * 1024 * 1024;
+    const validationError = validateThumbnailUploadCandidate(file, maxBytes);
+
+    if (validationError) {
+      setClientError("Fix the highlighted fields below.");
+      setThumbnailFileError(validationError);
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const nameHint =
+      formData.get("name")?.toString() ||
+      formData.get("thumbnailUrl")?.toString() ||
+      file.name;
+
+    try {
+      setBlobUploading(true);
+      const blob = await upload(suggestionBlobThumbnailPathname(nameHint, file), file, {
+        access: "public",
+        handleUploadUrl: "/api/suggestions/blob-thumbnail-upload",
+        contentType: file.type,
+        multipart: file.size > 4 * 1024 * 1024,
+      });
+
+      if (thumbnailUrlInputRef.current) {
+        thumbnailUrlInputRef.current.value = blob.url;
+      }
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      skipBlobUploadRef.current = true;
+      formRef.current?.requestSubmit();
+    } catch (error) {
+      console.error("Suggestion thumbnail upload failed.", error);
+      setClientError("Fix the highlighted fields below.");
+      setThumbnailFileError(
+        "Thumbnail upload failed. Try again or use an image URL.",
+      );
+    } finally {
+      setBlobUploading(false);
+    }
+  }
 
   return (
-    <form action={formAction} aria-busy={pending} className="grid min-w-0 gap-4">
-      {state.summary ? (
+    <form
+      ref={formRef}
+      action={formAction}
+      onSubmit={handleSubmit}
+      aria-busy={pending || blobUploading}
+      className="grid min-w-0 gap-4"
+    >
+      {state.summary || clientError ? (
         <div
           role="alert"
           className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-800 dark:border-red-500/50 dark:bg-red-950/40 dark:text-red-200"
         >
-          <p className="font-black">{state.summary}</p>
+          <p className="font-black">{state.summary ?? clientError}</p>
           {state.formErrors.length > 0 ? (
             <ul className="mt-2 list-disc space-y-1 pl-5">
               {state.formErrors.map((error) => (
@@ -103,7 +195,7 @@ export function LevelSuggestionForm({
 
         <FormSection
           title="Media and version"
-          description="Showcase links must be full http/https URLs. Thumbnail is optional. Staff can add or replace the official thumbnail during review."
+          description="Showcase links must be full http/https URLs."
         >
           <div className="grid gap-4 md:grid-cols-2">
             <TextInput
@@ -114,32 +206,51 @@ export function LevelSuggestionForm({
               defaultValue={values.showcaseUrl}
               errors={state.fieldErrors.showcaseUrl}
             />
+            <TextArea
+              name="versionNotes"
+              label="Version notes"
+              help={fieldHelp.versionNotes}
+              defaultValue={values.versionNotes}
+              errors={state.fieldErrors.versionNotes}
+            />
+          </div>
+        </FormSection>
+
+        <FormSection
+          title="Optional thumbnail"
+          description="Upload or link a proposed thumbnail. Staff may replace it during review."
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            {uploadsAvailable ? (
+              <FileInput
+                inputRef={fileInputRef}
+                name="thumbnailFile"
+                label="Thumbnail upload"
+                help={fieldHelp.thumbnailFile}
+                hint={
+                  imageUploadProvider === "blob"
+                    ? `Optional PNG, JPG, or WebP up to ${maxImageMb} MB. Uploads go to Vercel Blob and win over the URL.`
+                    : `Optional PNG, JPG, or WebP up to ${maxImageMb} MB. Upload wins over the URL.`
+                }
+                errors={thumbnailFileErrors}
+              />
+            ) : (
+              <p className="rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-semibold leading-6 text-slate-600 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
+                Uploads are unavailable right now. You can paste a direct image
+                URL instead.
+              </p>
+            )}
             <TextInput
               name="thumbnailUrl"
               label="Thumbnail URL (optional)"
               help="Optional direct image URL. Staff can add or replace it during review."
               type="url"
               required={false}
+              inputRef={thumbnailUrlInputRef}
               defaultValue={values.thumbnailUrl}
               errors={state.fieldErrors.thumbnailUrl}
             />
-            {imageUploadsEnabled ? (
-              <FileInput
-                name="thumbnailFile"
-                label="Thumbnail upload"
-                help={fieldHelp.thumbnailFile}
-                hint={`Optional PNG, JPG, or WebP up to ${maxImageMb} MB. Upload wins over the URL.`}
-                errors={state.fieldErrors.thumbnailFile}
-              />
-            ) : null}
           </div>
-          <TextArea
-            name="versionNotes"
-            label="Version notes"
-            help={fieldHelp.versionNotes}
-            defaultValue={values.versionNotes}
-            errors={state.fieldErrors.versionNotes}
-          />
         </FormSection>
 
         <FormSection
@@ -160,7 +271,9 @@ export function LevelSuggestionForm({
             Approved suggestions are reviewed by staff before they become NDL
             levels.
           </p>
-          <SubmitButton>Submit level suggestion</SubmitButton>
+          <SubmitButton>
+            {blobUploading ? "Uploading thumbnail..." : "Submit level suggestion"}
+          </SubmitButton>
         </div>
       </SectionPanel>
     </form>
@@ -172,6 +285,7 @@ function TextInput({
   label,
   type = "text",
   required = true,
+  inputRef,
   defaultValue,
   errors,
   help,
@@ -180,6 +294,7 @@ function TextInput({
   label: string;
   type?: string;
   required?: boolean;
+  inputRef?: RefObject<HTMLInputElement | null>;
   defaultValue: string;
   errors?: string[];
   help?: string;
@@ -189,6 +304,7 @@ function TextInput({
   return (
     <FieldLabel label={label} help={help}>
       <input
+        ref={inputRef}
         name={name}
         type={type}
         required={required}
@@ -202,12 +318,14 @@ function TextInput({
 }
 
 function FileInput({
+  inputRef,
   name,
   label,
   hint,
   errors,
   help,
 }: {
+  inputRef: RefObject<HTMLInputElement | null>;
   name: LevelSuggestionField;
   label: string;
   hint: string;
@@ -219,6 +337,7 @@ function FileInput({
   return (
     <FieldLabel label={label} help={help}>
       <input
+        ref={inputRef}
         name={name}
         type="file"
         accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"

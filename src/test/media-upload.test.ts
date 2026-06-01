@@ -21,6 +21,8 @@ import {
 import {
   blobThumbnailPathname,
   isValidBlobThumbnailPathname,
+  isValidSuggestionBlobThumbnailPathname,
+  suggestionBlobThumbnailPathname,
   validateThumbnailUploadCandidate,
 } from "../lib/thumbnail-upload";
 
@@ -203,11 +205,18 @@ describe("local upload storage", () => {
       name: "thumbnail.webp",
       type: "image/webp",
     });
+    const suggestionPathname = suggestionBlobThumbnailPathname("Suggested Level", {
+      name: "thumbnail.jpg",
+      type: "image/jpeg",
+    });
 
     expect(pathname).toBe("thumbnails/demo-level.webp");
     expect(isValidBlobThumbnailPathname(pathname)).toBe(true);
     expect(isValidBlobThumbnailPathname("/thumbnails/demo-level.webp")).toBe(false);
     expect(isValidBlobThumbnailPathname("raw-footage/demo-level.webp")).toBe(false);
+    expect(suggestionPathname).toBe("suggestion-thumbnails/suggested-level.jpg");
+    expect(isValidSuggestionBlobThumbnailPathname(suggestionPathname)).toBe(true);
+    expect(isValidSuggestionBlobThumbnailPathname(pathname)).toBe(false);
     expect(
       validateThumbnailUploadCandidate(
         { name: "thumbnail.webp", type: "image/webp", size: 128 },

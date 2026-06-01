@@ -87,6 +87,21 @@ describe("production readiness guardrails", () => {
     expect(source("actions/level-suggestions.ts")).toContain(
       "localUploadsEnabled() && isUsableFile(thumbnailFile)",
     );
+    expect(source("components/level-suggestion-form.tsx")).toContain(
+      "handleUploadUrl: \"/api/suggestions/blob-thumbnail-upload\"",
+    );
+    expect(source("components/level-suggestion-form.tsx")).toContain(
+      "thumbnailUrlInputRef.current.value = blob.url",
+    );
+    expect(source("app/api/suggestions/blob-thumbnail-upload/route.ts")).toContain(
+      "getCurrentUser",
+    );
+    expect(source("app/api/suggestions/blob-thumbnail-upload/route.ts")).not.toContain(
+      "isAdminRole",
+    );
+    expect(source("app/api/suggestions/blob-thumbnail-upload/route.ts")).toContain(
+      "suggestion-thumbnails/",
+    );
     expect(source("app/moderation/page.tsx")).toContain(
       "levelSuggestion.findMany",
     );
@@ -103,10 +118,14 @@ describe("production readiness guardrails", () => {
     const form = source("components/level-suggestion-form.tsx");
 
     expect(form).toContain(
-      "Thumbnail is optional. Staff can add or replace the official thumbnail during review.",
+      "Upload or link a proposed thumbnail. Staff may replace it during review.",
     );
+    expect(form).toContain("Optional thumbnail");
     expect(form).toContain("Thumbnail URL (optional)");
-    expect(form).toContain("{imageUploadsEnabled ? (");
+    expect(form).toContain("uploadsAvailable ? (");
+    expect(form).toContain(
+      "Uploads are unavailable right now. You can paste a direct image",
+    );
     expect(form).not.toContain(
       "Thumbnail uploads are disabled on this NDL instance.",
     );
@@ -128,6 +147,15 @@ describe("production readiness guardrails", () => {
     );
     expect(source("app/api/admin/blob-thumbnail-upload/route.ts")).toContain(
       "handleUpload",
+    );
+    expect(source("app/api/suggestions/blob-thumbnail-upload/route.ts")).toContain(
+      "handleUpload",
+    );
+    expect(source("app/api/suggestions/blob-thumbnail-upload/route.ts")).toContain(
+      "maxImageUploadBytes",
+    );
+    expect(source("app/api/suggestions/blob-thumbnail-upload/route.ts")).toContain(
+      "thumbnailUploadContentTypes",
     );
     expect(rootSource("prisma.config.ts")).toContain(
       "DATABASE_URL is required for Prisma commands.",
@@ -189,7 +217,10 @@ describe("production readiness guardrails", () => {
     expect(adminForm).toContain("allowObjectUrl");
     expect(adminForm).toContain("onValueChange={setThumbnailUrlValue}");
     expect(adminForm).toContain("blobThumbnailPathname");
-    expect(adminForm).toContain("handleUploadUrl");
+    expect(adminForm).toContain(
+      "handleUploadUrl: \"/api/admin/blob-thumbnail-upload\"",
+    );
+    expect(adminForm).not.toContain("/api/suggestions/blob-thumbnail-upload");
   });
 
   it("keeps accessible field help tooltips wired into affected forms", () => {

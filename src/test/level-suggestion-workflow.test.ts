@@ -45,15 +45,20 @@ describe("level suggestion workflow", () => {
   });
 
   it("accepts optional suggestion thumbnail URLs", () => {
-    const result = validateLevelSuggestionFormSubmission(
-      suggestionFormData({
-        thumbnailUrl: "https://placehold.co/320x180.png",
-      }),
-    );
+    for (const thumbnailUrl of [
+      "https://placehold.co/320x180.png",
+      "https://store.public.blob.vercel-storage.com/suggestion-thumbnails/demo.webp",
+    ]) {
+      const result = validateLevelSuggestionFormSubmission(
+        suggestionFormData({
+          thumbnailUrl,
+        }),
+      );
 
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.thumbnailUrl).toBe("https://placehold.co/320x180.png");
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.thumbnailUrl).toBe(thumbnailUrl);
+      }
     }
   });
 

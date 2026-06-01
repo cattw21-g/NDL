@@ -10,7 +10,7 @@ import {
 } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import {
-  localUploadsEnabled,
+  imageUploadProvider,
   maxImageUploadBytes,
 } from "@/lib/upload-storage";
 
@@ -23,7 +23,7 @@ export default async function SuggestLevelPage({
 }) {
   await requireUser();
   const params = await searchParams;
-  const imageUploadsEnabled = localUploadsEnabled();
+  const uploads = imageUploadProvider();
 
   return (
     <div className="space-y-5">
@@ -44,7 +44,7 @@ export default async function SuggestLevelPage({
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <LevelSuggestionForm
-          imageUploadsEnabled={imageUploadsEnabled}
+          imageUploadProvider={uploads}
           maxImageMb={Math.round(maxImageUploadBytes() / 1024 / 1024)}
         />
 
