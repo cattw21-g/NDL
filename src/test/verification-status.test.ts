@@ -50,8 +50,12 @@ describe("verification status messages", () => {
     expect(status).toMatchObject({
       tone: "cyan",
       message:
-        "Verification sent. Check your email for a verification link and six-digit code. If you do not see it, check your spam or junk folder.",
+        "If an account exists and still needs verification, we sent a verification email. If you do not see it, check your spam or junk folder. If you do not have an account,",
+      cooldownMessage: "You can request another email in 80 seconds.",
+      cooldownSeconds: 80,
+      showRegisterLink: true,
     });
+    expect(status?.message).not.toMatch(/not associated|not found|already verified/i);
   });
 
   it("shows resend cooldown as a single warning state", () => {

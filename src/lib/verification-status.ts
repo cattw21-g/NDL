@@ -4,7 +4,10 @@ export type VerificationStatusMessage = {
   key: string;
   tone: VerificationStatusTone;
   message: string;
+  cooldownMessage?: string;
+  cooldownSeconds?: number;
   showLoginLink?: boolean;
+  showRegisterLink?: boolean;
 };
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -42,7 +45,11 @@ const statusMessages: Record<string, VerificationStatusMessage> = {
   sent: {
     key: "sent",
     tone: "cyan",
-    message: `Verification sent. ${verificationSentGuidance}`,
+    message:
+      "If an account exists and still needs verification, we sent a verification email. If you do not see it, check your spam or junk folder. If you do not have an account,",
+    cooldownMessage: "You can request another email in 80 seconds.",
+    cooldownSeconds: 80,
+    showRegisterLink: true,
   },
   "resend-email-failed": {
     key: "resend-email-failed",
@@ -54,6 +61,7 @@ const statusMessages: Record<string, VerificationStatusMessage> = {
     key: "resend-rate-limited",
     tone: "amber",
     message: "Please wait 80 seconds before requesting another email.",
+    cooldownSeconds: 80,
   },
   verified: {
     key: "verified",

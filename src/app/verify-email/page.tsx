@@ -36,19 +36,34 @@ export default async function VerifyEmailPage({
         />
 
         {status ? (
-          <StatusPanel tone={status.tone}>
-            {status.showLoginLink ? (
-              <>
-                Email verified successfully. You can now{" "}
-                <Link href="/login" className="font-black underline">
-                  log in
-                </Link>
-                .
-              </>
-            ) : (
-              status.message
-            )}
-          </StatusPanel>
+          <div className="space-y-2">
+            <StatusPanel tone={status.tone}>
+              {status.showLoginLink ? (
+                <>
+                  Email verified successfully. You can now{" "}
+                  <Link href="/login" className="font-black underline">
+                    log in
+                  </Link>
+                  .
+                </>
+              ) : status.showRegisterLink ? (
+                <>
+                  {status.message}{" "}
+                  <Link href="/register" className="font-black underline">
+                    register here
+                  </Link>
+                  .
+                </>
+              ) : (
+                status.message
+              )}
+            </StatusPanel>
+            {status.cooldownMessage ? (
+              <p className="rounded-md border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                {status.cooldownMessage}
+              </p>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
@@ -100,13 +115,25 @@ export default async function VerifyEmailPage({
               />
             </FieldLabel>
             <CooldownSubmitButton
+              key={status?.cooldownSeconds ? "cooldown" : "ready"}
               cooldownSeconds={EMAIL_RESEND_COOLDOWN_SECONDS}
+              initialCooldownSeconds={status?.cooldownSeconds ?? 0}
               className="w-full"
             >
               Send a new code
             </CooldownSubmitButton>
             <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
               If you do not see it, check your spam or junk folder.
+            </p>
+            <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+              No account yet?{" "}
+              <Link
+                href="/register"
+                className="font-black text-cyan-800 dark:text-cyan-300"
+              >
+                Register here
+              </Link>
+              .
             </p>
           </SectionPanel>
         </form>

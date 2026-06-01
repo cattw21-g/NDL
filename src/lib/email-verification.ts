@@ -236,7 +236,7 @@ export async function resendVerificationForEmail(
   }
 
   if (user.emailVerifiedAt) {
-    return { status: "already-verified" as const, email: normalizedEmail };
+    return { status: "sent" as const, email: normalizedEmail };
   }
 
   await sendVerificationForUser(client, user, env, now);

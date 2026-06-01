@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   createEmailVerification,
+  resendVerificationForEmail,
   type EmailVerificationClient,
   verifyEmailCode,
 } from "../lib/email-verification";
@@ -181,5 +182,75 @@ describe("email verification", () => {
     expect(tokens[0].usedAt?.toISOString()).toBe(
       "2026-05-30T00:05:00.000Z",
     );
+  });
+
+  it("returns the same safe resend result for unknown emails without sending", async () => {
+    const { client, tokens } = createFakeVerificationClient([]);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const result = await resendVerificationForEmail(
+      client,
+      "missing@example.com",
+      { NODE_ENV: "development" },
+      new Date("2026-05-30T00:00:00.000Z"),
+    );
+
+    expect(result).toEqual({
+      status: "sent",
+      email: "missing@example.com",
+    });
+    expect(tokens).toHaveLength(0);
+    expect(logSpy).not.toHaveBeenCalled();
+    logSpy.mockRestore();
+  });
+
+  it("returns the same safe resend result for known unverified emails after sending", async () => {
+    const user: FakeUser = {
+      id: "user-1",
+      email: "player@example.com",
+      emailVerifiedAt: null,
+    };
+    const { client, tokens } = createFakeVerificationClient([user]);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const result = await resendVerificationForEmail(
+      client,
+      user.email,
+      { NODE_ENV: "development" },
+      new Date("2026-05-30T00:00:00.000Z"),
+    );
+
+    expect(result).toEqual({
+      status: "sent",
+      email: user.email,
+    });
+    expect(tokens).toHaveLength(1);
+    expect(logSpy).toHaveBeenCalledWith("NDL email verification link:");
+    logSpy.mockRestore();
+  });
+
+  it("returns the same safe resend result for already verified emails without sending", async () => {
+    const user: FakeUser = {
+      id: "user-1",
+      email: "player@example.com",
+      emailVerifiedAt: new Date("2026-05-30T00:00:00.000Z"),
+    };
+    const { client, tokens } = createFakeVerificationClient([user]);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const result = await resendVerificationForEmail(
+      client,
+      user.email,
+      { NODE_ENV: "development" },
+      new Date("2026-05-30T00:00:00.000Z"),
+    );
+
+    expect(result).toEqual({
+      status: "sent",
+      email: user.email,
+    });
+    expect(tokens).toHaveLength(0);
+    expect(logSpy).not.toHaveBeenCalled();
+    logSpy.mockRestore();
   });
 });

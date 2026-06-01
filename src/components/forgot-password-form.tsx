@@ -6,7 +6,10 @@ import { useActionState } from "react";
 import { requestPasswordResetAction } from "@/actions/password-reset";
 import { CooldownSubmitButton } from "@/components/cooldown-submit-button";
 import { cx, FieldLabel, inputClass, SectionPanel } from "@/components/ui";
-import { EMAIL_RESEND_COOLDOWN_SECONDS } from "@/lib/email-cooldown";
+import {
+  EMAIL_RESEND_COOLDOWN_MESSAGE,
+  EMAIL_RESEND_COOLDOWN_SECONDS,
+} from "@/lib/email-cooldown";
 import {
   createForgotPasswordFormState,
   type ForgotPasswordField,
@@ -20,6 +23,9 @@ export function ForgotPasswordForm() {
     requestPasswordResetAction,
     createForgotPasswordFormState(),
   );
+  const shouldShowCooldown =
+    Boolean(state.successMessage) ||
+    state.formErrors.includes(EMAIL_RESEND_COOLDOWN_MESSAGE);
 
   return (
     <form action={formAction} aria-busy={pending}>
@@ -55,7 +61,11 @@ export function ForgotPasswordForm() {
           errors={state.fieldErrors.email}
         />
         <CooldownSubmitButton
+          key={shouldShowCooldown ? "cooldown" : "ready"}
           cooldownSeconds={EMAIL_RESEND_COOLDOWN_SECONDS}
+          initialCooldownSeconds={
+            shouldShowCooldown ? EMAIL_RESEND_COOLDOWN_SECONDS : 0
+          }
           className="w-full"
         >
           Send reset code

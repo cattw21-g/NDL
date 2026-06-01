@@ -7,6 +7,7 @@ import {
   resendVerificationForEmail,
   verifyEmailCode,
 } from "@/lib/email-verification";
+import { EMAIL_RESEND_COOLDOWN_SECONDS } from "@/lib/email-cooldown";
 import {
   checkRateLimit,
   emailRateLimitKey,
@@ -74,6 +75,7 @@ export async function resendVerificationAction(formData: FormData) {
       verificationPath({
         email: parsed.data.email,
         status: "resend-rate-limited",
+        cooldown: rateLimit.retryAfterSeconds,
       }),
     );
   }
@@ -97,11 +99,13 @@ export async function resendVerificationAction(formData: FormData) {
     );
   }
 
-  if (result.status === "already-verified") {
-    redirect(verificationPath({ email: result.email, status: "verified" }));
-  }
-
-  redirect(verificationPath({ email: result.email, status: "sent" }));
+  redirect(
+    verificationPath({
+      email: result.email,
+      status: "sent",
+      cooldown: EMAIL_RESEND_COOLDOWN_SECONDS,
+    }),
+  );
 }
 
 function logVerificationEmailError(

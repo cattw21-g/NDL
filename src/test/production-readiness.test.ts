@@ -249,6 +249,17 @@ describe("production readiness guardrails", () => {
     expect(source("app/verify-email/page.tsx")).toContain(
       "verificationStatusFromParams(params)",
     );
+    expect(source("app/verify-email/page.tsx")).toContain('href="/register"');
+    expect(source("app/verify-email/page.tsx")).toContain(
+      "initialCooldownSeconds={status?.cooldownSeconds ?? 0}",
+    );
+    expect(source("components/cooldown-submit-button.tsx")).not.toContain(
+      "onClick",
+    );
+    expect(source("actions/verification.ts")).not.toContain("already-verified");
+    expect(source("lib/email-verification.ts")).not.toContain(
+      "already-verified",
+    );
   });
 
   it("keeps password reset flow wired through hashed single-use tokens", () => {
