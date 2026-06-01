@@ -71,7 +71,7 @@ describe("submission workflow", () => {
     expect(data.status).toBe(RecordStatus.PENDING);
   });
 
-  it("accepting a submission upserts a public record with level points", async () => {
+  it("accepting a submission upserts a public record with computed current points", async () => {
     const calls = {
       submissionUpdates: [] as unknown[],
       recordUpserts: [] as unknown[],
@@ -110,7 +110,9 @@ describe("submission workflow", () => {
         cbfUsed: true,
         level: {
           name: "Demo Level",
-          points: 320,
+          rank: 1,
+          status: "RANKED",
+          points: 1000,
         },
         player: {
           displayName: "Demo Player",

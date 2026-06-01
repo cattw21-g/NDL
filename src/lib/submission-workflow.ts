@@ -5,6 +5,7 @@ import {
   buildDeviceSummary,
   type StructuredSubmissionProof,
 } from "./submission-proof";
+import { calculateLevelPoints, type ScoredLevelStatus } from "./points";
 
 export function buildSubmissionCreateData(
   playerId: string,
@@ -46,6 +47,8 @@ export type ReviewableSubmission = {
   isDemo?: boolean;
   level: {
     name: string;
+    rank: number | null;
+    status: ScoredLevelStatus;
     points: number;
   };
   player: {
@@ -88,6 +91,10 @@ export async function applySubmissionReview(
   });
 
   if (decision.status === RecordStatus.ACCEPTED) {
+    const pointsAwarded = calculateLevelPoints(
+      submission.level.rank,
+      submission.level.status,
+    );
     const recordData = {
       playerId: submission.playerId,
       levelId: submission.levelId,
@@ -95,7 +102,7 @@ export async function applySubmissionReview(
       rawFootageUrl: submission.rawFootageUrl,
       fps: submission.fps,
       cbfUsed: submission.cbfUsed,
-      pointsAwarded: submission.level.points,
+      pointsAwarded,
       isDemo: Boolean(submission.isDemo),
     };
 

@@ -12,7 +12,10 @@ import { prisma } from "@/lib/db";
 import { publicRecordWhere, publicUserWhere } from "@/lib/demo-visibility";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { canSeeSubmission } from "@/lib/permissions";
-import { calculateLeaderboard } from "@/lib/points";
+import {
+  calculateCurrentLevelPoints,
+  calculateLeaderboard,
+} from "@/lib/points";
 
 export const dynamic = "force-dynamic";
 
@@ -55,8 +58,13 @@ export default async function PlayerProfilePage({
     notFound();
   }
 
+  const acceptedRecords = player.records.map((record) => ({
+    ...record,
+    currentPoints: calculateCurrentLevelPoints(record.level),
+  }));
+
   const summary = calculateLeaderboard(
-    player.records
+    acceptedRecords
       .filter(
         (record) =>
           record.level.status === "RANKED" || record.level.status === "LEGACY",
@@ -66,7 +74,7 @@ export default async function PlayerProfilePage({
         playerName: player.playerName,
         displayName: player.displayName,
         levelId: record.levelId,
-        pointsAwarded: record.pointsAwarded,
+        pointsAwarded: record.currentPoints,
         acceptedAt: record.acceptedAt,
       })),
   )[0];
@@ -101,8 +109,8 @@ export default async function PlayerProfilePage({
             Accepted records
           </h2>
           <SectionPanel className="overflow-hidden">
-            {player.records.length > 0 ? (
-              player.records.map((record, index) => (
+            {acceptedRecords.length > 0 ? (
+              acceptedRecords.map((record, index) => (
                 <a
                   key={record.id}
                   href={record.videoUrl}
@@ -123,7 +131,7 @@ export default async function PlayerProfilePage({
                     </span>
                   </span>
                   <span className="text-right text-2xl font-black text-emerald-700 tabular-nums">
-                    {record.pointsAwarded}
+                    {record.currentPoints}
                   </span>
                 </a>
               ))

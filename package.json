@@ -16,6 +16,7 @@
     "db:seed": "prisma db seed",
     "db:seed:demo": "set ENABLE_DEMO_SEED=true&& set NDL_SEED_RESET=true&& prisma db seed",
     "admin:create": "tsx scripts/create-admin.ts",
+    "points:recalculate": "tsx scripts/recalculate-points.ts",
     "prebuild": "prisma generate"
   },
   "prisma": {

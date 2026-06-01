@@ -20,6 +20,7 @@ import {
   publicUserWhere,
 } from "@/lib/demo-visibility";
 import { formatDate } from "@/lib/format";
+import { calculateCurrentLevelPoints } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
 
@@ -147,7 +148,7 @@ export default async function Home() {
               thumbnailUrl: level.thumbnailUrl,
               status: level.status,
               difficulty: level.difficulty,
-              points: level.points,
+              points: calculateCurrentLevelPoints(level),
               _count: level._count,
             }))}
           />
@@ -190,23 +191,27 @@ export default async function Home() {
           >
             {latestRecords.length > 0 ? (
               <div className="space-y-2">
-                {latestRecords.map((record) => (
-                  <a
-                    key={record.id}
-                    href={record.videoUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block rounded-md border border-slate-300 bg-white px-3 py-2 text-sm transition hover:border-cyan-400 hover:bg-cyan-50 dark:border-slate-700 dark:bg-slate-950/60 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
-                  >
-                    <span className="block truncate font-black text-slate-900 dark:text-slate-100">
-                      {record.player.displayName}
-                    </span>
-                    <span className="block truncate text-xs font-bold text-slate-500 dark:text-slate-400">
-                      {record.level.rank ? `#${record.level.rank} ` : ""}
-                      {record.level.name} - {record.pointsAwarded} pts
-                    </span>
-                  </a>
-                ))}
+                {latestRecords.map((record) => {
+                  const recordPoints = calculateCurrentLevelPoints(record.level);
+
+                  return (
+                    <a
+                      key={record.id}
+                      href={record.videoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block rounded-md border border-slate-300 bg-white px-3 py-2 text-sm transition hover:border-cyan-400 hover:bg-cyan-50 dark:border-slate-700 dark:bg-slate-950/60 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
+                    >
+                      <span className="block truncate font-black text-slate-900 dark:text-slate-100">
+                        {record.player.displayName}
+                      </span>
+                      <span className="block truncate text-xs font-bold text-slate-500 dark:text-slate-400">
+                        {record.level.rank ? `#${record.level.rank} ` : ""}
+                        {record.level.name} - {recordPoints} pts
+                      </span>
+                    </a>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">

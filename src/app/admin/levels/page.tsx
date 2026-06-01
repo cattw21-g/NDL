@@ -13,6 +13,7 @@ import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { FALLBACK_THUMBNAIL_SRC } from "@/lib/media";
 import { formatDateInputValue } from "@/lib/format";
+import { calculateCurrentLevelPoints } from "@/lib/points";
 import {
   imageUploadProvider,
   maxImageUploadBytes,
@@ -100,7 +101,7 @@ export default async function AdminLevelsPage({
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <PointsPill points={level.points} />
+                  <PointsPill points={calculateCurrentLevelPoints(level)} />
                   <StatusBadge value={level.status} />
                 </div>
               </div>

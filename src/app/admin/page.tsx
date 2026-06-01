@@ -16,6 +16,7 @@ import { prisma } from "@/lib/db";
 import { demoModeEnabled } from "@/lib/demo-visibility";
 import { formatDateTime } from "@/lib/format";
 import { countModerationQueue } from "@/lib/moderation-queue";
+import { calculateCurrentLevelPoints } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
 
@@ -192,22 +193,26 @@ export default async function AdminPage() {
             </h2>
             <div className="mt-3 space-y-3">
               {recentAcceptedRecords.length > 0 ? (
-                recentAcceptedRecords.map((record) => (
-                  <div
-                    key={record.id}
-                    className="rounded-md border border-slate-300 bg-white p-3 dark:border-slate-700 dark:bg-slate-950/60"
-                  >
-                    <div className="truncate font-black text-slate-950 dark:text-slate-50">
-                      {record.level.name}
+                recentAcceptedRecords.map((record) => {
+                  const recordPoints = calculateCurrentLevelPoints(record.level);
+
+                  return (
+                    <div
+                      key={record.id}
+                      className="rounded-md border border-slate-300 bg-white p-3 dark:border-slate-700 dark:bg-slate-950/60"
+                    >
+                      <div className="truncate font-black text-slate-950 dark:text-slate-50">
+                        {record.level.name}
+                      </div>
+                      <div className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                        {record.player.displayName} - {recordPoints} pts
+                      </div>
+                      <div className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">
+                        {formatDateTime(record.acceptedAt)}
+                      </div>
                     </div>
-                    <div className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                      {record.player.displayName} - {record.pointsAwarded} pts
-                    </div>
-                    <div className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">
-                      {formatDateTime(record.acceptedAt)}
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">
                   Accepted records will appear here after review.

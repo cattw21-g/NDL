@@ -24,6 +24,7 @@ import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { getModerationQueue } from "@/lib/moderation-queue";
 import { isAdminRole } from "@/lib/permissions";
+import { calculateCurrentLevelPoints } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
 
@@ -187,7 +188,7 @@ export default async function ModerationPage({
                     <RecentLine
                       key={record.id}
                       title={record.level.name}
-                      body={`${record.player.displayName} - ${record.pointsAwarded} pts`}
+                      body={`${record.player.displayName} - ${calculateCurrentLevelPoints(record.level)} pts`}
                       date={formatDateTime(record.acceptedAt)}
                     />
                   ))

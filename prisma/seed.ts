@@ -281,7 +281,7 @@ async function seedDemo() {
       rawFootageUrl: accepted.rawFootageUrl,
       fps: accepted.fps,
       cbfUsed: accepted.cbfUsed,
-      pointsAwarded: levels[0].points,
+      pointsAwarded: calculateLevelPoints(levels[0].rank, levels[0].status),
       isDemo: true,
       acceptedAt: new Date("2026-05-10T12:00:00.000Z"),
     },

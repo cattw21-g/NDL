@@ -26,6 +26,15 @@ If Neon recommends different direct and pooled URLs, use the direct URL for one-
 
 Production must use `npm.cmd run db:migrate:deploy`, not `prisma migrate dev`. After deploying the password reset release, run `npm.cmd run db:migrate:deploy` once so Neon creates the `PasswordResetToken` table before users request reset emails. If this migration is skipped, password reset requests will fail at runtime because the table does not exist.
 
+After deploying a scoring formula change or importing/reranking production levels, recalculate stored level and accepted-record points against the target database:
+
+```powershell
+$env:DATABASE_URL="postgresql://..."
+npm.cmd run points:recalculate
+```
+
+Public pages compute points from current rank/status at runtime, but this command keeps stored `Level.points` and `Record.pointsAwarded` rows aligned for admin views, future moderation writes, and database consistency.
+
 ## 3. Vercel Deployment
 
 1. Import the GitHub repo in Vercel.
@@ -189,9 +198,10 @@ Set `APP_URL` and `NEXT_PUBLIC_SITE_URL` to the final HTTPS domain after the dom
 7. `ENABLE_DEMO_SEED` is unset or `false`.
 8. Migrations have been run with `npm.cmd run db:migrate:deploy`.
 9. Baseline seed has been run with `npm.cmd run db:seed`.
-10. First admin can log in.
-11. `public/og-image.svg` and `src/app/favicon.ico` have been replaced with final launch assets if desired.
-12. `/admin` shows no hidden demo warning, or any hidden demo rows have been intentionally removed before public launch.
+10. `npm.cmd run points:recalculate` has been run after any scoring formula change or production data import.
+11. First admin can log in.
+12. `public/og-image.svg` and `src/app/favicon.ico` have been replaced with final launch assets if desired.
+13. `/admin` shows no hidden demo warning, or any hidden demo rows have been intentionally removed before public launch.
 
 ## 9. Pre-Launch QA
 

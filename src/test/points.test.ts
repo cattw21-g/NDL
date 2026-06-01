@@ -1,19 +1,24 @@
 import { describe, expect, it } from "vitest";
 
-import { calculateLeaderboard, calculateLevelPoints } from "../lib/points";
+import {
+  calculateCurrentLevelPoints,
+  calculateLeaderboard,
+  calculateLevelPoints,
+} from "../lib/points";
+import {
+  recalculateStoredPoints,
+  type PointsRecalculationClient,
+} from "../lib/points-recalculation";
 
 describe("calculateLevelPoints", () => {
   it("uses the 320-point nonlinear formula for ranked levels", () => {
     expect(calculateLevelPoints(1, "RANKED")).toBe(320);
-    expect(calculateLevelPoints(2, "RANKED")).toBeLessThan(
-      calculateLevelPoints(1, "RANKED"),
-    );
-    expect(calculateLevelPoints(3, "RANKED")).toBeLessThan(
-      calculateLevelPoints(2, "RANKED"),
-    );
-    expect(calculateLevelPoints(25, "RANKED")).toBe(
-      Math.round(320 * 0.985 ** 24),
-    );
+    expect(calculateLevelPoints(2, "RANKED")).toBe(310);
+    expect(calculateLevelPoints(3, "RANKED")).toBe(300);
+    expect(calculateLevelPoints(10, "RANKED")).toBe(240);
+    expect(calculateLevelPoints(50, "RANKED")).toBe(68);
+    expect(calculateLevelPoints(100, "RANKED")).toBe(14);
+    expect(calculateLevelPoints(150, "RANKED")).toBe(3);
     expect(calculateLevelPoints(500, "RANKED")).toBe(1);
   });
 
@@ -36,6 +41,21 @@ describe("calculateLevelPoints", () => {
     expect(calculateLevelPoints(1, "PENDING")).toBe(0);
     expect(calculateLevelPoints(1, "REJECTED")).toBe(0);
     expect(calculateLevelPoints(1, "REMOVED")).toBe(0);
+  });
+
+  it("computes current level points from rank and status instead of stored values", () => {
+    expect(
+      calculateCurrentLevelPoints({
+        rank: 1,
+        status: "RANKED",
+      }),
+    ).toBe(320);
+    expect(
+      calculateCurrentLevelPoints({
+        rank: 1,
+        status: "PENDING",
+      }),
+    ).toBe(0);
   });
 });
 
@@ -79,5 +99,69 @@ describe("calculateLeaderboard", () => {
         lastRecordAt: now,
       },
     ]);
+  });
+});
+
+describe("recalculateStoredPoints", () => {
+  it("updates stale level and accepted record point rows from current ranks", async () => {
+    const levelUpdates: unknown[] = [];
+    const recordUpdates: unknown[] = [];
+    const db = {
+      level: {
+        findMany: async () => [
+          { id: "rank-1", rank: 1, status: "RANKED", points: 1000 },
+          { id: "rank-2", rank: 2, status: "RANKED", points: 1000 },
+          { id: "legacy", rank: null, status: "LEGACY", points: 1000 },
+          { id: "pending", rank: null, status: "PENDING", points: 1000 },
+        ],
+        update: async (args: unknown) => {
+          levelUpdates.push(args);
+          return args;
+        },
+      },
+      record: {
+        updateMany: async (args: unknown) => {
+          recordUpdates.push(args);
+          return { count: 1 };
+        },
+      },
+    } as unknown as PointsRecalculationClient;
+
+    const result = await recalculateStoredPoints(db);
+
+    expect(result).toEqual({
+      levelsChecked: 4,
+      levelsUpdated: 4,
+      recordsUpdated: 4,
+    });
+    expect(levelUpdates).toEqual([
+      {
+        where: { id: "rank-1" },
+        data: { points: 320 },
+      },
+      {
+        where: { id: "rank-2" },
+        data: { points: 310 },
+      },
+      {
+        where: { id: "legacy" },
+        data: { points: 25 },
+      },
+      {
+        where: { id: "pending" },
+        data: { points: 0 },
+      },
+    ]);
+    expect(recordUpdates).toContainEqual({
+      where: {
+        levelId: "rank-1",
+        pointsAwarded: {
+          not: 320,
+        },
+      },
+      data: {
+        pointsAwarded: 320,
+      },
+    });
   });
 });

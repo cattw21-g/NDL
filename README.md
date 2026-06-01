@@ -181,6 +181,16 @@ These accounts exist only after `npm.cmd run db:seed:demo`.
 
 Demo data is intentionally marked with `[DEMO]`, demo-only account names, example.com links, and demo thumbnail assets. Production seeding does not create this data.
 
+## Points Recalculation
+
+NDL displays points from the current level rank/status at runtime, so stale stored values do not leak into public list pages. Because `Level.points` and accepted `Record.pointsAwarded` are also stored for consistency, run the recalculation script after deploying a scoring formula change or after importing/reranking production data:
+
+```powershell
+npm.cmd run points:recalculate
+```
+
+Run this against the target database with the same `DATABASE_URL` and production safety environment used for other one-off maintenance commands.
+
 ## Scripts
 
 ```powershell
@@ -195,6 +205,7 @@ npm.cmd run db:seed
 npm.cmd run db:seed:demo
 npm.cmd run db:up
 npm.cmd run admin:create
+npm.cmd run points:recalculate
 ```
 
 ## Core Workflows
@@ -232,6 +243,7 @@ Before public launch, replace the placeholder OpenGraph image and favicon with f
 - Set production `DATABASE_URL`, `NODE_ENV=production`, `APP_URL`, `NEXT_PUBLIC_SITE_URL`, `SESSION_COOKIE_NAME`, and `SESSION_SECRET`.
 - Set production SMTP variables so registration verification email can be sent.
 - Run `npm.cmd run db:generate`, `npm.cmd run db:migrate:deploy`, and `npm.cmd run db:seed`.
+- Run `npm.cmd run points:recalculate` after scoring formula changes or production data imports.
 - Create the first admin through `npm.cmd run db:seed` with `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_HANDLE`, or run `npm.cmd run admin:create`.
 - Confirm `ENABLE_DEMO_SEED` and `NDL_SEED_RESET` are unset or `false` in production.
 - Confirm `UPLOAD_MODE=disabled` on Vercel production.

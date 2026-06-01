@@ -4,7 +4,10 @@ import Link from "next/link";
 import { EmptyState, Eyebrow, MetricTile, SectionPanel } from "@/components/ui";
 import { prisma } from "@/lib/db";
 import { publicRecordWhere } from "@/lib/demo-visibility";
-import { calculateLeaderboard } from "@/lib/points";
+import {
+  calculateCurrentLevelPoints,
+  calculateLeaderboard,
+} from "@/lib/points";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +22,7 @@ export default async function PlayersPage() {
     }),
     include: {
       player: true,
+      level: true,
     },
   });
 
@@ -28,7 +32,7 @@ export default async function PlayersPage() {
       playerName: record.player.playerName,
       displayName: record.player.displayName,
       levelId: record.levelId,
-      pointsAwarded: record.pointsAwarded,
+      pointsAwarded: calculateCurrentLevelPoints(record.level),
       acceptedAt: record.acceptedAt,
     })),
   );

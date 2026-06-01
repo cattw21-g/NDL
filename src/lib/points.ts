@@ -23,6 +23,11 @@ export type LeaderboardRow = {
   lastRecordAt: Date;
 };
 
+export type LevelPointSource = {
+  rank: number | null | undefined;
+  status: ScoredLevelStatus;
+};
+
 export function calculateLevelPoints(
   rank: number | null | undefined,
   status: ScoredLevelStatus,
@@ -39,7 +44,11 @@ export function calculateLevelPoints(
     return 0;
   }
 
-  return Math.max(1, Math.round(320 * 0.985 ** (rank - 1)));
+  return Math.max(1, Math.round(320 * (310 / 320) ** (rank - 1)));
+}
+
+export function calculateCurrentLevelPoints(level: LevelPointSource) {
+  return calculateLevelPoints(level.rank, level.status);
 }
 
 export function calculateLeaderboard(records: LeaderboardRecord[]) {

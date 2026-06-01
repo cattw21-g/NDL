@@ -19,6 +19,7 @@ import {
   publicRecordWhere,
 } from "@/lib/demo-visibility";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { calculateCurrentLevelPoints } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,7 @@ export default async function LevelPage({
   }
 
   const isDemo = demoModeEnabled() && (level.isDemo || level.name.includes("[DEMO]"));
+  const currentLevelPoints = calculateCurrentLevelPoints(level);
 
   return (
     <div className="space-y-5">
@@ -80,7 +82,7 @@ export default async function LevelPage({
           <div className="p-4 sm:p-5">
             <div className="flex flex-wrap items-center gap-2">
               <RankBadge rank={level.rank} />
-              <PointsPill points={level.points} />
+              <PointsPill points={currentLevelPoints} />
               <StatusBadge value={level.status} />
               <StatusBadge value={level.difficulty} />
             </div>
@@ -168,7 +170,7 @@ export default async function LevelPage({
                     {record.cbfUsed ? "yes" : "no"}
                   </span>
                   <span className="text-xl font-black text-emerald-700 tabular-nums md:text-right">
-                    {record.pointsAwarded}
+                    {currentLevelPoints}
                   </span>
                 </a>
               ))

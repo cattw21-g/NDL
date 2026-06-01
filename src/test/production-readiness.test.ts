@@ -379,4 +379,56 @@ describe("production readiness guardrails", () => {
     expect(ranking).toContain("await updateRecordsForLevel(tx, item.id, points)");
     expect(ranking).toContain("pointsAwarded: points");
   });
+
+  it("keeps public points computed from rank and status instead of stale stored rows", () => {
+    expect(source("lib/points.ts")).toContain("320 * (310 / 320)");
+    expect(source("app/page.tsx")).toContain(
+      "points: calculateCurrentLevelPoints(level)",
+    );
+    expect(source("app/page.tsx")).toContain(
+      "const recordPoints = calculateCurrentLevelPoints(record.level)",
+    );
+    expect(source("app/page.tsx")).not.toContain("points: level.points");
+    expect(source("app/levels/[slug]/page.tsx")).toContain(
+      "const currentLevelPoints = calculateCurrentLevelPoints(level)",
+    );
+    expect(source("app/levels/[slug]/page.tsx")).not.toContain(
+      "<PointsPill points={level.points}",
+    );
+    expect(source("app/players/page.tsx")).toContain("level: true");
+    expect(source("app/players/page.tsx")).toContain(
+      "pointsAwarded: calculateCurrentLevelPoints(record.level)",
+    );
+    expect(source("app/players/[playerName]/page.tsx")).toContain(
+      "currentPoints: calculateCurrentLevelPoints(record.level)",
+    );
+    expect(source("lib/submission-workflow.ts")).toContain(
+      "const pointsAwarded = calculateLevelPoints(",
+    );
+    expect(source("lib/submission-workflow.ts")).not.toContain(
+      "pointsAwarded: submission.level.points",
+    );
+  });
+
+  it("wires the stored points recalculation script and docs", () => {
+    expect(rootSource("package.json")).toContain(
+      '"points:recalculate": "tsx scripts/recalculate-points.ts"',
+    );
+    expect(rootSource("scripts/recalculate-points.ts")).toContain(
+      "recalculateStoredPoints",
+    );
+    expect(source("lib/points-recalculation.ts")).toContain(
+      "calculateLevelPoints(level.rank, level.status)",
+    );
+    expect(rootSource("prisma/seed.ts")).toContain(
+      "pointsAwarded: calculateLevelPoints(levels[0].rank, levels[0].status)",
+    );
+    expect(rootSource("prisma/seed.ts")).not.toContain(
+      "pointsAwarded: levels[0].points",
+    );
+    expect(rootSource("README.md")).toContain("npm.cmd run points:recalculate");
+    expect(rootSource("docs/deployment.md")).toContain(
+      "npm.cmd run points:recalculate",
+    );
+  });
 });
