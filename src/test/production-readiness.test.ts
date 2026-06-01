@@ -199,15 +199,23 @@ describe("production readiness guardrails", () => {
     expect(action).toContain("redirect(\"/submissions?created=1\")");
   });
 
-  it("keeps public registration and verification copy production-clean", () => {
+  it("keeps public auth page copy production-clean", () => {
     const publicAuthCopy = [
+      source("app/login/page.tsx"),
       source("app/register/page.tsx"),
       source("app/verify-email/page.tsx"),
       source("components/register-form.tsx"),
+      source("lib/verification-status.ts"),
     ].join("\n").toLowerCase();
 
     for (const phrase of [
+      "db:seed:demo",
+      "demo local accounts",
+      "seed commands",
       "terminal",
+      "smtp fallback",
+      "admin bootstrap",
+      "local development",
       "dev console",
       "development verification links",
       "smtp not configured",
@@ -219,11 +227,19 @@ describe("production readiness guardrails", () => {
     expect(publicAuthCopy).toContain(
       "check your email for a verification link",
     );
+    expect(publicAuthCopy).toContain("label=\"username\"");
+    expect(publicAuthCopy).not.toContain("label=\"handle\"");
 
     const authAction = source("actions/auth.ts");
     expect(authAction).toContain("validateRegisterFormSubmission(formData)");
+    expect(authAction).toContain("registered-sent");
+    expect(authAction).toContain("registered-email-failed");
+    expect(authAction).toContain("email or username");
     expect(authAction.indexOf("if (!parsed.success)")).toBeLessThan(
       authAction.indexOf("prisma.user.create"),
+    );
+    expect(source("app/verify-email/page.tsx")).toContain(
+      "verificationStatusFromParams(params)",
     );
   });
 

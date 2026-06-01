@@ -53,7 +53,7 @@ export function RegisterForm() {
         />
         <TextInput
           name="playerName"
-          label="Handle"
+          label="Username"
           defaultValue={values.playerName}
           errors={state.fieldErrors.playerName}
         />

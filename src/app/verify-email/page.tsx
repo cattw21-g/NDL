@@ -13,15 +13,7 @@ import {
   PageHeader,
   SectionPanel,
 } from "@/components/ui";
-
-const errorMessages: Record<string, string> = {
-  email:
-    "NDL could not send the verification email. Try again later or contact staff.",
-  expired: "That verification link or code has expired. Request a new one.",
-  invalid: "That verification link is invalid or has already been used.",
-  "invalid-code": "Enter the six digit code from your verification email.",
-  "invalid-email": "Enter a valid email address.",
-};
+import { verificationStatusFromParams } from "@/lib/verification-status";
 
 export default async function VerifyEmailPage({
   searchParams,
@@ -30,11 +22,7 @@ export default async function VerifyEmailPage({
 }) {
   const params = await searchParams;
   const email = typeof params.email === "string" ? params.email : "";
-  const error = typeof params.error === "string" ? params.error : null;
-  const verified = Boolean(params.verified);
-  const sent = Boolean(params.sent);
-  const registered = Boolean(params.registered);
-  const required = Boolean(params.required);
+  const status = verificationStatusFromParams(params);
 
   return (
     <div className="mx-auto grid w-full max-w-5xl gap-5 lg:grid-cols-[minmax(0,1fr)_28rem] lg:items-start">
@@ -45,33 +33,19 @@ export default async function VerifyEmailPage({
           description="Player accounts must verify email before login, record submission, and private submission access."
         />
 
-        {registered ? (
-          <StatusPanel tone="cyan">
-            Account created. Check your email for a verification link.
-          </StatusPanel>
-        ) : null}
-        {required ? (
-          <StatusPanel tone="amber">
-            Verification is required before you can log in or submit records.
-          </StatusPanel>
-        ) : null}
-        {sent ? (
-          <StatusPanel tone="cyan">
-            Verification sent. Check your email for the latest link or code.
-          </StatusPanel>
-        ) : null}
-        {verified ? (
-          <StatusPanel tone="emerald">
-            Email verified successfully. You can now{" "}
-            <Link href="/login" className="font-black underline">
-              log in
-            </Link>
-            .
-          </StatusPanel>
-        ) : null}
-        {error ? (
-          <StatusPanel tone="red">
-            {errorMessages[error] ?? "Verification could not be completed."}
+        {status ? (
+          <StatusPanel tone={status.tone}>
+            {status.showLoginLink ? (
+              <>
+                Email verified successfully. You can now{" "}
+                <Link href="/login" className="font-black underline">
+                  log in
+                </Link>
+                .
+              </>
+            ) : (
+              status.message
+            )}
           </StatusPanel>
         ) : null}
       </div>
@@ -124,6 +98,9 @@ export default async function VerifyEmailPage({
               />
             </FieldLabel>
             <SubmitButton className="w-full">Send a new code</SubmitButton>
+            <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+              If the email is not in your inbox, check spam/junk.
+            </p>
           </SectionPanel>
         </form>
       </div>

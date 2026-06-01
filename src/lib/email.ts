@@ -12,6 +12,8 @@ type SmtpConfig = {
   port: number;
   secure: boolean;
   from: string;
+  replyTo?: string;
+  disableTrackingHint: boolean;
   auth?: {
     user: string;
     pass: string;
@@ -19,24 +21,31 @@ type SmtpConfig = {
 };
 
 type EnvMap = Record<string, string | undefined>;
-type SmtpTransportConfig = Omit<SmtpConfig, "from">;
+type SmtpTransportConfig = Pick<SmtpConfig, "host" | "port" | "secure" | "auth">;
 export type TransportFactory = (options: SmtpTransportConfig) => {
-  sendMail: (message: {
-    from: string;
-    to: string;
-    subject: string;
-    text: string;
-  }) => Promise<unknown>;
+  sendMail: (message: VerificationMailMessage) => Promise<unknown>;
 };
 type Logger = Pick<Console, "log">;
+
+export type VerificationMailMessage = {
+  from: string;
+  to: string;
+  replyTo?: string;
+  subject: string;
+  text: string;
+  html: string;
+  headers?: Record<string, string>;
+};
 
 function readSmtpConfig(env: EnvMap): SmtpConfig | null {
   const host = env.SMTP_HOST?.trim();
   const portValue = env.SMTP_PORT?.trim();
   const from = env.SMTP_FROM?.trim();
+  const replyTo = env.SMTP_REPLY_TO?.trim();
   const user = env.SMTP_USER?.trim();
   const pass = env.SMTP_PASSWORD?.trim();
   const secure = env.SMTP_SECURE === "true";
+  const disableTrackingHint = env.SMTP_DISABLE_TRACKING_HINT === "true";
 
   if (!host && !user && !pass) {
     return null;
@@ -61,6 +70,8 @@ function readSmtpConfig(env: EnvMap): SmtpConfig | null {
     port,
     secure,
     from,
+    replyTo: replyTo || undefined,
+    disableTrackingHint,
     auth: user && pass ? { user, pass } : undefined,
   };
 }
@@ -100,20 +111,75 @@ export async function sendVerificationEmail(
     auth: config.auth,
   });
 
-  await transporter.sendMail({
+  const message: VerificationMailMessage = {
     from: config.from,
     to: email.to,
-    subject: "Verify your NDL account",
-    text: [
-      "Verify your NDL account to submit records.",
-      "",
-      `Verification link: ${email.verificationUrl}`,
-      `Verification code: ${email.code}`,
-      `Expires: ${email.expiresAt.toISOString()}`,
-      "",
-      "If you did not create an NDL account, ignore this message.",
-    ].join("\n"),
-  });
+    subject: "Verify your Nerfed Demonlist account",
+    text: verificationEmailText(email),
+    html: verificationEmailHtml(email),
+  };
+
+  if (config.replyTo) {
+    message.replyTo = config.replyTo;
+  }
+
+  if (config.disableTrackingHint) {
+    message.headers = {
+      "X-Disable-Tracking": "true",
+    };
+  }
+
+  await transporter.sendMail(message);
 
   return "smtp" as const;
+}
+
+export function verificationEmailText(email: VerificationEmail) {
+  return [
+    "Nerfed Demonlist",
+    "",
+    "Verify your account to submit records and manage your NDL activity.",
+    "",
+    `Verify your account: ${email.verificationUrl}`,
+    "",
+    `Fallback code: ${email.code}`,
+    `This code expires at ${formatExpiry(email.expiresAt)}.`,
+    "",
+    "If you did not create this account, ignore this email.",
+  ].join("\n");
+}
+
+export function verificationEmailHtml(email: VerificationEmail) {
+  const url = escapeHtml(email.verificationUrl);
+  const code = escapeHtml(email.code);
+  const expiry = escapeHtml(formatExpiry(email.expiresAt));
+
+  return `<!doctype html>
+<html>
+  <body style="margin:0;background:#f8fafc;color:#0f172a;font-family:Arial,Helvetica,sans-serif;">
+    <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
+      <h1 style="margin:0 0 12px;font-size:24px;line-height:1.2;color:#0f172a;">Nerfed Demonlist</h1>
+      <p style="margin:0 0 20px;font-size:15px;line-height:1.6;">Verify your account to submit records and manage your NDL activity.</p>
+      <p style="margin:0 0 24px;">
+        <a href="${url}" style="display:inline-block;border-radius:6px;background:#0e7490;color:#ffffff;font-size:14px;font-weight:700;line-height:1;text-decoration:none;padding:12px 16px;">Verify account</a>
+      </p>
+      <p style="margin:0 0 8px;font-size:14px;line-height:1.6;">Fallback code:</p>
+      <p style="margin:0 0 20px;font-size:24px;font-weight:800;letter-spacing:4px;color:#0f172a;">${code}</p>
+      <p style="margin:0 0 20px;font-size:13px;line-height:1.6;color:#475569;">This code expires at ${expiry}.</p>
+      <p style="margin:0;font-size:13px;line-height:1.6;color:#475569;">If you did not create this account, ignore this email.</p>
+    </div>
+  </body>
+</html>`;
+}
+
+function formatExpiry(date: Date) {
+  return date.toISOString().replace(".000Z", "Z");
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }

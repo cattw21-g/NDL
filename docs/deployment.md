@@ -46,7 +46,9 @@ Required production variables:
 | `MAX_IMAGE_UPLOAD_MB` | Optional thumbnail image upload limit, default `5`. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` | Required for production email verification. |
 | `SMTP_USER`, `SMTP_PASSWORD` | Required if your SMTP provider uses auth. |
+| `SMTP_REPLY_TO` | Optional reply address for verification email. |
 | `SMTP_SECURE` | `true` for implicit TLS, usually port 465; otherwise `false`. |
+| `SMTP_DISABLE_TRACKING_HINT` | Optional best-effort no-tracking header; provider settings still control tracking. |
 
 Generate a `SESSION_SECRET` locally with PowerShell:
 
@@ -110,8 +112,10 @@ $env:SMTP_HOST="smtp.example.com"
 $env:SMTP_PORT="587"
 $env:SMTP_USER="smtp-user"
 $env:SMTP_PASSWORD="smtp-password"
-$env:SMTP_FROM="NDL <no-reply@example.com>"
+$env:SMTP_FROM="Nerfed Demonlist <noreply@nerfeddemonlist.net>"
+$env:SMTP_REPLY_TO="staff@nerfeddemonlist.net"
 $env:SMTP_SECURE="false"
+$env:SMTP_DISABLE_TRACKING_HINT="true"
 ```
 
 Use a verified sender address with your SMTP provider.
@@ -120,6 +124,19 @@ Two low-cost setup paths:
 
 - Brevo free SMTP: create a Brevo account, verify a sender/domain, copy the SMTP login/key, use `smtp-relay.brevo.com`, port `587`, and `SMTP_SECURE=false`.
 - Gmail app-password SMTP: enable 2-Step Verification, create an app password, use `smtp.gmail.com`, port `587`, and `SMTP_SECURE=false`. For port `465`, set `SMTP_SECURE=true`.
+
+Inbox placement and delivery speed are not fully controlled by NDL. They depend on sender/domain verification, SPF, DKIM, DMARC, domain reputation, recipient spam filters, and Brevo account reputation. The app sends a simple transactional email with one verification link, a six-digit fallback code, text and HTML bodies, and no images. If email still lands in junk or takes around a minute, check provider reputation/settings and DNS authentication first.
+
+Production Brevo checklist:
+
+1. Brevo sender or domain is verified.
+2. SPF, DKIM, and DMARC records are present and passing.
+3. SMTP IP restriction is disabled for Vercel unless you have stable outbound IPs.
+4. `SMTP_FROM` is `Nerfed Demonlist <noreply@nerfeddemonlist.net>`.
+5. `APP_URL` is `https://nerfeddemonlist.net`.
+6. Vercel is redeployed after every environment variable change.
+7. Registration and resend verification are tested after deployment.
+8. Click/open tracking is disabled in Brevo settings if desired; `SMTP_DISABLE_TRACKING_HINT=true` is only a best-effort email header.
 
 ## 6. Uploads
 

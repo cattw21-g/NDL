@@ -51,8 +51,10 @@ Copy `.env.example` to `.env` for local development.
 | `SMTP_PORT` | Production email | `587` | SMTP port |
 | `SMTP_USER` | Production email | Empty for console fallback | SMTP username, if required |
 | `SMTP_PASSWORD` | Production email | Empty for console fallback | SMTP password, if required |
-| `SMTP_FROM` | Production email | `NDL <no-reply@example.com>` | From address for verification email |
+| `SMTP_FROM` | Production email | `Nerfed Demonlist <noreply@nerfeddemonlist.net>` | From address for verification email |
+| `SMTP_REPLY_TO` | Optional | Empty | Reply-To address for verification email |
 | `SMTP_SECURE` | Optional | `false` | `true` for implicit TLS, usually port 465 |
+| `SMTP_DISABLE_TRACKING_HINT` | Optional | `true` | Adds a best-effort no-tracking header; disable tracking in your SMTP provider too |
 | `NDL_RULES_VERSION` | Optional | `production-v1` or `demo-v1` | Release/version label for seeded baseline rules |
 | `ENABLE_DEMO_SEED` | Optional | `true` only for local demo seeding | Keep unset or `false` |
 | `NDL_SEED_RESET` | Optional | `true` only with local demo seeding | Keep unset or `false` |
@@ -88,11 +90,23 @@ $env:SMTP_HOST="smtp-relay.brevo.com"
 $env:SMTP_PORT="587"
 $env:SMTP_USER="your-brevo-smtp-login"
 $env:SMTP_PASSWORD="your-brevo-smtp-key"
-$env:SMTP_FROM="NDL <verified-sender@example.com>"
+$env:SMTP_FROM="Nerfed Demonlist <noreply@nerfeddemonlist.net>"
+$env:SMTP_REPLY_TO="staff@nerfeddemonlist.net"
 $env:SMTP_SECURE="false"
+$env:SMTP_DISABLE_TRACKING_HINT="true"
 ```
 
-Brevo documents `smtp-relay.brevo.com` as the SMTP server and notes that port 465 uses SSL/TLS; use port 587 with `SMTP_SECURE=false` unless your Brevo settings say otherwise.
+Brevo documents `smtp-relay.brevo.com` as the SMTP server and notes that port 465 uses SSL/TLS; use port 587 with `SMTP_SECURE=false` unless your Brevo settings say otherwise. Inbox placement and delivery speed also depend on the verified sender/domain, SPF, DKIM, DMARC, domain reputation, recipient spam filters, and Brevo account reputation. NDL sends a minimal transactional email, but delivery delays and junk-folder placement are partly outside the app's control.
+
+Production email checklist:
+
+- Verify the Brevo sender or sending domain before launch.
+- Disable SMTP IP restriction for Vercel unless you use stable outbound IPs.
+- Use `SMTP_FROM="Nerfed Demonlist <noreply@nerfeddemonlist.net>"`.
+- Set `APP_URL="https://nerfeddemonlist.net"`.
+- Redeploy Vercel after changing environment variables.
+- Test registration and resend verification after each email setting change.
+- Disable click/open tracking in Brevo settings if you do not want provider-side tracking; `SMTP_DISABLE_TRACKING_HINT=true` is only a best-effort header.
 
 Gmail app-password SMTP:
 

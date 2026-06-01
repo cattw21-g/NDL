@@ -43,16 +43,22 @@ function verificationRedirect(
 
 async function sendVerificationOrRedirect(
   user: { id: string; email: string },
-  params: Record<string, string | number | boolean>,
+  status: {
+    success: string;
+    failure: string;
+  },
 ): Promise<never> {
   try {
     await sendVerificationForUser(prisma, user);
   } catch (error) {
-    console.error("Failed to send verification email.", error);
-    verificationRedirect(user.email, { ...params, error: "email" });
+    logVerificationEmailError("verification_email_send_failed", error, {
+      userId: user.id,
+      email: user.email,
+    });
+    verificationRedirect(user.email, { status: status.failure });
   }
 
-  verificationRedirect(user.email, { ...params, sent: 1 });
+  verificationRedirect(user.email, { status: status.success });
 }
 
 export async function loginAction(formData: FormData) {
@@ -92,7 +98,10 @@ export async function loginAction(formData: FormData) {
   }
 
   if (!isVerifiedAccount(user)) {
-    await sendVerificationOrRedirect(user, { required: 1 });
+    await sendVerificationOrRedirect(user, {
+      success: "verification-required-sent",
+      failure: "verification-required-email-failed",
+    });
   }
 
   await createSession(user.id);
@@ -132,7 +141,7 @@ export async function registerAction(
 
   if (existing) {
     return createRegisterFormErrorState(parsed.values, {
-      formErrors: ["That email or handle is already in use."],
+      formErrors: ["That email or username is already in use."],
     });
   }
 
@@ -145,10 +154,31 @@ export async function registerAction(
     }),
   });
 
-  return sendVerificationOrRedirect(user, { registered: 1 });
+  return sendVerificationOrRedirect(user, {
+    success: "registered-sent",
+    failure: "registered-email-failed",
+  });
 }
 
 export async function logoutAction() {
   await destroyCurrentSession();
   redirect("/");
+}
+
+function logVerificationEmailError(
+  event: string,
+  error: unknown,
+  context: {
+    userId?: string;
+    email: string;
+  },
+) {
+  const emailDomain = context.email.split("@")[1] ?? "unknown";
+  console.error(event, {
+    event,
+    userId: context.userId,
+    emailDomain,
+    errorName: error instanceof Error ? error.name : typeof error,
+    errorMessage: error instanceof Error ? error.message : String(error),
+  });
 }

@@ -5,6 +5,7 @@ import type { PrismaClient } from "../generated/prisma/client";
 export type RateLimitAction =
   | "login"
   | "register"
+  | "verification-resend"
   | "record-submission"
   | "level-suggestion";
 
@@ -17,6 +18,7 @@ type RateLimitClient = Pick<PrismaClient, "rateLimitAttempt">;
 const rules: Record<RateLimitAction, { limit: number; windowMs: number }> = {
   login: { limit: 10, windowMs: 15 * 60 * 1000 },
   register: { limit: 3, windowMs: 60 * 60 * 1000 },
+  "verification-resend": { limit: 1, windowMs: 60 * 1000 },
   "record-submission": { limit: 8, windowMs: 60 * 60 * 1000 },
   "level-suggestion": { limit: 5, windowMs: 24 * 60 * 60 * 1000 },
 };

@@ -69,4 +69,22 @@ describe("rate limiting", () => {
       expect(result.message).toContain("Too many attempts");
     }
   });
+
+  it("blocks repeated verification resend attempts during cooldown", async () => {
+    const attempts = [
+      {
+        action: "verification-resend",
+        key: emailRateLimitKey("player@example.com"),
+        occurredAt: new Date("2026-05-31T00:00:00.000Z"),
+      },
+    ];
+    const result = await checkRateLimit(
+      createClient(attempts),
+      "verification-resend",
+      emailRateLimitKey("player@example.com"),
+      new Date("2026-05-31T00:00:30.000Z"),
+    );
+
+    expect(result.allowed).toBe(false);
+  });
 });

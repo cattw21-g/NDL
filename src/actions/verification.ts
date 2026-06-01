@@ -8,6 +8,10 @@ import {
   verifyEmailCode,
 } from "@/lib/email-verification";
 import {
+  checkRateLimit,
+  emailRateLimitKey,
+} from "@/lib/rate-limit";
+import {
   formDataToObject,
   resendVerificationSchema,
   verifyEmailCodeSchema,
@@ -31,7 +35,7 @@ export async function verifyEmailCodeAction(formData: FormData) {
   const parsed = verifyEmailCodeSchema.safeParse(formDataToObject(formData));
 
   if (!parsed.success) {
-    redirect(verificationPath({ error: "invalid-code" }));
+    redirect(verificationPath({ status: "invalid-code" }));
   }
 
   const result = await verifyEmailCode(
@@ -41,13 +45,13 @@ export async function verifyEmailCodeAction(formData: FormData) {
   );
 
   if (result.status === "verified") {
-    redirect(verificationPath({ email: result.email, verified: 1 }));
+    redirect(verificationPath({ email: result.email, status: "verified" }));
   }
 
   redirect(
     verificationPath({
       email: parsed.data.email,
-      error: result.status,
+      status: result.status,
     }),
   );
 }
@@ -56,24 +60,62 @@ export async function resendVerificationAction(formData: FormData) {
   const parsed = resendVerificationSchema.safeParse(formDataToObject(formData));
 
   if (!parsed.success) {
-    redirect(verificationPath({ error: "invalid-email" }));
+    redirect(verificationPath({ status: "invalid-email" }));
+  }
+
+  const rateLimit = await checkRateLimit(
+    prisma,
+    "verification-resend",
+    emailRateLimitKey(parsed.data.email),
+  );
+
+  if (!rateLimit.allowed) {
+    redirect(
+      verificationPath({
+        email: parsed.data.email,
+        status: "resend-rate-limited",
+      }),
+    );
   }
 
   const result = await resendVerificationForEmail(
     prisma,
     parsed.data.email,
   ).catch((error) => {
-      console.error("Failed to resend verification email.", error);
+      logVerificationEmailError("verification_email_resend_failed", error, {
+        email: parsed.data.email,
+      });
       return null;
     });
 
   if (!result) {
-    redirect(verificationPath({ email: parsed.data.email, error: "email" }));
+    redirect(
+      verificationPath({
+        email: parsed.data.email,
+        status: "resend-email-failed",
+      }),
+    );
   }
 
   if (result.status === "already-verified") {
-    redirect(verificationPath({ email: result.email, verified: 1 }));
+    redirect(verificationPath({ email: result.email, status: "verified" }));
   }
 
-  redirect(verificationPath({ email: result.email, sent: 1 }));
+  redirect(verificationPath({ email: result.email, status: "sent" }));
+}
+
+function logVerificationEmailError(
+  event: string,
+  error: unknown,
+  context: {
+    email: string;
+  },
+) {
+  const emailDomain = context.email.split("@")[1] ?? "unknown";
+  console.error(event, {
+    event,
+    emailDomain,
+    errorName: error instanceof Error ? error.name : typeof error,
+    errorMessage: error instanceof Error ? error.message : String(error),
+  });
 }

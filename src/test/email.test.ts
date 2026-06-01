@@ -37,7 +37,9 @@ describe("verification email delivery", () => {
         SMTP_USER: "smtp-user",
         SMTP_PASSWORD: "smtp-password",
         SMTP_FROM: "NDL <no-reply@example.com>",
+        SMTP_REPLY_TO: "staff@example.com",
         SMTP_SECURE: "false",
+        SMTP_DISABLE_TRACKING_HINT: "true",
       },
       {
         createTransport,
@@ -58,10 +60,24 @@ describe("verification email delivery", () => {
     expect(sent[0]).toMatchObject({
       from: "NDL <no-reply@example.com>",
       to: "player@example.com",
-      subject: "Verify your NDL account",
+      replyTo: "staff@example.com",
+      subject: "Verify your Nerfed Demonlist account",
+      headers: {
+        "X-Disable-Tracking": "true",
+      },
     });
-    expect(JSON.stringify(sent[0])).toContain(verificationEmail.verificationUrl);
-    expect(JSON.stringify(sent[0])).toContain(verificationEmail.code);
+    const message = sent[0] as {
+      text: string;
+      html: string;
+    };
+    expect(message.text).toContain("Nerfed Demonlist");
+    expect(message.text).toContain(verificationEmail.verificationUrl);
+    expect(message.text).toContain(verificationEmail.code);
+    expect(message.text).toContain("If you did not create this account");
+    expect(message.html).toContain("<html>");
+    expect(message.html).toContain("Verify account");
+    expect(message.html).toContain(verificationEmail.code);
+    expect(message.html.match(/https:\/\/ndl\.example/g)).toHaveLength(1);
   });
 
   it("logs verification link and code in development when SMTP is absent", async () => {
@@ -97,5 +113,31 @@ describe("verification email delivery", () => {
     ).rejects.toThrow(
       "SMTP configuration is required in production to send verification email.",
     );
+  });
+
+  it("omits Reply-To when SMTP_REPLY_TO is not configured", async () => {
+    let sent: unknown;
+    const createTransport: TransportFactory = () => ({
+      sendMail: async (message) => {
+        sent = message;
+        return {};
+      },
+    });
+
+    await sendVerificationEmail(
+      verificationEmail,
+      {
+        NODE_ENV: "production",
+        SMTP_HOST: "smtp-relay.brevo.com",
+        SMTP_PORT: "587",
+        SMTP_FROM: "Nerfed Demonlist <noreply@nerfeddemonlist.net>",
+        SMTP_SECURE: "false",
+      },
+      {
+        createTransport,
+      },
+    );
+
+    expect(sent).not.toHaveProperty("replyTo");
   });
 });
