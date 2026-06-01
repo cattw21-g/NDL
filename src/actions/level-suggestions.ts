@@ -22,6 +22,7 @@ import {
 import {
   cleanupUploads,
   isUsableFile,
+  localUploadsEnabled,
   saveThumbnailUpload,
 } from "@/lib/upload-storage";
 import {
@@ -54,10 +55,10 @@ export async function submitLevelSuggestionAction(
   }
 
   const thumbnailFile = formData.get("thumbnailFile");
-  let thumbnailUrl: string | null = null;
+  let thumbnailUrl: string | null = parsed.data.thumbnailUrl ?? null;
   const uploadedPaths: string[] = [];
 
-  if (isUsableFile(thumbnailFile)) {
+  if (localUploadsEnabled() && isUsableFile(thumbnailFile)) {
     const upload = await saveThumbnailUpload(thumbnailFile, parsed.data.name);
 
     if (!upload.ok) {

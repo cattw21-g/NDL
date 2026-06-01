@@ -30,7 +30,7 @@ export default async function SuggestLevelPage({
       <PageHeader
         eyebrow={<Eyebrow icon={Lightbulb}>Level suggestion</Eyebrow>}
         title="Suggest a nerfed level"
-        description="Send staff a level candidate with credits, showcase proof, thumbnail media, and compatibility notes."
+        description="Send staff a level candidate with credits, showcase proof, optional thumbnail media, and compatibility notes."
       >
         <Link
           href="/level-suggestions"

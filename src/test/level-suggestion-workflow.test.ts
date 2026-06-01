@@ -40,6 +40,35 @@ describe("level suggestion workflow", () => {
     if (result.success) {
       expect(result.data.name).toBe("Abyssal Mercy");
       expect(result.data.gdLevelId).toBe("123456789");
+      expect(result.data.thumbnailUrl).toBeUndefined();
+    }
+  });
+
+  it("accepts optional suggestion thumbnail URLs", () => {
+    const result = validateLevelSuggestionFormSubmission(
+      suggestionFormData({
+        thumbnailUrl: "https://placehold.co/320x180.png",
+      }),
+    );
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.thumbnailUrl).toBe("https://placehold.co/320x180.png");
+    }
+  });
+
+  it("rejects invalid optional suggestion thumbnail URLs", () => {
+    const result = validateLevelSuggestionFormSubmission(
+      suggestionFormData({
+        thumbnailUrl: "C:\\Users\\cat97\\thumbnail.png",
+      }),
+    );
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.state.fieldErrors.thumbnailUrl).toContain(
+        "Thumbnail must be a valid http/https image URL or a local public path like /thumbnails/example.png.",
+      );
     }
   });
 

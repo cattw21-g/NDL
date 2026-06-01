@@ -37,6 +37,14 @@ const requiredHttpUrl = (message: string) =>
 const thumbnailMessage =
   "Thumbnail must be a valid http/https image URL or a local public path like /thumbnails/example.png.";
 const rankMessage = "Rank must be a positive whole number.";
+const optionalThumbnailUrl = z.preprocess(
+  emptyToUndefined,
+  z
+    .string({ error: thumbnailMessage })
+    .trim()
+    .refine(isValidThumbnailSource, thumbnailMessage)
+    .optional(),
+);
 
 const optionalProofResourceUrl = z.preprocess(
   emptyToUndefined,
@@ -140,6 +148,7 @@ export const levelSuggestionSchema = z.object({
   nerfCreator: requiredText("Nerf creator is required.", 80),
   verifier: requiredText("Verifier is required.", 80),
   showcaseUrl: requiredHttpUrl("Showcase must be a valid http/https URL."),
+  thumbnailUrl: optionalThumbnailUrl,
   versionNotes: optionalText(1000),
   compatibilityNotes: requiredText(
     "Explain how the nerf preserves original route/timing compatibility.",

@@ -103,7 +103,7 @@ export function LevelSuggestionForm({
 
         <FormSection
           title="Media and version"
-          description="Showcase links must be full http/https URLs. Thumbnail upload is optional and may be disabled on production."
+          description="Showcase links must be full http/https URLs. Thumbnail is optional. Staff can add or replace the official thumbnail during review."
         >
           <div className="grid gap-4 md:grid-cols-2">
             <TextInput
@@ -114,14 +114,24 @@ export function LevelSuggestionForm({
               defaultValue={values.showcaseUrl}
               errors={state.fieldErrors.showcaseUrl}
             />
-            <FileInput
-              name="thumbnailFile"
-              label="Thumbnail upload"
-              help={fieldHelp.thumbnailFile}
-              disabled={!imageUploadsEnabled}
-              hint={`Optional PNG, JPG, or WebP up to ${maxImageMb} MB.`}
-              errors={state.fieldErrors.thumbnailFile}
+            <TextInput
+              name="thumbnailUrl"
+              label="Thumbnail URL (optional)"
+              help="Optional direct image URL. Staff can add or replace it during review."
+              type="url"
+              required={false}
+              defaultValue={values.thumbnailUrl}
+              errors={state.fieldErrors.thumbnailUrl}
             />
+            {imageUploadsEnabled ? (
+              <FileInput
+                name="thumbnailFile"
+                label="Thumbnail upload"
+                help={fieldHelp.thumbnailFile}
+                hint={`Optional PNG, JPG, or WebP up to ${maxImageMb} MB. Upload wins over the URL.`}
+                errors={state.fieldErrors.thumbnailFile}
+              />
+            ) : null}
           </div>
           <TextArea
             name="versionNotes"
@@ -161,6 +171,7 @@ function TextInput({
   name,
   label,
   type = "text",
+  required = true,
   defaultValue,
   errors,
   help,
@@ -168,6 +179,7 @@ function TextInput({
   name: LevelSuggestionField;
   label: string;
   type?: string;
+  required?: boolean;
   defaultValue: string;
   errors?: string[];
   help?: string;
@@ -179,7 +191,7 @@ function TextInput({
       <input
         name={name}
         type={type}
-        required
+        required={required}
         defaultValue={defaultValue}
         aria-invalid={hasErrors}
         className={cx(inputClass, "w-full min-w-0", hasErrors && invalidClass)}
@@ -192,14 +204,12 @@ function TextInput({
 function FileInput({
   name,
   label,
-  disabled,
   hint,
   errors,
   help,
 }: {
   name: LevelSuggestionField;
   label: string;
-  disabled: boolean;
   hint: string;
   errors?: string[];
   help?: string;
@@ -212,16 +222,15 @@ function FileInput({
         name={name}
         type="file"
         accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
-        disabled={disabled}
         aria-invalid={hasErrors}
         className={cx(
           inputClass,
-          "w-full min-w-0 max-w-full text-xs file:mr-3 file:max-w-[9rem] file:truncate file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-black file:text-white disabled:cursor-not-allowed disabled:opacity-60 dark:file:bg-cyan-300 dark:file:text-slate-950",
+          "w-full min-w-0 max-w-full text-xs file:mr-3 file:max-w-[9rem] file:truncate file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-black file:text-white dark:file:bg-cyan-300 dark:file:text-slate-950",
           hasErrors && invalidClass,
         )}
       />
       <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-        {disabled ? "Thumbnail uploads are disabled on this NDL instance." : hint}
+        {hint}
       </span>
       <FieldErrors errors={errors} />
     </FieldLabel>

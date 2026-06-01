@@ -81,6 +81,12 @@ describe("production readiness guardrails", () => {
     expect(source("actions/level-suggestions.ts")).toContain(
       "convertLevelSuggestionAction",
     );
+    expect(source("actions/level-suggestions.ts")).toContain(
+      "parsed.data.thumbnailUrl ?? null",
+    );
+    expect(source("actions/level-suggestions.ts")).toContain(
+      "localUploadsEnabled() && isUsableFile(thumbnailFile)",
+    );
     expect(source("app/moderation/page.tsx")).toContain(
       "levelSuggestion.findMany",
     );
@@ -91,6 +97,22 @@ describe("production readiness guardrails", () => {
     expect(source("actions/admin.ts")).toContain("sourceSuggestionId");
     expect(source("actions/admin.ts")).toContain("CONVERTED");
     expect(source("components/app-shell.tsx")).toContain("/suggest-level");
+  });
+
+  it("keeps suggestion thumbnails optional without disabled upload copy", () => {
+    const form = source("components/level-suggestion-form.tsx");
+
+    expect(form).toContain(
+      "Thumbnail is optional. Staff can add or replace the official thumbnail during review.",
+    );
+    expect(form).toContain("Thumbnail URL (optional)");
+    expect(form).toContain("{imageUploadsEnabled ? (");
+    expect(form).not.toContain(
+      "Thumbnail uploads are disabled on this NDL instance.",
+    );
+    expect(source("lib/level-suggestion-form-state.ts")).toContain(
+      "\"thumbnailUrl\"",
+    );
   });
 
   it("keeps production environment safety checks wired in", () => {
