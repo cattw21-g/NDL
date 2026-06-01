@@ -4,7 +4,85 @@ import {
   levelMutationErrorState,
   validateLevelFormSubmission,
 } from "../lib/level-form-state";
-import { levelSchema, submissionSchema } from "../lib/validation";
+import {
+  validateRegisterFormSubmission,
+} from "../lib/register-form-state";
+import { levelSchema, registerSchema, submissionSchema } from "../lib/validation";
+
+describe("registration validation", () => {
+  const validRegistration = {
+    email: "player@example.com",
+    playerName: "Player_One",
+    password: "VeryLongPass123!",
+    confirmPassword: "VeryLongPass123!",
+  };
+
+  it("accepts matching password confirmation", () => {
+    expect(registerSchema.safeParse(validRegistration).success).toBe(true);
+  });
+
+  it("rejects non-matching password confirmation with the requested message", () => {
+    const parsed = registerSchema.safeParse({
+      ...validRegistration,
+      confirmPassword: "DifferentPass123!",
+    });
+
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.flatten().fieldErrors.confirmPassword).toContain(
+        "Passwords do not match.",
+      );
+    }
+  });
+
+  it("requires password confirmation", () => {
+    const parsed = registerSchema.safeParse({
+      email: validRegistration.email,
+      playerName: validRegistration.playerName,
+      password: validRegistration.password,
+    });
+
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.flatten().fieldErrors.confirmPassword?.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("keeps the existing password minimum validation", () => {
+    const parsed = registerSchema.safeParse({
+      ...validRegistration,
+      password: "short",
+      confirmPassword: "short",
+    });
+
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.flatten().fieldErrors.password?.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("maps confirmation errors to form state and clears password values", () => {
+    const formData = new FormData();
+    formData.set("email", validRegistration.email);
+    formData.set("playerName", validRegistration.playerName);
+    formData.set("password", validRegistration.password);
+    formData.set("confirmPassword", "DifferentPass123!");
+
+    const result = validateRegisterFormSubmission(formData);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.state.summary).toBe("Fix the highlighted fields below.");
+      expect(result.state.fieldErrors.confirmPassword).toContain(
+        "Passwords do not match.",
+      );
+      expect(result.state.values.email).toBe(validRegistration.email);
+      expect(result.state.values.playerName).toBe(validRegistration.playerName);
+      expect(result.state.values.password).toBe("");
+      expect(result.state.values.confirmPassword).toBe("");
+    }
+  });
+});
 
 describe("submission validation", () => {
   it("accepts http and https proof links", () => {

@@ -1,4 +1,4 @@
-import { MailCheck, RefreshCw, ShieldCheck } from "lucide-react";
+import { MailCheck, RefreshCw } from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -16,7 +16,7 @@ import {
 
 const errorMessages: Record<string, string> = {
   email:
-    "NDL could not send the verification email. Check SMTP settings or try again.",
+    "NDL could not send the verification email. Try again later or contact staff.",
   expired: "That verification link or code has expired. Request a new one.",
   invalid: "That verification link is invalid or has already been used.",
   "invalid-code": "Enter the six digit code from your verification email.",
@@ -45,27 +45,9 @@ export default async function VerifyEmailPage({
           description="Player accounts must verify email before login, record submission, and private submission access."
         />
 
-        <SectionPanel className="p-5">
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="mt-1 h-5 w-5 text-cyan-800" />
-            <div>
-              <h2 className="font-black text-slate-950">
-                Verification protects the queue
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-700">
-                New accounts stay inactive until the verification link or
-                six digit code is confirmed. In development, NDL prints the
-                verification link and code to the terminal when SMTP is not
-                configured.
-              </p>
-            </div>
-          </div>
-        </SectionPanel>
-
         {registered ? (
           <StatusPanel tone="cyan">
-            Account created. Check your email, or the dev terminal if SMTP is
-            not configured.
+            Account created. Check your email for a verification link.
           </StatusPanel>
         ) : null}
         {required ? (
@@ -75,8 +57,7 @@ export default async function VerifyEmailPage({
         ) : null}
         {sent ? (
           <StatusPanel tone="cyan">
-            Verification sent. Use the latest link or code; older active tokens
-            were invalidated.
+            Verification sent. Check your email for the latest link or code.
           </StatusPanel>
         ) : null}
         {verified ? (

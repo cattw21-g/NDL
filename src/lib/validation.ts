@@ -58,17 +58,30 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-export const registerSchema = z.object({
-  email: z.email().trim().toLowerCase(),
-  playerName: z
-    .string()
-    .trim()
-    .min(2)
-    .max(32)
-    .regex(/^[a-zA-Z0-9_-]+$/, "Use letters, numbers, underscores, or dashes."),
-  displayName: z.string().trim().min(2).max(40),
-  password: z.string().min(10).max(128),
-});
+export const registerSchema = z
+  .object({
+    email: z.email().trim().toLowerCase(),
+    playerName: z
+      .string()
+      .trim()
+      .min(2)
+      .max(32)
+      .regex(/^[a-zA-Z0-9_-]+$/, "Use letters, numbers, underscores, or dashes."),
+    password: z.string().min(10).max(128),
+    confirmPassword: z
+      .string({ error: "Confirm password is required." })
+      .min(1, "Confirm password is required.")
+      .max(128),
+  })
+  .superRefine((value, context) => {
+    if (value.password !== value.confirmPassword) {
+      context.addIssue({
+        code: "custom",
+        path: ["confirmPassword"],
+        message: "Passwords do not match.",
+      });
+    }
+  });
 
 export const submissionSchema = z
   .object({

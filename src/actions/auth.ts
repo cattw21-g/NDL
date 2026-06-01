@@ -14,8 +14,13 @@ import {
   checkRateLimit,
   emailRateLimitKey,
 } from "@/lib/rate-limit";
+import {
+  createRegisterFormErrorState,
+  type RegisterFormState,
+  validateRegisterFormSubmission,
+} from "@/lib/register-form-state";
 import { buildRegistrationCreateData } from "@/lib/registration";
-import { formDataToObject, loginSchema, registerSchema } from "@/lib/validation";
+import { formDataToObject, loginSchema } from "@/lib/validation";
 
 function authError(path: "login" | "register", message: string): never {
   redirect(`/${path}?error=${encodeURIComponent(message)}`);
@@ -39,7 +44,7 @@ function verificationRedirect(
 async function sendVerificationOrRedirect(
   user: { id: string; email: string },
   params: Record<string, string | number | boolean>,
-) {
+): Promise<never> {
   try {
     await sendVerificationForUser(prisma, user);
   } catch (error) {
@@ -94,11 +99,14 @@ export async function loginAction(formData: FormData) {
   redirect("/submissions");
 }
 
-export async function registerAction(formData: FormData) {
-  const parsed = registerSchema.safeParse(formDataToObject(formData));
+export async function registerAction(
+  _previousState: RegisterFormState,
+  formData: FormData,
+): Promise<RegisterFormState> {
+  const parsed = validateRegisterFormSubmission(formData);
 
   if (!parsed.success) {
-    authError("register", "Check the account fields and try again.");
+    return parsed.state;
   }
 
   const rateLimit = await checkRateLimit(
@@ -108,7 +116,9 @@ export async function registerAction(formData: FormData) {
   );
 
   if (!rateLimit.allowed) {
-    authError("register", rateLimit.message);
+    return createRegisterFormErrorState(parsed.values, {
+      formErrors: [rateLimit.message],
+    });
   }
 
   const existing = await prisma.user.findFirst({
@@ -121,14 +131,21 @@ export async function registerAction(formData: FormData) {
   });
 
   if (existing) {
-    authError("register", "That email or player name is already in use.");
+    return createRegisterFormErrorState(parsed.values, {
+      formErrors: ["That email or handle is already in use."],
+    });
   }
 
   const user = await prisma.user.create({
-    data: await buildRegistrationCreateData(parsed.data),
+    data: await buildRegistrationCreateData({
+      email: parsed.data.email,
+      playerName: parsed.data.playerName,
+      displayName: parsed.data.playerName,
+      password: parsed.data.password,
+    }),
   });
 
-  await sendVerificationOrRedirect(user, { registered: 1 });
+  return sendVerificationOrRedirect(user, { registered: 1 });
 }
 
 export async function logoutAction() {

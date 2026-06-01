@@ -199,6 +199,34 @@ describe("production readiness guardrails", () => {
     expect(action).toContain("redirect(\"/submissions?created=1\")");
   });
 
+  it("keeps public registration and verification copy production-clean", () => {
+    const publicAuthCopy = [
+      source("app/register/page.tsx"),
+      source("app/verify-email/page.tsx"),
+      source("components/register-form.tsx"),
+    ].join("\n").toLowerCase();
+
+    for (const phrase of [
+      "terminal",
+      "dev console",
+      "development verification links",
+      "smtp not configured",
+      "verification protects the queue",
+    ]) {
+      expect(publicAuthCopy).not.toContain(phrase);
+    }
+
+    expect(publicAuthCopy).toContain(
+      "check your email for a verification link",
+    );
+
+    const authAction = source("actions/auth.ts");
+    expect(authAction).toContain("validateRegisterFormSubmission(formData)");
+    expect(authAction.indexOf("if (!parsed.success)")).toBeLessThan(
+      authAction.indexOf("prisma.user.create"),
+    );
+  });
+
   it("keeps rank changes tied to level and record point recalculation", () => {
     const ranking = source("lib/level-ranking.ts");
 
