@@ -39,7 +39,7 @@ export function calculateLevelPoints(
     return 0;
   }
 
-  return Math.max(50, Math.round(1000 * 0.97 ** (rank - 1)));
+  return Math.max(1, Math.round(320 * 0.985 ** (rank - 1)));
 }
 
 export function calculateLeaderboard(records: LeaderboardRecord[]) {

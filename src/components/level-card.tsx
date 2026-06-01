@@ -1,4 +1,4 @@
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { SafeThumbnail } from "@/components/safe-thumbnail";
@@ -45,15 +45,15 @@ export function LevelCard({ level }: { level: LevelCardLevel }) {
                 : "bg-slate-300",
         )}
       />
-      <div className="grid grid-cols-[4.75rem_minmax(0,1fr)] gap-0 md:grid-cols-[4.75rem_12.5rem_minmax(0,1fr)_9.75rem] md:items-stretch">
-        <div className="flex items-center justify-center bg-slate-50 p-2 dark:bg-slate-950/60">
+      <div className="grid grid-cols-[4.75rem_minmax(0,1fr)] gap-0 md:grid-cols-[4.75rem_15rem_minmax(0,1fr)_10rem] md:items-center">
+        <div className="flex items-center justify-center bg-slate-50 p-2 dark:bg-slate-950/60 md:self-stretch">
           <RankBadge rank={level.rank} />
         </div>
 
-        <div className="min-w-0 p-2">
+        <div className="min-w-0 p-2 md:w-60">
           <Link
             href={`/levels/${level.slug}`}
-            className="relative block aspect-video h-24 w-full overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950 md:h-28"
+            className="relative block aspect-video w-full overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950"
           >
             <SafeThumbnail
               src={level.thumbnailUrl}
@@ -69,7 +69,7 @@ export function LevelCard({ level }: { level: LevelCardLevel }) {
           </Link>
         </div>
 
-        <div className="col-span-2 min-w-0 border-t border-slate-300 p-3 dark:border-slate-700 md:col-span-1 md:border-t-0 md:px-3 md:py-2.5">
+        <div className="col-span-2 min-w-0 border-t border-slate-300 p-3 dark:border-slate-700 md:col-auto md:border-t-0 md:px-3 md:py-2.5">
           <div className="min-w-0">
             {level.status !== "RANKED" ? (
               <div className="flex flex-wrap items-center gap-2">
@@ -94,7 +94,7 @@ export function LevelCard({ level }: { level: LevelCardLevel }) {
           </div>
         </div>
 
-        <div className="col-span-2 grid grid-cols-3 gap-2 border-t border-slate-300 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950/60 md:col-span-1 md:grid-cols-1 md:border-l md:border-t-0">
+        <div className="col-span-2 grid grid-cols-3 gap-2 border-t border-slate-300 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950/60 md:col-auto md:grid-cols-1 md:border-l md:border-t-0 md:self-stretch">
           <PointsPill points={level.points} />
           <span className="inline-flex min-h-8 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-800 tabular-nums dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
             {level._count?.records ?? 0} records
@@ -106,10 +106,6 @@ export function LevelCard({ level }: { level: LevelCardLevel }) {
             Details
             <ArrowRight className="h-4 w-4" />
           </Link>
-          <span className="hidden items-center gap-2 truncate text-xs font-bold text-slate-500 dark:text-slate-400 md:flex">
-            <ShieldCheck className="h-4 w-4 text-cyan-700" />
-            Reviewed list entry
-          </span>
         </div>
       </div>
     </article>
