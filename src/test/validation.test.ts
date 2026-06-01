@@ -7,7 +7,12 @@ import {
 import {
   validateRegisterFormSubmission,
 } from "../lib/register-form-state";
-import { levelSchema, registerSchema, submissionSchema } from "../lib/validation";
+import {
+  levelSchema,
+  registerSchema,
+  resetPasswordSchema,
+  submissionSchema,
+} from "../lib/validation";
 
 describe("registration validation", () => {
   const validRegistration = {
@@ -142,6 +147,64 @@ describe("submission validation", () => {
     });
 
     expect(parsed.success).toBe(false);
+  });
+});
+
+describe("password reset validation", () => {
+  const validReset = {
+    email: "player@example.com",
+    token: "token",
+    code: "123456",
+    password: "NewLongPass123!",
+    confirmPassword: "NewLongPass123!",
+  };
+
+  it("accepts matching password confirmation", () => {
+    expect(resetPasswordSchema.safeParse(validReset).success).toBe(true);
+  });
+
+  it("rejects non-matching password confirmation with the requested message", () => {
+    const parsed = resetPasswordSchema.safeParse({
+      ...validReset,
+      confirmPassword: "DifferentPass123!",
+    });
+
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.flatten().fieldErrors.confirmPassword).toContain(
+        "Passwords do not match.",
+      );
+    }
+  });
+
+  it("requires password confirmation and keeps password minimum validation", () => {
+    const missingConfirmation = resetPasswordSchema.safeParse({
+      email: validReset.email,
+      code: validReset.code,
+      password: validReset.password,
+    });
+    const shortPassword = resetPasswordSchema.safeParse({
+      ...validReset,
+      password: "short",
+      confirmPassword: "short",
+    });
+
+    expect(missingConfirmation.success).toBe(false);
+    expect(shortPassword.success).toBe(false);
+  });
+
+  it("requires a six digit reset code", () => {
+    const parsed = resetPasswordSchema.safeParse({
+      ...validReset,
+      code: "abc123",
+    });
+
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.flatten().fieldErrors.code).toContain(
+        "Enter the six digit reset code.",
+      );
+    }
   });
 });
 

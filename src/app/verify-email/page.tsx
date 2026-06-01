@@ -99,7 +99,7 @@ export default async function VerifyEmailPage({
             </FieldLabel>
             <SubmitButton className="w-full">Send a new code</SubmitButton>
             <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-              If the email is not in your inbox, check spam/junk.
+              If you do not see it, check your spam or junk folder.
             </p>
           </SectionPanel>
         </form>

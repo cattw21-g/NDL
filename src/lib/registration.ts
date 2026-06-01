@@ -1,4 +1,4 @@
-import { hash } from "bcryptjs";
+import { hashPassword as defaultHashPassword } from "./password-hashing";
 
 export type RegistrationInput = {
   email: string;
@@ -9,8 +9,7 @@ export type RegistrationInput = {
 
 export async function buildRegistrationCreateData(
   input: RegistrationInput,
-  hashPassword: (password: string) => Promise<string> = (password) =>
-    hash(password, 12),
+  hashPassword: (password: string) => Promise<string> = defaultHashPassword,
 ) {
   return {
     email: input.email,

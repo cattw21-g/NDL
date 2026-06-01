@@ -87,4 +87,36 @@ describe("rate limiting", () => {
 
     expect(result.allowed).toBe(false);
   });
+
+  it("blocks repeated password reset requests", async () => {
+    const attempts = Array.from({ length: 3 }, () => ({
+      action: "password-reset-request",
+      key: emailRateLimitKey("player@example.com"),
+      occurredAt: new Date("2026-05-31T00:00:00.000Z"),
+    }));
+    const result = await checkRateLimit(
+      createClient(attempts),
+      "password-reset-request",
+      emailRateLimitKey("player@example.com"),
+      new Date("2026-05-31T00:30:00.000Z"),
+    );
+
+    expect(result.allowed).toBe(false);
+  });
+
+  it("blocks repeated password reset attempts", async () => {
+    const attempts = Array.from({ length: 8 }, () => ({
+      action: "password-reset-attempt",
+      key: emailRateLimitKey("player@example.com"),
+      occurredAt: new Date("2026-05-31T00:00:00.000Z"),
+    }));
+    const result = await checkRateLimit(
+      createClient(attempts),
+      "password-reset-attempt",
+      emailRateLimitKey("player@example.com"),
+      new Date("2026-05-31T00:10:00.000Z"),
+    );
+
+    expect(result.allowed).toBe(false);
+  });
 });

@@ -8,12 +8,14 @@ export type VerificationStatusMessage = {
 };
 
 type SearchParams = Record<string, string | string[] | undefined>;
+const verificationSentGuidance =
+  "Check your email for a verification link and six-digit code. If you do not see it, check your spam or junk folder.";
 
 const statusMessages: Record<string, VerificationStatusMessage> = {
   "registered-sent": {
     key: "registered-sent",
     tone: "cyan",
-    message: "Account created. Check your email for a verification link.",
+    message: `Account created. ${verificationSentGuidance}`,
   },
   "registered-email-failed": {
     key: "registered-email-failed",
@@ -29,8 +31,7 @@ const statusMessages: Record<string, VerificationStatusMessage> = {
   "verification-required-sent": {
     key: "verification-required-sent",
     tone: "amber",
-    message:
-      "Verification is required before you can log in. Check your email for a verification link.",
+    message: `Verification is required before you can log in. ${verificationSentGuidance}`,
   },
   "verification-required-email-failed": {
     key: "verification-required-email-failed",
@@ -41,7 +42,7 @@ const statusMessages: Record<string, VerificationStatusMessage> = {
   sent: {
     key: "sent",
     tone: "cyan",
-    message: "Verification sent. Check your email for the latest link or code.",
+    message: `Verification sent. ${verificationSentGuidance}`,
   },
   "resend-email-failed": {
     key: "resend-email-failed",

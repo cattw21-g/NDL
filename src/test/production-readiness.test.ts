@@ -204,7 +204,11 @@ describe("production readiness guardrails", () => {
       source("app/login/page.tsx"),
       source("app/register/page.tsx"),
       source("app/verify-email/page.tsx"),
+      source("app/forgot-password/page.tsx"),
+      source("app/reset-password/page.tsx"),
       source("components/register-form.tsx"),
+      source("components/forgot-password-form.tsx"),
+      source("components/reset-password-form.tsx"),
       source("lib/verification-status.ts"),
     ].join("\n").toLowerCase();
 
@@ -227,8 +231,12 @@ describe("production readiness guardrails", () => {
     expect(publicAuthCopy).toContain(
       "check your email for a verification link",
     );
+    expect(publicAuthCopy).toContain("check your spam or junk folder");
     expect(publicAuthCopy).toContain("label=\"username\"");
     expect(publicAuthCopy).not.toContain("label=\"handle\"");
+    expect(source("app/login/page.tsx")).toContain("/forgot-password");
+    expect(source("app/forgot-password/page.tsx")).toContain("ForgotPasswordForm");
+    expect(source("app/reset-password/page.tsx")).toContain("ResetPasswordForm");
 
     const authAction = source("actions/auth.ts");
     expect(authAction).toContain("validateRegisterFormSubmission(formData)");
@@ -240,6 +248,32 @@ describe("production readiness guardrails", () => {
     );
     expect(source("app/verify-email/page.tsx")).toContain(
       "verificationStatusFromParams(params)",
+    );
+  });
+
+  it("keeps password reset flow wired through hashed single-use tokens", () => {
+    expect(rootSource("prisma/schema.prisma")).toContain(
+      "model PasswordResetToken",
+    );
+    expect(source("actions/password-reset.ts")).toContain(
+      "requestPasswordResetAction",
+    );
+    expect(source("actions/password-reset.ts")).toContain("resetPasswordAction");
+    expect(source("actions/password-reset.ts")).toContain(
+      "password-reset-request",
+    );
+    expect(source("actions/password-reset.ts")).toContain(
+      "password-reset-attempt",
+    );
+    expect(source("lib/password-reset.ts")).toContain(
+      "hashPasswordResetSecret",
+    );
+    expect(source("lib/password-reset.ts")).toContain(
+      "PASSWORD_RESET_EXPIRY_MINUTES = 15",
+    );
+    expect(source("lib/password-reset.ts")).toContain("session.deleteMany");
+    expect(source("lib/email.ts")).toContain(
+      "Reset your Nerfed Demonlist password",
     );
   });
 

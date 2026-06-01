@@ -41,6 +41,14 @@ export default async function LoginPage({
               className={inputClass}
             />
           </FieldLabel>
+          <div className="text-right text-sm">
+            <Link
+              href="/forgot-password"
+              className="font-black text-cyan-800 dark:text-cyan-300"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <SubmitButton className="w-full">Login</SubmitButton>
           <p className="text-sm text-slate-600 dark:text-slate-300">
             Need a player account?{" "}

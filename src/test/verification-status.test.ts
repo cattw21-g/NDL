@@ -10,8 +10,11 @@ describe("verification status messages", () => {
 
     expect(status).toMatchObject({
       tone: "cyan",
-      message: "Account created. Check your email for a verification link.",
+      message:
+        "Account created. Check your email for a verification link and six-digit code. If you do not see it, check your spam or junk folder.",
     });
+    expect(status?.message.match(/check your email/gi)).toHaveLength(1);
+    expect(status?.message.match(/spam or junk/gi)).toHaveLength(1);
   });
 
   it("shows one warning when account creation succeeds but email sending fails", () => {
@@ -35,8 +38,20 @@ describe("verification status messages", () => {
 
     expect(status?.key).toBe("registered-email-failed");
     expect(status?.message).not.toBe(
-      "Account created. Check your email for a verification link.",
+      "Account created. Check your email for a verification link and six-digit code. If you do not see it, check your spam or junk folder.",
     );
+  });
+
+  it("shows spam-folder guidance after resend success", () => {
+    const status = verificationStatusFromParams({
+      status: "sent",
+    });
+
+    expect(status).toMatchObject({
+      tone: "cyan",
+      message:
+        "Verification sent. Check your email for a verification link and six-digit code. If you do not see it, check your spam or junk folder.",
+    });
   });
 
   it("shows resend cooldown as a single warning state", () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  sendPasswordResetEmail,
   sendVerificationEmail,
   type TransportFactory,
 } from "../lib/email";
@@ -10,6 +11,13 @@ const verificationEmail = {
   verificationUrl: "https://ndl.example/verify-email/confirm?token=abc",
   code: "123456",
   expiresAt: new Date("2026-05-30T01:00:00.000Z"),
+};
+
+const passwordResetEmail = {
+  to: "player@example.com",
+  resetUrl: "https://ndl.example/reset-password?email=player%40example.com&token=abc",
+  code: "654321",
+  expiresAt: new Date("2026-05-30T00:15:00.000Z"),
 };
 
 describe("verification email delivery", () => {
@@ -139,5 +147,73 @@ describe("verification email delivery", () => {
     );
 
     expect(sent).not.toHaveProperty("replyTo");
+  });
+});
+
+describe("password reset email delivery", () => {
+  it("sends a clean reset email with one APP_URL-based link and code", async () => {
+    let sent: unknown;
+    const createTransport: TransportFactory = () => ({
+      sendMail: async (message) => {
+        sent = message;
+        return {};
+      },
+    });
+
+    const delivery = await sendPasswordResetEmail(
+      passwordResetEmail,
+      {
+        NODE_ENV: "production",
+        SMTP_HOST: "smtp-relay.brevo.com",
+        SMTP_PORT: "587",
+        SMTP_FROM: "Nerfed Demonlist <noreply@nerfeddemonlist.net>",
+        SMTP_SECURE: "false",
+      },
+      {
+        createTransport,
+      },
+    );
+
+    expect(delivery).toBe("smtp");
+    expect(sent).toMatchObject({
+      from: "Nerfed Demonlist <noreply@nerfeddemonlist.net>",
+      to: "player@example.com",
+      subject: "Reset your Nerfed Demonlist password",
+    });
+
+    const message = sent as {
+      text: string;
+      html: string;
+    };
+
+    expect(message.text).toContain(passwordResetEmail.resetUrl);
+    expect(message.text).toContain(passwordResetEmail.code);
+    expect(message.text).toContain("If you did not request this");
+    expect(message.html).toContain("Reset password");
+    expect(message.html).toContain(passwordResetEmail.code);
+    expect(message.html.match(/https:\/\/ndl\.example/g)).toHaveLength(1);
+  });
+
+  it("logs reset link and code in development when SMTP is absent", async () => {
+    const logger = {
+      log: vi.fn(),
+    };
+
+    const delivery = await sendPasswordResetEmail(
+      passwordResetEmail,
+      {
+        NODE_ENV: "development",
+      },
+      {
+        logger,
+      },
+    );
+
+    expect(delivery).toBe("console");
+    expect(logger.log).toHaveBeenCalledWith("NDL password reset link:");
+    expect(logger.log).toHaveBeenCalledWith(passwordResetEmail.resetUrl);
+    expect(logger.log).toHaveBeenCalledWith(
+      `NDL password reset code: ${passwordResetEmail.code}`,
+    );
   });
 });

@@ -52,6 +52,7 @@ const checkboxBoolean = z.preprocess(
     value === "1",
   z.boolean(),
 );
+const passwordSchema = z.string().min(10).max(128);
 
 export const loginSchema = z.object({
   email: z.email().trim().toLowerCase(),
@@ -67,7 +68,7 @@ export const registerSchema = z
       .min(2)
       .max(32)
       .regex(/^[a-zA-Z0-9_-]+$/, "Use letters, numbers, underscores, or dashes."),
-    password: z.string().min(10).max(128),
+    password: passwordSchema,
     confirmPassword: z
       .string({ error: "Confirm password is required." })
       .min(1, "Confirm password is required.")
@@ -232,6 +233,31 @@ export const verifyEmailCodeSchema = z.object({
 export const resendVerificationSchema = z.object({
   email: z.email().trim().toLowerCase(),
 });
+
+export const requestPasswordResetSchema = z.object({
+  email: z.email().trim().toLowerCase(),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    email: z.email().trim().toLowerCase(),
+    token: z.preprocess(emptyToUndefined, z.string().trim().optional()),
+    code: z.string().trim().regex(/^\d{6}$/, "Enter the six digit reset code."),
+    password: passwordSchema,
+    confirmPassword: z
+      .string({ error: "Confirm password is required." })
+      .min(1, "Confirm password is required.")
+      .max(128),
+  })
+  .superRefine((value, context) => {
+    if (value.password !== value.confirmPassword) {
+      context.addIssue({
+        code: "custom",
+        path: ["confirmPassword"],
+        message: "Passwords do not match.",
+      });
+    }
+  });
 
 export function formDataToObject(formData: FormData) {
   return Object.fromEntries(formData.entries());

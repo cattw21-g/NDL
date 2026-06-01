@@ -1,4 +1,3 @@
-import { compare, hash } from "bcryptjs";
 import { randomBytes, createHmac } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -6,19 +5,12 @@ import { redirect } from "next/navigation";
 import { Role } from "@/generated/prisma/enums";
 import { isVerifiedAccount } from "@/lib/account-state";
 import { prisma } from "@/lib/db";
+import { hashPassword, verifyPassword } from "@/lib/password-hashing";
 import { isAdminRole, isModeratorRole } from "@/lib/permissions";
 import { requireSessionSecret, type EnvMap } from "@/lib/production-env";
 
 const SESSION_DAYS = 30;
 const SESSION_COOKIE = process.env.SESSION_COOKIE_NAME ?? "ndl_session";
-
-export async function hashPassword(password: string) {
-  return hash(password, 12);
-}
-
-export async function verifyPassword(password: string, passwordHash: string) {
-  return compare(password, passwordHash);
-}
 
 export function hashSessionToken(token: string, env: EnvMap = process.env) {
   return createHmac("sha256", requireSessionSecret(env))
@@ -151,4 +143,4 @@ export async function requireAdmin() {
   return user;
 }
 
-export { Role };
+export { hashPassword, Role, verifyPassword };
