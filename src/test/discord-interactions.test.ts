@@ -4,7 +4,11 @@ import path from "node:path";
 import nacl from "tweetnacl";
 import { describe, expect, it, vi } from "vitest";
 
-import { POST } from "@/app/api/discord/interactions/route";
+import {
+  GET as GET_INTERACTIONS_HEALTH,
+  POST,
+} from "@/app/api/discord/interactions/route";
+import { GET as GET_NESTED_HEALTH } from "@/app/api/discord/interactions/health/route";
 import type { ApiLevel, ApiPlayer, ApiRecord } from "@/lib/api-serializers";
 import {
   DiscordInteractionResponseType,
@@ -19,6 +23,67 @@ import {
 } from "@/lib/discord-interactions";
 
 describe("Discord HTTP interactions", () => {
+  it("GET health routes return safe deployment diagnostics", async () => {
+    const originalEnv = {
+      DISCORD_PUBLIC_KEY: process.env.DISCORD_PUBLIC_KEY,
+      BOT_API_SECRET: process.env.BOT_API_SECRET,
+      DISCORD_BOT_TOKEN: process.env.DISCORD_BOT_TOKEN,
+      DATABASE_URL: process.env.DATABASE_URL,
+    };
+    process.env.DISCORD_PUBLIC_KEY = "public-key-value-that-must-not-leak";
+    process.env.BOT_API_SECRET = "bot-secret-that-must-not-leak";
+    process.env.DISCORD_BOT_TOKEN = "discord-token-that-must-not-leak";
+    process.env.DATABASE_URL = "postgres://secret-that-must-not-leak";
+
+    try {
+      for (const response of [
+        GET_INTERACTIONS_HEALTH(),
+        GET_NESTED_HEALTH(),
+      ]) {
+        expect(response.status).toBe(200);
+        expect(response.headers.get("content-type")).toContain(
+          "application/json",
+        );
+
+        const body = await response.json();
+        expect(body).toMatchObject({
+          ok: true,
+          route: "/api/discord/interactions",
+          hasPublicKey: true,
+        });
+        expect(typeof body.timestamp).toBe("string");
+        expect(Number.isNaN(Date.parse(body.timestamp))).toBe(false);
+
+        const serialized = JSON.stringify(body);
+        expect(serialized).not.toContain("public-key-value-that-must-not-leak");
+        expect(serialized).not.toContain("bot-secret-that-must-not-leak");
+        expect(serialized).not.toContain("discord-token-that-must-not-leak");
+        expect(serialized).not.toContain("postgres://secret-that-must-not-leak");
+        expect(serialized).not.toContain("DISCORD_PUBLIC_KEY");
+        expect(serialized).not.toContain("BOT_API_SECRET");
+        expect(serialized).not.toContain("DISCORD_BOT_TOKEN");
+        expect(serialized).not.toContain("DATABASE_URL");
+      }
+    } finally {
+      restoreEnv(originalEnv);
+    }
+  });
+
+  it("GET health reports missing public key as false", async () => {
+    const originalPublicKey = process.env.DISCORD_PUBLIC_KEY;
+    delete process.env.DISCORD_PUBLIC_KEY;
+
+    try {
+      await expect(GET_INTERACTIONS_HEALTH().json()).resolves.toMatchObject({
+        ok: true,
+        route: "/api/discord/interactions",
+        hasPublicKey: false,
+      });
+    } finally {
+      process.env.DISCORD_PUBLIC_KEY = originalPublicKey;
+    }
+  });
+
   it("verifies valid Ed25519 signatures and rejects invalid signatures", () => {
     const keyPair = nacl.sign.keyPair();
     const body = JSON.stringify({ type: 1 });

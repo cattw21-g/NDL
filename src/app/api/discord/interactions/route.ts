@@ -9,6 +9,10 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+export function GET() {
+  return discordInteractionsHealthResponse();
+}
+
 export async function POST(request: Request) {
   logDiscordInteraction("route hit");
   const body = await request.text();
@@ -90,6 +94,15 @@ function invalidSignatureResponse() {
     },
     { status: 401 },
   );
+}
+
+export function discordInteractionsHealthResponse() {
+  return NextResponse.json({
+    ok: true,
+    route: "/api/discord/interactions",
+    hasPublicKey: Boolean(process.env.DISCORD_PUBLIC_KEY?.trim()),
+    timestamp: new Date().toISOString(),
+  });
 }
 
 function logDiscordInteraction(
