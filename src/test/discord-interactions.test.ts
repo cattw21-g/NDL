@@ -93,6 +93,59 @@ describe("Discord HTTP interactions", () => {
     }
   });
 
+  it("logs safe diagnostics for signed PING without leaking headers or payload", async () => {
+    const keyPair = nacl.sign.keyPair();
+    const body = JSON.stringify({ type: 1 });
+    const timestamp = "1700000000";
+    const signature = toHex(
+      nacl.sign.detached(
+        new TextEncoder().encode(`${timestamp}${body}`),
+        keyPair.secretKey,
+      ),
+    );
+    const originalPublicKey = process.env.DISCORD_PUBLIC_KEY;
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    process.env.DISCORD_PUBLIC_KEY = toHex(keyPair.publicKey);
+
+    try {
+      const response = await POST(
+        new Request("https://ndl.test/api/discord/interactions", {
+          method: "POST",
+          body,
+          headers: {
+            "X-Signature-Ed25519": signature,
+            "X-Signature-Timestamp": timestamp,
+          },
+        }),
+      );
+
+      expect(response.status).toBe(200);
+
+      const logText = consoleLog.mock.calls
+        .map((call) => JSON.stringify(call))
+        .join("\n");
+
+      expect(logText).toContain("[discord-interactions]");
+      expect(logText).toContain("route hit");
+      expect(logText).toContain("hasSignature");
+      expect(logText).toContain("hasTimestamp");
+      expect(logText).toContain("hasPublicKey");
+      expect(logText).toContain("bodyLength");
+      expect(logText).toContain("verified");
+      expect(logText).toContain("payloadType");
+      expect(logText).toContain("isPing");
+      expect(logText).toContain("PING received");
+      expect(logText).toContain("PING returning PONG");
+      expect(logText).not.toContain(signature);
+      expect(logText).not.toContain(timestamp);
+      expect(logText).not.toContain(toHex(keyPair.publicKey));
+      expect(logText).not.toContain(body);
+    } finally {
+      process.env.DISCORD_PUBLIC_KEY = originalPublicKey;
+      consoleLog.mockRestore();
+    }
+  });
+
   it("signed PING does not require database, bot, or staff secrets", async () => {
     const keyPair = nacl.sign.keyPair();
     const body = JSON.stringify({ type: 1 });
@@ -330,6 +383,22 @@ describe("Discord HTTP interactions", () => {
     );
     expect(docs).toContain(discordInteractionEndpointUrl);
     expect(docs).toContain("Vercel-hosted HTTP Interactions");
+  });
+
+  it("has no middleware or proxy that can block the Discord interactions route", () => {
+    const repoRoot = process.cwd();
+    const blockingFiles = [
+      "middleware.ts",
+      "middleware.js",
+      "proxy.ts",
+      "proxy.js",
+      "src/middleware.ts",
+      "src/middleware.js",
+      "src/proxy.ts",
+      "src/proxy.js",
+    ].filter((fileName) => fs.existsSync(path.join(repoRoot, fileName)));
+
+    expect(blockingFiles).toEqual([]);
   });
 });
 
