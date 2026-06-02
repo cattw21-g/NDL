@@ -1,68 +1,60 @@
 # NDL Discord Bot
 
-The NDL Discord bot is a separate TypeScript package in `bot/`. It reads NDL through JSON APIs only:
+NDL supports Discord slash commands through Vercel-hosted HTTP Interactions. This is the recommended production mode because it does not need Railway, local hosting, or an always-running WebSocket/Gateway worker.
 
-- Public commands call `/api/public/...`.
-- Staff commands call `/api/bot/staff/...` with `Authorization: Bearer <BOT_API_SECRET>`.
-- The bot must not scrape HTML pages or connect directly to Neon/Postgres.
+The Interactions Endpoint URL is:
 
-## Discord Application Setup
+```text
+https://nerfeddemonlist.net/api/discord/interactions
+```
 
-1. Open the Discord Developer Portal and create an application.
-2. Add a bot user and copy the bot token into `DISCORD_BOT_TOKEN`.
-3. Copy the application ID into `DISCORD_CLIENT_ID`.
-4. Under Bot settings, keep the default `Guilds` intent. NDL does not need privileged message-content intents.
-5. Invite the bot with the `bot` and `applications.commands` scopes. Grant only the channel permissions it needs to send slash-command replies.
+The endpoint reads NDL data through the same public/staff-safe data paths as the JSON APIs. It must not scrape HTML pages and must not connect to a separate database outside the NDL app.
 
-For local development, set `DISCORD_GUILD_ID` to a test server ID so slash commands register instantly for that guild. Leave it blank for global production command registration.
+## Vercel HTTP Interactions Setup
 
-## Environment Variables
+1. Open the Discord Developer Portal and select the NDL application.
+2. Go to **General Information** and copy the **Public Key** into Vercel as `DISCORD_PUBLIC_KEY`.
+3. Copy the Application ID into Vercel as `DISCORD_APPLICATION_ID`.
+4. Set the Interactions Endpoint URL to `https://nerfeddemonlist.net/api/discord/interactions`.
+5. Add `NEXT_PUBLIC_SITE_URL=https://nerfeddemonlist.net` or `APP_URL=https://nerfeddemonlist.net`.
+6. Optionally set `DISCORD_STAFF_ROLE_ID` to the Discord role allowed to use staff commands.
+7. Redeploy Vercel after changing env vars.
 
-Copy `bot/.env.example` to `bot/.env` for local development:
+Discord validates the endpoint by sending a signed PING interaction. The NDL route verifies `X-Signature-Ed25519` and `X-Signature-Timestamp`, then returns PONG.
+
+## Command Registration
+
+Slash commands are registered with Discord's REST API. This is a one-off maintenance step, not a 24/7 process.
+
+Required local or one-off env vars:
 
 ```text
 DISCORD_BOT_TOKEN=""
-DISCORD_CLIENT_ID=""
+DISCORD_APPLICATION_ID=""
 DISCORD_GUILD_ID=""
-NDL_PUBLIC_API_BASE="https://nerfeddemonlist.net"
-NDL_BOT_API_SECRET=""
-DISCORD_STAFF_ROLE_ID=""
 ```
 
-`NDL_BOT_API_SECRET` is the bot-side copy of the website `BOT_API_SECRET`. Store it only in the bot host secret manager. Do not put it in client code, browser-visible variables, screenshots, or Discord replies.
+`DISCORD_GUILD_ID` is optional. Set it for fast test-guild registration; leave it blank for global production commands.
 
-## Local Commands
-
-From the repo root:
+Run from the repo root:
 
 ```powershell
-npm.cmd run bot:register
-npm.cmd run bot:dev
-npm.cmd run bot:build
+npm.cmd run discord:register
 ```
 
-From the `bot/` folder:
-
-```powershell
-npm.cmd run register-commands
-npm.cmd run dev
-npm.cmd run build
-npm.cmd run start
-```
-
-Run `register-commands` after changing slash command names, options, or descriptions.
+`DISCORD_BOT_TOKEN` is only needed for this command registration step. It is not required by the Vercel Interactions endpoint and must not be exposed to client code.
 
 ## Public Slash Commands
 
-- `/top count` shows top ranked levels from `/api/public/levels`.
-- `/level query` searches public levels from `/api/public/search`.
-- `/player handle` shows a public player summary from `/api/public/players/[handle]`.
-- `/records handle` shows accepted public records from `/api/public/players/[handle]/records`.
-- `/recent` shows recent accepted public records from `/api/public/recent-records`.
-- `/search query` groups public level and player results from `/api/public/search`.
-- `/rules` links to the rules page and summarizes `/api/public/rules`.
+- `/top count` shows top ranked levels.
+- `/level query` searches public levels.
+- `/player handle` shows a public player summary.
+- `/records handle` shows accepted public records.
+- `/recent` shows recent accepted records.
+- `/search query` groups public level and player results.
+- `/rules` links to and summarizes the NDL rules.
 
-Public commands are safe for public Discord channels because the API omits pending submissions, rejected submissions, staff notes, private raw footage links, emails, tokens, password hashes, sessions, and environment values.
+Public commands only expose accepted/published public data. They must not display emails, password hashes, sessions, reset or verification tokens, private raw footage links, staff notes, admin notes, or environment secrets.
 
 ## Staff Slash Commands
 
@@ -73,39 +65,32 @@ Public commands are safe for public Discord channels because the API omits pendi
 - `/audit query`
 - `/stats`
 
-Staff commands require both:
-
-1. `DISCORD_STAFF_ROLE_ID` matching one of the caller's Discord roles.
-2. `NDL_BOT_API_SECRET` configured on the bot host.
-
-If a user lacks the staff role, the bot replies ephemerally:
+Staff commands require `DISCORD_STAFF_ROLE_ID` and a guild interaction payload containing that role ID in `member.roles`. If the role is missing or role data is unavailable, NDL replies ephemerally:
 
 ```text
 You do not have permission to use this command.
 ```
 
-Staff replies are ephemeral by default. Do not post proof links, raw footage links, moderator notes, queue details, audit entries, or other private moderation context in public channels.
+Staff responses are ephemeral by default. Use ephemeral replies for staff commands, and do not post proof links, raw footage links, moderator notes, queue details, or audit details in public Discord channels.
 
-## Deployment Options
+## HTTP Mode vs Gateway Mode
 
-The bot can run anywhere that supports a long-running Node 20 process, such as a VPS, Railway, Fly.io, Render background worker, or another Discord-bot-friendly host. Vercel serverless functions are not a good fit for the bot process because Discord gateway clients need a persistent connection.
+Vercel HTTP Interactions:
 
-Deployment checklist:
+- Runs 24/7 for free on the existing Vercel deployment.
+- Does not maintain online presence.
+- Cannot listen to ordinary channel messages.
+- Cannot run background jobs.
+- Works well for slash commands that can answer quickly.
 
-- Build with `npm.cmd --prefix bot run build`.
-- Start with `npm.cmd --prefix bot run start`.
-- Store bot env vars in the bot host secret manager.
-- Register commands after deployment or from a trusted local machine.
-- Keep `NDL_PUBLIC_API_BASE=https://nerfeddemonlist.net` for production.
-- Keep `NDL_BOT_API_SECRET` synchronized with the website `BOT_API_SECRET`.
+The existing `bot/` package remains as an optional legacy Gateway bot for future paid/long-running hosting. It is not required for production slash commands on Vercel.
 
-## Safety Rules
+## Protected Staff JSON API
 
-- Never expose `BOT_API_SECRET` or `NDL_BOT_API_SECRET` in Discord.
-- Never connect the bot directly to Neon/Postgres.
-- Never scrape NDL HTML pages.
-- Use public endpoints for public commands and staff endpoints only after Discord role checks.
-- Use ephemeral replies for all staff command output.
-- Avoid displaying user emails, password hashes, session data, verification tokens, reset tokens, SMTP secrets, `DATABASE_URL`, or raw environment variables.
-- Treat raw footage and proof image links as staff-only moderation data.
-- Respect API rate-limit errors and back off before retrying.
+NDL still exposes `/api/bot/staff/...` for future server-side bot clients. Those endpoints require:
+
+```text
+Authorization: Bearer <BOT_API_SECRET>
+```
+
+Keep `BOT_API_SECRET` only in Vercel/server environments and trusted bot hosts. Do not expose it in browsers or public Discord replies.

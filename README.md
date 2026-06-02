@@ -41,13 +41,15 @@ Copy `.env.example` to `.env` for local development.
 | `NEXT_PUBLIC_SITE_URL` | Recommended | `http://localhost:3000` | Canonical public URL, for metadata and social sharing |
 | `SESSION_COOKIE_NAME` | Optional | `ndl_session` | A stable cookie name, usually `ndl_session` |
 | `SESSION_SECRET` | Production required | Optional dev fallback | Strong random secret of at least 32 characters |
-| `BOT_API_SECRET` | Optional bot API | Empty disables staff bot API | Strong server-only bearer token for Discord bot staff endpoints |
-| `DISCORD_BOT_TOKEN` | Discord bot | Required for bot package | Bot token from the Discord Developer Portal |
-| `DISCORD_CLIENT_ID` | Discord bot | Required for bot package | Discord application/client ID |
-| `DISCORD_GUILD_ID` | Discord bot | Optional | Guild ID for faster local slash-command registration |
-| `NDL_PUBLIC_API_BASE` | Discord bot | `https://nerfeddemonlist.net` | Public NDL API base URL used by the bot |
-| `NDL_BOT_API_SECRET` | Discord bot | Optional | Bot-side copy of `BOT_API_SECRET` for staff commands |
-| `DISCORD_STAFF_ROLE_ID` | Discord bot | Optional | Discord role ID allowed to use staff commands |
+| `BOT_API_SECRET` | Optional bot API | Empty disables staff bot API | Strong server-only bearer token for protected `/api/bot/staff` endpoints |
+| `DISCORD_PUBLIC_KEY` | Discord HTTP interactions | Required for Vercel slash commands | Public key from Discord Developer Portal |
+| `DISCORD_APPLICATION_ID` | Discord HTTP interactions | Required for command registration | Discord application/client ID |
+| `DISCORD_BOT_TOKEN` | Discord command registration | One-off only | Bot token used by `npm.cmd run discord:register`; not needed for Vercel request handling |
+| `DISCORD_GUILD_ID` | Discord command registration | Optional | Guild ID for faster test command registration |
+| `DISCORD_STAFF_ROLE_ID` | Discord staff commands | Optional | Discord role ID allowed to use staff commands |
+| `DISCORD_CLIENT_ID` | Legacy Gateway bot | Optional alias | Backward-compatible application ID for `bot/` |
+| `NDL_PUBLIC_API_BASE` | Legacy Gateway bot | `https://nerfeddemonlist.net` | Public NDL API base URL used by the optional `bot/` package |
+| `NDL_BOT_API_SECRET` | Legacy Gateway bot | Optional | Bot-side copy of `BOT_API_SECRET` for legacy staff commands |
 | `UPLOAD_MODE` | Optional | `local` for local uploads, `disabled` to hide uploads | `disabled` unless self-hosting persistent storage |
 | `ALLOW_LOCAL_UPLOADS_IN_PRODUCTION` | Optional | `false` | `false` on Vercel; `true` only for intentional self-hosted local storage |
 | `MAX_IMAGE_UPLOAD_MB` | Optional | `5` | Maximum local PNG/JPG/WebP upload size |
@@ -81,7 +83,19 @@ NDL exposes read-only JSON routes under `/api/public/...` for public bot command
 
 Do not expose `BOT_API_SECRET` to browsers, client components, or public Discord messages. Staff bot responses may contain moderation proof links and staff notes, so the bot should use ephemeral replies where appropriate. See [docs/discord-bot.md](docs/discord-bot.md).
 
-The Discord bot package lives in `bot/`. It must call the NDL API and must not scrape HTML pages or connect directly to Neon/Postgres.
+Production slash commands should use Vercel HTTP Interactions at `/api/discord/interactions`. In Discord Developer Portal, set the Interactions Endpoint URL to:
+
+```text
+https://nerfeddemonlist.net/api/discord/interactions
+```
+
+Register commands with:
+
+```powershell
+npm.cmd run discord:register
+```
+
+`DISCORD_BOT_TOKEN` is only needed for that one-off registration command, not for the Vercel endpoint. The optional legacy Gateway bot package remains in `bot/`; it must call the NDL API and must not scrape HTML pages or connect directly to Neon/Postgres.
 
 ```powershell
 npm.cmd run bot:register

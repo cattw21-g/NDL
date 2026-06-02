@@ -64,8 +64,8 @@ describe("Discord bot package guardrails", () => {
       "utf8",
     );
 
-    expect(docs).toContain("Discord Application Setup");
-    expect(docs).toContain("register-commands");
+    expect(docs).toContain("Vercel HTTP Interactions Setup");
+    expect(docs).toContain("discord:register");
     expect(docs).toContain("ephemeral");
     expect(docs).toContain("must not scrape HTML");
     expect(envExample).toContain("DISCORD_BOT_TOKEN");

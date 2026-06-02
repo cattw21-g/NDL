@@ -54,13 +54,14 @@ Required production variables:
 | `APP_URL` | Canonical app URL used in email verification links, such as `https://ndl.example.com`. |
 | `NEXT_PUBLIC_SITE_URL` | Canonical public URL for metadata and social previews. Usually the same as `APP_URL`. |
 | `SESSION_SECRET` | Strong random secret, at least 32 characters. |
-| `BOT_API_SECRET` | Optional strong server-only bearer token for Discord bot staff API routes. |
-| `DISCORD_BOT_TOKEN` | Discord bot token for the separate `bot/` package. Do not set as a public/browser variable. |
-| `DISCORD_CLIENT_ID` | Discord application/client ID for slash-command registration. |
-| `DISCORD_GUILD_ID` | Optional guild ID for fast development command registration. |
-| `NDL_PUBLIC_API_BASE` | Public API base URL for the bot, usually `https://nerfeddemonlist.net`. |
-| `NDL_BOT_API_SECRET` | Bot-host copy of `BOT_API_SECRET`; required for staff bot commands. |
-| `DISCORD_STAFF_ROLE_ID` | Discord role ID allowed to use staff bot commands. |
+| `BOT_API_SECRET` | Optional strong server-only bearer token for protected `/api/bot/staff` routes. |
+| `DISCORD_PUBLIC_KEY` | Required for Vercel HTTP slash commands; copy from Discord Developer Portal General Information. |
+| `DISCORD_APPLICATION_ID` | Required for command registration; Discord application/client ID. |
+| `DISCORD_BOT_TOKEN` | One-off command registration token only; do not expose as a public/browser variable. |
+| `DISCORD_GUILD_ID` | Optional guild ID for fast test command registration. |
+| `DISCORD_STAFF_ROLE_ID` | Optional Discord role ID allowed to use staff commands. |
+| `NDL_PUBLIC_API_BASE` | Legacy Gateway bot API base URL, usually `https://nerfeddemonlist.net`. |
+| `NDL_BOT_API_SECRET` | Legacy Gateway bot copy of `BOT_API_SECRET`; required only for legacy staff commands. |
 | `UPLOAD_MODE` | Use `disabled` for Vercel production. |
 | `BLOB_READ_WRITE_TOKEN` | Optional Vercel Blob token for production admin thumbnail uploads. |
 | `MAX_IMAGE_UPLOAD_MB` | Optional thumbnail image upload limit, default `5`. |
@@ -80,9 +81,9 @@ $bytes = New-Object byte[] 48
 
 Do not set `ENABLE_DEMO_SEED=true` in production.
 
-If using a Discord bot, set `BOT_API_SECRET` only in Vercel/server environments and in the bot host. The token is for server-to-server calls to `/api/bot/staff/...`; never expose it in browser code or public Discord replies. Public bot commands can use `/api/public/...` without a secret.
+For Discord slash commands on Vercel, set `DISCORD_PUBLIC_KEY`, `DISCORD_APPLICATION_ID`, and `NEXT_PUBLIC_SITE_URL` or `APP_URL`. In the Discord Developer Portal, set the Interactions Endpoint URL to `https://nerfeddemonlist.net/api/discord/interactions`. Run `npm.cmd run discord:register` once with `DISCORD_BOT_TOKEN` in a trusted local or one-off environment; the Vercel route does not require `DISCORD_BOT_TOKEN`.
 
-The bot itself runs as a separate long-lived Node 20 process from `bot/`; do not deploy it as a Vercel serverless route. Configure the bot host with `DISCORD_BOT_TOKEN`, `DISCORD_CLIENT_ID`, `NDL_PUBLIC_API_BASE`, and, for staff commands, `NDL_BOT_API_SECRET` plus `DISCORD_STAFF_ROLE_ID`. See `docs/discord-bot.md`.
+If using the protected staff JSON API or optional legacy Gateway bot, set `BOT_API_SECRET` only in Vercel/server environments and trusted bot hosts. Never expose it in browser code or public Discord replies. See `docs/discord-bot.md`.
 
 ## 4. First Admin
 
