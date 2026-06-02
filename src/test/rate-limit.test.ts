@@ -164,4 +164,36 @@ describe("rate limiting", () => {
 
     expect(result.allowed).toBe(false);
   });
+
+  it("rate-limits public and staff API buckets separately", async () => {
+    const publicAttempts = Array.from({ length: 60 }, () => ({
+      action: "public-api",
+      key: "ip:127.0.0.1",
+      occurredAt: new Date("2026-05-31T00:00:00.000Z"),
+    }));
+    const staffAttempts = Array.from({ length: 120 }, () => ({
+      action: "bot-staff-api",
+      key: "ip:127.0.0.1",
+      occurredAt: new Date("2026-05-31T00:00:00.000Z"),
+    }));
+    const publicResult = await checkRateLimit(
+      createClient(publicAttempts),
+      "public-api",
+      "ip:127.0.0.1",
+      new Date("2026-05-31T00:00:30.000Z"),
+    );
+    const staffResult = await checkRateLimit(
+      createClient(staffAttempts),
+      "bot-staff-api",
+      "ip:127.0.0.1",
+      new Date("2026-05-31T00:00:30.000Z"),
+    );
+
+    expect(publicResult.allowed).toBe(false);
+    expect(staffResult.allowed).toBe(false);
+    if (!publicResult.allowed && !staffResult.allowed) {
+      expect(publicResult.message).toContain("API requests");
+      expect(staffResult.message).toContain("bot API requests");
+    }
+  });
 });

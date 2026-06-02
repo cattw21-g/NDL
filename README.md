@@ -41,6 +41,13 @@ Copy `.env.example` to `.env` for local development.
 | `NEXT_PUBLIC_SITE_URL` | Recommended | `http://localhost:3000` | Canonical public URL, for metadata and social sharing |
 | `SESSION_COOKIE_NAME` | Optional | `ndl_session` | A stable cookie name, usually `ndl_session` |
 | `SESSION_SECRET` | Production required | Optional dev fallback | Strong random secret of at least 32 characters |
+| `BOT_API_SECRET` | Optional bot API | Empty disables staff bot API | Strong server-only bearer token for Discord bot staff endpoints |
+| `DISCORD_BOT_TOKEN` | Discord bot | Required for bot package | Bot token from the Discord Developer Portal |
+| `DISCORD_CLIENT_ID` | Discord bot | Required for bot package | Discord application/client ID |
+| `DISCORD_GUILD_ID` | Discord bot | Optional | Guild ID for faster local slash-command registration |
+| `NDL_PUBLIC_API_BASE` | Discord bot | `https://nerfeddemonlist.net` | Public NDL API base URL used by the bot |
+| `NDL_BOT_API_SECRET` | Discord bot | Optional | Bot-side copy of `BOT_API_SECRET` for staff commands |
+| `DISCORD_STAFF_ROLE_ID` | Discord bot | Optional | Discord role ID allowed to use staff commands |
 | `UPLOAD_MODE` | Optional | `local` for local uploads, `disabled` to hide uploads | `disabled` unless self-hosting persistent storage |
 | `ALLOW_LOCAL_UPLOADS_IN_PRODUCTION` | Optional | `false` | `false` on Vercel; `true` only for intentional self-hosted local storage |
 | `MAX_IMAGE_UPLOAD_MB` | Optional | `5` | Maximum local PNG/JPG/WebP upload size |
@@ -67,6 +74,20 @@ Copy `.env.example` to `.env` for local development.
 Do not commit real production secrets. `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_HANDLE` are used by `npm.cmd run db:seed` and `npm.cmd run admin:create` to create or update a verified admin account. `NDL_ADMIN_*` names remain supported for compatibility with older local instructions.
 
 New player registrations require email verification. In development, if SMTP is not configured, NDL prints the verification link and six digit code to the terminal. In production, configure SMTP before allowing registration.
+
+## API And Discord Bot Foundation
+
+NDL exposes read-only JSON routes under `/api/public/...` for public bot commands and protected staff JSON routes under `/api/bot/staff/...`. Public API responses include only accepted records, public levels/players, active rules, and published changelog posts. Staff bot routes require `Authorization: Bearer <BOT_API_SECRET>` and should be called only from a server-side Discord bot process after Discord role checks.
+
+Do not expose `BOT_API_SECRET` to browsers, client components, or public Discord messages. Staff bot responses may contain moderation proof links and staff notes, so the bot should use ephemeral replies where appropriate. See [docs/discord-bot.md](docs/discord-bot.md).
+
+The Discord bot package lives in `bot/`. It must call the NDL API and must not scrape HTML pages or connect directly to Neon/Postgres.
+
+```powershell
+npm.cmd run bot:register
+npm.cmd run bot:dev
+npm.cmd run bot:build
+```
 
 ## Media Uploads
 

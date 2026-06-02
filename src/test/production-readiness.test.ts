@@ -205,6 +205,79 @@ describe("production readiness guardrails", () => {
     );
   });
 
+  it("keeps Discord bot API routes JSON-only, filtered, and protected", () => {
+    const publicRoutes = [
+      "app/api/public/levels/route.ts",
+      "app/api/public/levels/[slug]/route.ts",
+      "app/api/public/players/route.ts",
+      "app/api/public/players/[handle]/route.ts",
+      "app/api/public/players/[handle]/records/route.ts",
+      "app/api/public/recent-records/route.ts",
+      "app/api/public/search/route.ts",
+      "app/api/public/rules/route.ts",
+      "app/api/public/changelog/route.ts",
+    ];
+    const staffRoutes = [
+      "app/api/bot/staff/pending-records/route.ts",
+      "app/api/bot/staff/pending-suggestions/route.ts",
+      "app/api/bot/staff/record-submissions/[id]/route.ts",
+      "app/api/bot/staff/level-suggestions/[id]/route.ts",
+      "app/api/bot/staff/audit/route.ts",
+      "app/api/bot/staff/stats/route.ts",
+    ];
+
+    for (const route of publicRoutes) {
+      const routeSource = source(route);
+
+      expect(routeSource).toContain("apiOk");
+      expect(routeSource).toContain('enforceApiRateLimit("public-api")');
+      expect(routeSource).not.toContain("requireBotApiSecret");
+      expect(routeSource).not.toContain("redirect(");
+    }
+
+    expect(source("app/api/public/levels/route.ts")).toContain(
+      "publicLevelWhere",
+    );
+    expect(source("app/api/public/levels/[slug]/route.ts")).toContain(
+      "publicRecordWhere",
+    );
+    expect(source("app/api/public/players/route.ts")).toContain(
+      "publicRecordWhere",
+    );
+    expect(source("app/api/public/players/[handle]/route.ts")).toContain(
+      "publicUserWhere",
+    );
+    expect(source("app/api/public/changelog/route.ts")).toContain(
+      "publicChangelogWhere",
+    );
+
+    for (const route of staffRoutes) {
+      const routeSource = source(route);
+
+      expect(routeSource).toContain("requireBotApiSecret");
+      expect(routeSource).toContain("apiOk");
+      expect(routeSource).not.toContain("process.env");
+      expect(routeSource).not.toContain("passwordHash");
+      expect(routeSource).not.toContain("tokenHash");
+      expect(routeSource).not.toContain("DATABASE_URL");
+    }
+
+    expect(source("lib/api-auth.ts")).toContain("BOT_API_SECRET");
+    expect(source("lib/api-auth.ts")).toContain("authorization");
+    expect(source("lib/api-auth.ts")).toContain("timingSafeEqual");
+    expect(source("lib/api-response.ts")).toContain("ok: true");
+    expect(source("lib/api-response.ts")).toContain("ok: false");
+    expect(source("lib/api-serializers.ts")).toContain(
+      "calculateCurrentLevelPoints",
+    );
+    expect(source("lib/api-serializers.ts")).not.toContain("passwordHash");
+    expect(source("lib/rate-limit.ts")).toContain('"public-api"');
+    expect(source("lib/rate-limit.ts")).toContain('"bot-staff-api"');
+    expect(rootSource(".env.example")).toContain("BOT_API_SECRET");
+    expect(rootSource("docs/discord-bot.md")).toContain("/pending-records");
+    expect(rootSource("docs/discord-bot.md")).toContain("ephemeral replies");
+  });
+
   it("keeps global SEO and social metadata configured", () => {
     const layout = source("app/layout.tsx");
 

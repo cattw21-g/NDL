@@ -54,6 +54,13 @@ Required production variables:
 | `APP_URL` | Canonical app URL used in email verification links, such as `https://ndl.example.com`. |
 | `NEXT_PUBLIC_SITE_URL` | Canonical public URL for metadata and social previews. Usually the same as `APP_URL`. |
 | `SESSION_SECRET` | Strong random secret, at least 32 characters. |
+| `BOT_API_SECRET` | Optional strong server-only bearer token for Discord bot staff API routes. |
+| `DISCORD_BOT_TOKEN` | Discord bot token for the separate `bot/` package. Do not set as a public/browser variable. |
+| `DISCORD_CLIENT_ID` | Discord application/client ID for slash-command registration. |
+| `DISCORD_GUILD_ID` | Optional guild ID for fast development command registration. |
+| `NDL_PUBLIC_API_BASE` | Public API base URL for the bot, usually `https://nerfeddemonlist.net`. |
+| `NDL_BOT_API_SECRET` | Bot-host copy of `BOT_API_SECRET`; required for staff bot commands. |
+| `DISCORD_STAFF_ROLE_ID` | Discord role ID allowed to use staff bot commands. |
 | `UPLOAD_MODE` | Use `disabled` for Vercel production. |
 | `BLOB_READ_WRITE_TOKEN` | Optional Vercel Blob token for production admin thumbnail uploads. |
 | `MAX_IMAGE_UPLOAD_MB` | Optional thumbnail image upload limit, default `5`. |
@@ -72,6 +79,10 @@ $bytes = New-Object byte[] 48
 ```
 
 Do not set `ENABLE_DEMO_SEED=true` in production.
+
+If using a Discord bot, set `BOT_API_SECRET` only in Vercel/server environments and in the bot host. The token is for server-to-server calls to `/api/bot/staff/...`; never expose it in browser code or public Discord replies. Public bot commands can use `/api/public/...` without a secret.
+
+The bot itself runs as a separate long-lived Node 20 process from `bot/`; do not deploy it as a Vercel serverless route. Configure the bot host with `DISCORD_BOT_TOKEN`, `DISCORD_CLIENT_ID`, `NDL_PUBLIC_API_BASE`, and, for staff commands, `NDL_BOT_API_SECRET` plus `DISCORD_STAFF_ROLE_ID`. See `docs/discord-bot.md`.
 
 ## 4. First Admin
 

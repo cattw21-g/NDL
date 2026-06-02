@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/bot/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -19,6 +20,7 @@
 
 # production
 /build
+/bot/dist
 
 # misc
 .DS_Store
@@ -32,6 +34,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!/bot/.env.example
 
 # vercel
 .vercel

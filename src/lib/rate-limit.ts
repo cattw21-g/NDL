@@ -13,7 +13,9 @@ export type RateLimitAction =
   | "password-reset-request"
   | "password-reset-attempt"
   | "record-submission"
-  | "level-suggestion";
+  | "level-suggestion"
+  | "public-api"
+  | "bot-staff-api";
 
 export type RateLimitDecision =
   | { allowed: true }
@@ -40,6 +42,16 @@ const rules: Record<
   "password-reset-attempt": { limit: 8, windowMs: 15 * 60 * 1000 },
   "record-submission": { limit: 8, windowMs: 60 * 60 * 1000 },
   "level-suggestion": { limit: 5, windowMs: 24 * 60 * 60 * 1000 },
+  "public-api": {
+    limit: 60,
+    windowMs: 60 * 1000,
+    message: "Too many API requests. Wait a bit and try again.",
+  },
+  "bot-staff-api": {
+    limit: 120,
+    windowMs: 60 * 1000,
+    message: "Too many bot API requests. Wait a bit and try again.",
+  },
 };
 
 export async function requestRateLimitKey(fallback = "anonymous") {
