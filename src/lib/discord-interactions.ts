@@ -229,12 +229,16 @@ export function verifyDiscordRequestSignature(input: {
   signature: string | null;
   publicKey: string | undefined;
 }) {
-  if (!input.timestamp || !input.signature || !input.publicKey) {
+  const timestamp = input.timestamp?.trim();
+  const signature = input.signature?.trim();
+  const publicKey = input.publicKey?.trim();
+
+  if (!timestamp || !signature || !publicKey) {
     return false;
   }
 
-  const signatureBytes = hexToBytes(input.signature);
-  const publicKeyBytes = hexToBytes(input.publicKey);
+  const signatureBytes = hexToBytes(signature);
+  const publicKeyBytes = hexToBytes(publicKey);
 
   if (
     !signatureBytes ||
@@ -245,8 +249,13 @@ export function verifyDiscordRequestSignature(input: {
     return false;
   }
 
-  const message = new TextEncoder().encode(`${input.timestamp}${input.body}`);
-  return nacl.sign.detached.verify(message, signatureBytes, publicKeyBytes);
+  const message = new TextEncoder().encode(`${timestamp}${input.body}`);
+
+  try {
+    return nacl.sign.detached.verify(message, signatureBytes, publicKeyBytes);
+  } catch {
+    return false;
+  }
 }
 
 export async function handleDiscordInteraction(

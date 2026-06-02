@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import nacl from "tweetnacl";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { POST } from "@/app/api/discord/interactions/route";
 import type { ApiLevel, ApiPlayer, ApiRecord } from "@/lib/api-serializers";
@@ -67,6 +67,10 @@ describe("Discord HTTP interactions", () => {
           },
         }),
       );
+      expect(validResponse.status).toBe(200);
+      expect(validResponse.headers.get("content-type")).toContain(
+        "application/json",
+      );
       await expect(validResponse.json()).resolves.toEqual({ type: 1 });
 
       const invalidResponse = await POST(
@@ -81,6 +85,120 @@ describe("Discord HTTP interactions", () => {
       );
 
       expect(invalidResponse.status).toBe(401);
+      expect(invalidResponse.headers.get("content-type")).toContain(
+        "application/json",
+      );
+    } finally {
+      process.env.DISCORD_PUBLIC_KEY = originalPublicKey;
+    }
+  });
+
+  it("signed PING does not require database, bot, or staff secrets", async () => {
+    const keyPair = nacl.sign.keyPair();
+    const body = JSON.stringify({ type: 1 });
+    const timestamp = "1700000000";
+    const signature = toHex(
+      nacl.sign.detached(
+        new TextEncoder().encode(`${timestamp}${body}`),
+        keyPair.secretKey,
+      ),
+    );
+    const originalEnv = {
+      DISCORD_PUBLIC_KEY: process.env.DISCORD_PUBLIC_KEY,
+      DATABASE_URL: process.env.DATABASE_URL,
+      BOT_API_SECRET: process.env.BOT_API_SECRET,
+      DISCORD_BOT_TOKEN: process.env.DISCORD_BOT_TOKEN,
+    };
+
+    process.env.DISCORD_PUBLIC_KEY = toHex(keyPair.publicKey);
+    delete process.env.DATABASE_URL;
+    delete process.env.BOT_API_SECRET;
+    delete process.env.DISCORD_BOT_TOKEN;
+
+    try {
+      const response = await POST(
+        new Request("https://ndl.test/api/discord/interactions", {
+          method: "POST",
+          body,
+          headers: {
+            "X-Signature-Ed25519": signature,
+            "X-Signature-Timestamp": timestamp,
+          },
+        }),
+      );
+
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual({ type: 1 });
+    } finally {
+      restoreEnv(originalEnv);
+    }
+  });
+
+  it("missing DISCORD_PUBLIC_KEY logs clearly and returns JSON 401", async () => {
+    const originalPublicKey = process.env.DISCORD_PUBLIC_KEY;
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    delete process.env.DISCORD_PUBLIC_KEY;
+
+    try {
+      const response = await POST(
+        new Request("https://ndl.test/api/discord/interactions", {
+          method: "POST",
+          body: JSON.stringify({ type: 1 }),
+          headers: {
+            "X-Signature-Ed25519": "00",
+            "X-Signature-Timestamp": "1700000000",
+          },
+        }),
+      );
+
+      expect(response.status).toBe(401);
+      expect(response.headers.get("content-type")).toContain(
+        "application/json",
+      );
+      expect(consoleError).toHaveBeenCalledWith(
+        "DISCORD_PUBLIC_KEY is required to verify Discord interactions.",
+      );
+    } finally {
+      process.env.DISCORD_PUBLIC_KEY = originalPublicKey;
+      consoleError.mockRestore();
+    }
+  });
+
+  it("malformed JSON after a valid signature returns a JSON error", async () => {
+    const keyPair = nacl.sign.keyPair();
+    const body = "{not-json";
+    const timestamp = "1700000000";
+    const signature = toHex(
+      nacl.sign.detached(
+        new TextEncoder().encode(`${timestamp}${body}`),
+        keyPair.secretKey,
+      ),
+    );
+    const originalPublicKey = process.env.DISCORD_PUBLIC_KEY;
+    process.env.DISCORD_PUBLIC_KEY = toHex(keyPair.publicKey);
+
+    try {
+      const response = await POST(
+        new Request("https://ndl.test/api/discord/interactions", {
+          method: "POST",
+          body,
+          headers: {
+            "X-Signature-Ed25519": signature,
+            "X-Signature-Timestamp": timestamp,
+          },
+        }),
+      );
+
+      expect(response.status).toBe(400);
+      expect(response.headers.get("content-type")).toContain(
+        "application/json",
+      );
+      await expect(response.json()).resolves.toMatchObject({
+        type: 4,
+        data: {
+          flags: 64,
+        },
+      });
     } finally {
       process.env.DISCORD_PUBLIC_KEY = originalPublicKey;
     }
@@ -206,6 +324,10 @@ describe("Discord HTTP interactions", () => {
     );
 
     expect(routeSource).not.toContain("DISCORD_BOT_TOKEN");
+    expect(routeSource.indexOf("request.text()")).toBeGreaterThan(-1);
+    expect(routeSource.indexOf("request.text()")).toBeLessThan(
+      routeSource.indexOf("JSON.parse"),
+    );
     expect(docs).toContain(discordInteractionEndpointUrl);
     expect(docs).toContain("Vercel-hosted HTTP Interactions");
   });
@@ -393,4 +515,14 @@ function toHex(bytes: Uint8Array) {
   return Array.from(bytes)
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
+}
+
+function restoreEnv(env: Record<string, string | undefined>) {
+  for (const [key, value] of Object.entries(env)) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
 }

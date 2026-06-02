@@ -13,15 +13,25 @@ export async function POST(request: Request) {
   const body = await request.text();
   const signature = request.headers.get("X-Signature-Ed25519");
   const timestamp = request.headers.get("X-Signature-Timestamp");
+  const publicKey = process.env.DISCORD_PUBLIC_KEY?.trim();
+
+  if (!publicKey) {
+    console.error(
+      "DISCORD_PUBLIC_KEY is required to verify Discord interactions.",
+    );
+
+    return invalidSignatureResponse();
+  }
+
   const isVerified = verifyDiscordRequestSignature({
     body,
     signature,
     timestamp,
-    publicKey: process.env.DISCORD_PUBLIC_KEY,
+    publicKey,
   });
 
   if (!isVerified) {
-    return new Response("invalid request signature", { status: 401 });
+    return invalidSignatureResponse();
   }
 
   let interaction: DiscordInteraction;
@@ -43,4 +53,13 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json(await handleDiscordInteraction(interaction));
+}
+
+function invalidSignatureResponse() {
+  return NextResponse.json(
+    {
+      error: "invalid request signature",
+    },
+    { status: 401 },
+  );
 }
