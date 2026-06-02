@@ -3,6 +3,7 @@ import {
   ExternalLink,
   Layers3,
   LinkIcon,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -22,7 +23,18 @@ import {
 import { requireModerator } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
-import { getModerationQueue } from "@/lib/moderation-queue";
+import {
+  countFilteredLevelSuggestions,
+  countFilteredRecordSubmissions,
+  getFilteredLevelSuggestions,
+  getFilteredRecordSubmissions,
+  moderationPageSize,
+  parseModerationFilters,
+  type LevelSuggestionListItem,
+  type ModerationFilters,
+  type ModerationSearchParams,
+  type RecordSubmissionListItem,
+} from "@/lib/moderation-queue";
 import { isAdminRole } from "@/lib/permissions";
 import { calculateCurrentLevelPoints } from "@/lib/points";
 
@@ -34,33 +46,22 @@ export default async function ModerationPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const moderator = await requireModerator();
+  const params = await searchParams;
+  const filters = parseModerationFilters(params);
   const [
-    params,
     recordSubmissions,
+    recordSubmissionCount,
     levelSuggestions,
+    levelSuggestionCount,
     recentAcceptedRecords,
     recentRejectedRecords,
     recentSuggestionDecisions,
     actions,
   ] = await Promise.all([
-    searchParams,
-    getModerationQueue(),
-    prisma.levelSuggestion.findMany({
-      where: {
-        status: {
-          in: ["PENDING", "NEEDS_CHANGES", "APPROVED"],
-        },
-        createdLevelId: null,
-      },
-      include: {
-        submitter: true,
-        reviewer: true,
-        createdLevel: true,
-      },
-      orderBy: {
-        submittedAt: "asc",
-      },
-    }),
+    getFilteredRecordSubmissions(filters.record),
+    countFilteredRecordSubmissions(filters.record),
+    getFilteredLevelSuggestions(filters.suggestion),
+    countFilteredLevelSuggestions(filters.suggestion),
     prisma.record.findMany({
       take: 5,
       include: {
@@ -110,6 +111,14 @@ export default async function ModerationPage({
     }),
   ]);
   const canConvertSuggestions = isAdminRole(moderator.role);
+  const recordPageCount = Math.max(
+    1,
+    Math.ceil(recordSubmissionCount / moderationPageSize),
+  );
+  const suggestionPageCount = Math.max(
+    1,
+    Math.ceil(levelSuggestionCount / moderationPageSize),
+  );
 
   return (
     <div className="space-y-5">
@@ -128,8 +137,8 @@ export default async function ModerationPage({
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <MetricQueue label="Record queue" pending={recordSubmissions.length} />
-          <MetricQueue label="Level suggestions" pending={levelSuggestions.length} />
+          <MetricQueue label="Record matches" pending={recordSubmissionCount} />
+          <MetricQueue label="Suggestion matches" pending={levelSuggestionCount} />
         </div>
       </section>
 
@@ -139,26 +148,35 @@ export default async function ModerationPage({
         <div className="space-y-6">
           <QueueBlock
             title="Record submissions"
-            description="Pending and needs-changes records awaiting a staff decision."
+            description={`${recordSubmissionCount} record submission${recordSubmissionCount === 1 ? "" : "s"} match the current filters.`}
           >
+            <RecordFilterForm filters={filters} />
             {recordSubmissions.length > 0 ? (
               <div className="space-y-4">
                 {recordSubmissions.map((submission) => (
                   <RecordReviewCard key={submission.id} submission={submission} />
                 ))}
+                <PaginationControls
+                  params={params}
+                  pageParam="recordPage"
+                  page={filters.record.page}
+                  pageCount={recordPageCount}
+                  total={recordSubmissionCount}
+                />
               </div>
             ) : (
               <EmptyState
-                title="No open record submissions"
-                description="Pending or needs-changes records will appear here."
+                title="No record submissions match these filters."
+                description="Adjust search, status, date, level, or player filters."
               />
             )}
           </QueueBlock>
 
           <QueueBlock
             title="Level suggestions"
-            description="Suggested nerfed levels awaiting approval, rejection, or changes."
+            description={`${levelSuggestionCount} level suggestion${levelSuggestionCount === 1 ? "" : "s"} match the current filters.`}
           >
+            <SuggestionFilterForm filters={filters} />
             {levelSuggestions.length > 0 ? (
               <div className="space-y-4">
                 {levelSuggestions.map((suggestion) => (
@@ -168,11 +186,18 @@ export default async function ModerationPage({
                     canConvert={canConvertSuggestions}
                   />
                 ))}
+                <PaginationControls
+                  params={params}
+                  pageParam="suggestionPage"
+                  page={filters.suggestion.page}
+                  pageCount={suggestionPageCount}
+                  total={levelSuggestionCount}
+                />
               </div>
             ) : (
               <EmptyState
-                title="No open level suggestions"
-                description="New level candidates will appear here after user submission."
+                title="No level suggestions match these filters."
+                description="Adjust search, status, date, name, original, or submitter filters."
               />
             )}
           </QueueBlock>
@@ -280,6 +305,312 @@ export default async function ModerationPage({
   );
 }
 
+function RecordFilterForm({ filters }: { filters: ModerationFilters }) {
+  return (
+    <SectionPanel className="p-3 shadow-none">
+      <form action="/moderation" className="grid gap-3" method="get">
+        <HiddenSuggestionFields filters={filters} />
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1.4fr)_11rem_1fr_1fr]">
+          <FieldLabel label="Search">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                name="q"
+                defaultValue={filters.q}
+                className={`${inputClass} w-full pl-9`}
+                placeholder="Player, level, URL, proof, notes"
+              />
+            </div>
+          </FieldLabel>
+          <FieldLabel label="Status">
+            <select
+              name="recordStatus"
+              defaultValue={filters.record.statusParam}
+              className={inputClass}
+            >
+              <option value="">Open queue</option>
+              <option value="PENDING">Pending</option>
+              <option value="NEEDS_CHANGES">Needs changes</option>
+              <option value="ACCEPTED">Accepted</option>
+              <option value="REJECTED">Rejected</option>
+            </select>
+          </FieldLabel>
+          <FieldLabel label="Level">
+            <input
+              name="recordLevel"
+              defaultValue={filters.record.level}
+              className={inputClass}
+              placeholder="Level name"
+            />
+          </FieldLabel>
+          <FieldLabel label="Player">
+            <input
+              name="recordPlayer"
+              defaultValue={filters.record.player}
+              className={inputClass}
+              placeholder="Player name"
+            />
+          </FieldLabel>
+        </div>
+        <div className="grid gap-3 md:grid-cols-[10rem_10rem_minmax(0,1fr)_auto] md:items-end">
+          <FieldLabel label="From">
+            <input
+              type="date"
+              name="recordFrom"
+              defaultValue={filters.record.fromParam}
+              className={inputClass}
+            />
+          </FieldLabel>
+          <FieldLabel label="To">
+            <input
+              type="date"
+              name="recordTo"
+              defaultValue={filters.record.toParam}
+              className={inputClass}
+            />
+          </FieldLabel>
+          <FieldLabel label="Sort">
+            <select
+              name="recordSort"
+              defaultValue={filters.record.sort}
+              className={inputClass}
+            >
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="rank-high">Highest ranked level first</option>
+              <option value="rank-low">Lowest ranked level first</option>
+            </select>
+          </FieldLabel>
+          <button
+            type="submit"
+            className="min-h-10 rounded-md border border-cyan-800 bg-cyan-800 px-4 text-sm font-black text-white transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+          >
+            Filter records
+          </button>
+        </div>
+      </form>
+    </SectionPanel>
+  );
+}
+
+function SuggestionFilterForm({ filters }: { filters: ModerationFilters }) {
+  return (
+    <SectionPanel className="p-3 shadow-none">
+      <form action="/moderation" className="grid gap-3" method="get">
+        <HiddenRecordFields filters={filters} />
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1.4fr)_11rem_1fr_1fr]">
+          <FieldLabel label="Search">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                name="q"
+                defaultValue={filters.q}
+                className={`${inputClass} w-full pl-9`}
+                placeholder="Level, GD ID, submitter, notes"
+              />
+            </div>
+          </FieldLabel>
+          <FieldLabel label="Status">
+            <select
+              name="suggestionStatus"
+              defaultValue={filters.suggestion.statusParam}
+              className={inputClass}
+            >
+              <option value="">Open suggestions</option>
+              <option value="PENDING">Pending</option>
+              <option value="APPROVED">Approved</option>
+              <option value="NEEDS_CHANGES">Needs changes</option>
+              <option value="REJECTED">Rejected</option>
+              <option value="CONVERTED">Converted</option>
+            </select>
+          </FieldLabel>
+          <FieldLabel label="Suggested level">
+            <input
+              name="suggestionName"
+              defaultValue={filters.suggestion.name}
+              className={inputClass}
+              placeholder="Suggested name"
+            />
+          </FieldLabel>
+          <FieldLabel label="Original level">
+            <input
+              name="suggestionOriginal"
+              defaultValue={filters.suggestion.original}
+              className={inputClass}
+              placeholder="Original name"
+            />
+          </FieldLabel>
+        </div>
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_10rem_10rem_minmax(0,1fr)_auto] md:items-end">
+          <FieldLabel label="Submitter">
+            <input
+              name="suggestionSubmitter"
+              defaultValue={filters.suggestion.submitter}
+              className={inputClass}
+              placeholder="Submitter"
+            />
+          </FieldLabel>
+          <FieldLabel label="From">
+            <input
+              type="date"
+              name="suggestionFrom"
+              defaultValue={filters.suggestion.fromParam}
+              className={inputClass}
+            />
+          </FieldLabel>
+          <FieldLabel label="To">
+            <input
+              type="date"
+              name="suggestionTo"
+              defaultValue={filters.suggestion.toParam}
+              className={inputClass}
+            />
+          </FieldLabel>
+          <FieldLabel label="Sort">
+            <select
+              name="suggestionSort"
+              defaultValue={filters.suggestion.sort}
+              className={inputClass}
+            >
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="approved">Approved first</option>
+              <option value="pending">Pending first</option>
+            </select>
+          </FieldLabel>
+          <button
+            type="submit"
+            className="min-h-10 rounded-md border border-cyan-800 bg-cyan-800 px-4 text-sm font-black text-white transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+          >
+            Filter suggestions
+          </button>
+        </div>
+      </form>
+    </SectionPanel>
+  );
+}
+
+function HiddenRecordFields({ filters }: { filters: ModerationFilters }) {
+  return (
+    <>
+      <HiddenField name="recordStatus" value={filters.record.statusParam} />
+      <HiddenField name="recordLevel" value={filters.record.level} />
+      <HiddenField name="recordPlayer" value={filters.record.player} />
+      <HiddenField name="recordFrom" value={filters.record.fromParam} />
+      <HiddenField name="recordTo" value={filters.record.toParam} />
+      <HiddenField name="recordSort" value={filters.record.sort} />
+      <HiddenField name="recordPage" value={String(filters.record.page)} />
+    </>
+  );
+}
+
+function HiddenSuggestionFields({ filters }: { filters: ModerationFilters }) {
+  return (
+    <>
+      <HiddenField
+        name="suggestionStatus"
+        value={filters.suggestion.statusParam}
+      />
+      <HiddenField name="suggestionName" value={filters.suggestion.name} />
+      <HiddenField
+        name="suggestionOriginal"
+        value={filters.suggestion.original}
+      />
+      <HiddenField
+        name="suggestionSubmitter"
+        value={filters.suggestion.submitter}
+      />
+      <HiddenField name="suggestionFrom" value={filters.suggestion.fromParam} />
+      <HiddenField name="suggestionTo" value={filters.suggestion.toParam} />
+      <HiddenField name="suggestionSort" value={filters.suggestion.sort} />
+      <HiddenField
+        name="suggestionPage"
+        value={String(filters.suggestion.page)}
+      />
+    </>
+  );
+}
+
+function HiddenField({ name, value }: { name: string; value: string }) {
+  if (!value || value === "1" || value === "newest") {
+    return null;
+  }
+
+  return <input type="hidden" name={name} value={value} />;
+}
+
+function PaginationControls({
+  params,
+  pageParam,
+  page,
+  pageCount,
+  total,
+}: {
+  params: ModerationSearchParams;
+  pageParam: "recordPage" | "suggestionPage";
+  page: number;
+  pageCount: number;
+  total: number;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-slate-300 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-900">
+      <p className="font-bold text-slate-600 dark:text-slate-300">
+        Page {page} of {pageCount} - {total} total
+      </p>
+      <div className="flex gap-2">
+        {page > 1 ? (
+          <Link
+            href={moderationPageHref(params, pageParam, page - 1)}
+            className="inline-flex min-h-9 items-center rounded-md border border-slate-300 bg-white px-3 font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950"
+          >
+            Previous
+          </Link>
+        ) : null}
+        {page < pageCount ? (
+          <Link
+            href={moderationPageHref(params, pageParam, page + 1)}
+            className="inline-flex min-h-9 items-center rounded-md border border-cyan-800 bg-cyan-800 px-3 font-black text-white transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+          >
+            Next
+          </Link>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function moderationPageHref(
+  params: ModerationSearchParams,
+  pageParam: "recordPage" | "suggestionPage",
+  page: number,
+) {
+  const search = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item) {
+          search.append(key, item);
+        }
+      }
+      continue;
+    }
+
+    if (value) {
+      search.set(key, value);
+    }
+  }
+
+  if (page <= 1) {
+    search.delete(pageParam);
+  } else {
+    search.set(pageParam, String(page));
+  }
+
+  const query = search.toString();
+  return query ? `/moderation?${query}` : "/moderation";
+}
+
 function MetricQueue({ label, pending }: { label: string; pending: number }) {
   return (
     <SectionPanel className="p-4 shadow-none">
@@ -320,8 +651,11 @@ function QueueBlock({
 function RecordReviewCard({
   submission,
 }: {
-  submission: Awaited<ReturnType<typeof getModerationQueue>>[number];
+  submission: RecordSubmissionListItem;
 }) {
+  const canReview =
+    submission.status === "PENDING" || submission.status === "NEEDS_CHANGES";
+
   return (
     <SectionPanel className="overflow-hidden">
       <div className="border-b border-slate-300 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-950/60">
@@ -378,30 +712,40 @@ function RecordReviewCard({
         ) : null}
       </div>
 
-      <form
-        action={reviewSubmissionAction}
-        className="grid gap-3 border-t border-slate-300 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-950/60"
-      >
-        <input type="hidden" name="submissionId" value={submission.id} />
-        <div className="grid gap-3 md:grid-cols-[14rem_1fr]">
-          <FieldLabel label="Decision">
-            <select name="status" required className={inputClass}>
-              <option value="ACCEPTED">Accept</option>
-              <option value="REJECTED">Reject</option>
-              <option value="NEEDS_CHANGES">Needs changes</option>
-            </select>
-          </FieldLabel>
-          <FieldLabel label="Moderator notes">
-            <input
-              name="moderatorNotes"
-              required
-              className={inputClass}
-              placeholder="Required decision note"
-            />
-          </FieldLabel>
-        </div>
-        <SubmitButton>Save record review</SubmitButton>
-      </form>
+      {canReview ? (
+        <form
+          action={reviewSubmissionAction}
+          className="grid gap-3 border-t border-slate-300 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-950/60"
+        >
+          <input type="hidden" name="submissionId" value={submission.id} />
+          <div className="grid gap-3 md:grid-cols-[14rem_1fr]">
+            <FieldLabel label="Decision">
+              <select name="status" required className={inputClass}>
+                <option value="ACCEPTED">Accept</option>
+                <option value="REJECTED">Reject</option>
+                <option value="NEEDS_CHANGES">Needs changes</option>
+              </select>
+            </FieldLabel>
+            <FieldLabel label="Moderator notes">
+              <input
+                name="moderatorNotes"
+                required
+                className={inputClass}
+                placeholder="Required decision note"
+              />
+            </FieldLabel>
+          </div>
+          <SubmitButton>Save record review</SubmitButton>
+        </form>
+      ) : (
+        <ReviewSummary
+          title="Record decision"
+          status={submission.status}
+          note={submission.moderatorNotes}
+          reviewedAt={submission.reviewedAt}
+          reviewer={submission.reviewer?.displayName}
+        />
+      )}
     </SectionPanel>
   );
 }
@@ -410,26 +754,14 @@ function SuggestionReviewCard({
   suggestion,
   canConvert,
 }: {
-  suggestion: {
-    id: string;
-    name: string;
-    originalName: string;
-    gdLevelId: string;
-    publisher: string;
-    nerfCreator: string;
-    verifier: string;
-    showcaseUrl: string;
-    thumbnailUrl: string | null;
-    versionNotes: string | null;
-    compatibilityNotes: string;
-    status: string;
-    submittedAt: Date;
-    createdLevelId: string | null;
-    submitter: { displayName: string; playerName: string };
-    createdLevel: { slug: string } | null;
-  };
+  suggestion: LevelSuggestionListItem;
   canConvert: boolean;
 }) {
+  const canReview =
+    suggestion.status === "PENDING" || suggestion.status === "NEEDS_CHANGES";
+  const canConvertApproved =
+    suggestion.status === "APPROVED" && !suggestion.createdLevelId;
+
   return (
     <SectionPanel className="overflow-hidden">
       <div className="border-b border-slate-300 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-950/60">
@@ -470,7 +802,7 @@ function SuggestionReviewCard({
         ) : null}
       </div>
 
-      {suggestion.status !== "APPROVED" ? (
+      {canReview ? (
         <form
           action={reviewLevelSuggestionAction}
           className="grid gap-3 border-t border-slate-300 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-950/60"
@@ -495,7 +827,7 @@ function SuggestionReviewCard({
           </div>
           <SubmitButton>Save suggestion review</SubmitButton>
         </form>
-      ) : (
+      ) : canConvertApproved ? (
         <div className="grid gap-3 border-t border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-500/50 dark:bg-emerald-950/30">
           <div className="flex items-center gap-2 font-black text-emerald-900 dark:text-emerald-100">
             <Layers3 className="h-5 w-5" />
@@ -514,8 +846,59 @@ function SuggestionReviewCard({
             </p>
           )}
         </div>
+      ) : suggestion.status === "CONVERTED" && suggestion.createdLevel ? (
+        <div className="grid gap-3 border-t border-emerald-300 bg-emerald-50 p-4 dark:border-emerald-500/50 dark:bg-emerald-950/30">
+          <div className="flex items-center gap-2 font-black text-emerald-900 dark:text-emerald-100">
+            <Layers3 className="h-5 w-5" />
+            Converted suggestion
+          </div>
+          <Link
+            href={`/levels/${suggestion.createdLevel.slug}`}
+            className="inline-flex min-h-10 w-fit items-center justify-center rounded-md border border-emerald-700 bg-emerald-700 px-4 py-2 text-sm font-black text-white transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-emerald-300 dark:bg-emerald-300 dark:text-slate-950 dark:hover:bg-emerald-200"
+          >
+            View created level
+          </Link>
+        </div>
+      ) : (
+        <ReviewSummary
+          title="Suggestion decision"
+          status={suggestion.status}
+          note={suggestion.moderatorNotes}
+          reviewedAt={suggestion.reviewedAt}
+          reviewer={suggestion.reviewer?.displayName}
+        />
       )}
     </SectionPanel>
+  );
+}
+
+function ReviewSummary({
+  title,
+  status,
+  note,
+  reviewedAt,
+  reviewer,
+}: {
+  title: string;
+  status: string;
+  note: string | null;
+  reviewedAt: Date | null;
+  reviewer: string | undefined;
+}) {
+  return (
+    <div className="grid gap-2 border-t border-slate-300 bg-slate-100 p-4 text-sm leading-6 text-slate-700 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-black text-slate-950 dark:text-slate-50">
+          {title}
+        </span>
+        <StatusBadge value={status} />
+      </div>
+      <p>{note ?? "No moderator note recorded."}</p>
+      <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+        {formatDateTime(reviewedAt)}
+        {reviewer ? ` by ${reviewer}` : ""}
+      </p>
+    </div>
   );
 }
 

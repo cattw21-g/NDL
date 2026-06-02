@@ -4,6 +4,7 @@ import {
   ClipboardCheck,
   FileText,
   ListPlus,
+  ScrollText,
   ShieldCheck,
   Trophy,
   Users,
@@ -48,6 +49,13 @@ const adminLinks = [
     description: "Publish public project updates.",
     icon: FileText,
     tone: "amber",
+  },
+  {
+    href: "/admin/audit",
+    label: "Audit Log",
+    description: "Review staff actions, changed entities, and sanitized snapshots.",
+    icon: ScrollText,
+    tone: "blue",
   },
 ];
 

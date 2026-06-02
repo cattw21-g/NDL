@@ -37,7 +37,10 @@ describe("demo visibility", () => {
     });
 
     expect(publicChangelogWhere()).toMatchObject({
-      AND: expect.arrayContaining([{ isDemo: false }]),
+      AND: expect.arrayContaining([
+        { isPublished: true, archivedAt: null },
+        { isDemo: false },
+      ]),
     });
   });
 
@@ -45,5 +48,13 @@ describe("demo visibility", () => {
     const where = { status: "RANKED" } as const;
 
     expect(publicLevelWhere(where, { ENABLE_DEMO_SEED: "true" })).toBe(where);
+  });
+
+  it("keeps unpublished and archived changelog posts hidden in demo mode too", () => {
+    expect(
+      publicChangelogWhere({}, { ENABLE_DEMO_SEED: "true" }),
+    ).toMatchObject({
+      AND: expect.arrayContaining([{ isPublished: true, archivedAt: null }]),
+    });
   });
 });

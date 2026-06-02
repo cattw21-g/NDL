@@ -6,6 +6,7 @@ import {
   type StructuredSubmissionProof,
 } from "./submission-proof";
 import { calculateLevelPoints, type ScoredLevelStatus } from "./points";
+import { writeAuditLog } from "./audit-log";
 
 export function buildSubmissionCreateData(
   playerId: string,
@@ -44,6 +45,7 @@ export type ReviewableSubmission = {
   rawFootageUrl: string | null;
   fps: number;
   cbfUsed: boolean;
+  status?: string;
   isDemo?: boolean;
   level: {
     name: string;
@@ -59,6 +61,8 @@ export type ReviewableSubmission = {
 export type ReviewModerator = {
   id: string;
   displayName: string;
+  playerName?: string;
+  role?: string;
 };
 
 export type ReviewDecision = {
@@ -68,7 +72,7 @@ export type ReviewDecision = {
 
 export type SubmissionReviewClient = Pick<
   Prisma.TransactionClient,
-  "recordSubmission" | "record" | "moderationAction"
+  "recordSubmission" | "record" | "moderationAction" | "adminAuditLog"
 >;
 
 export async function applySubmissionReview(
@@ -78,6 +82,8 @@ export async function applySubmissionReview(
   decision: ReviewDecision,
   reviewedAt = new Date(),
 ) {
+  let awardedPoints: number | null = null;
+
   await tx.recordSubmission.update({
     where: {
       id: submission.id,
@@ -95,6 +101,7 @@ export async function applySubmissionReview(
       submission.level.rank,
       submission.level.status,
     );
+    awardedPoints = pointsAwarded;
     const recordData = {
       playerId: submission.playerId,
       levelId: submission.levelId,
@@ -136,5 +143,30 @@ export async function applySubmissionReview(
         moderatorNotes: decision.moderatorNotes,
       },
     },
+  });
+
+  await writeAuditLog(tx, {
+    actor: moderator,
+    action:
+      decision.status === RecordStatus.ACCEPTED
+        ? "RECORD_ACCEPTED"
+        : decision.status === RecordStatus.REJECTED
+          ? "RECORD_REJECTED"
+          : "RECORD_NEEDS_CHANGES",
+    entityType: "RecordSubmission",
+    entityId: submission.id,
+    entityLabel: `${submission.player.displayName} on ${submission.level.name}`,
+    before: {
+      status: submission.status ?? RecordStatus.PENDING,
+      playerId: submission.playerId,
+      levelId: submission.levelId,
+      levelName: submission.level.name,
+    },
+    after: {
+      status: decision.status,
+      reviewedAt,
+      pointsAwarded: awardedPoints,
+    },
+    note: decision.moderatorNotes,
   });
 }

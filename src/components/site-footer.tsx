@@ -11,6 +11,7 @@ const footerColumns = [
       { href: "/rules", label: "Rules" },
       { href: "/players", label: "Players" },
       { href: "/changelog", label: "Changelog" },
+      { href: "/news", label: "News" },
     ],
   },
   {

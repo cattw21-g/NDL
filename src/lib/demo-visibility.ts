@@ -62,13 +62,21 @@ export function publicChangelogWhere(
   where: Prisma.ChangelogPostWhereInput = {},
   env: Record<string, string | undefined> = process.env,
 ) {
+  const publicPostWhere = {
+    isPublished: true,
+    archivedAt: null,
+  } satisfies Prisma.ChangelogPostWhereInput;
+
   if (demoModeEnabled(env)) {
-    return where;
+    return {
+      AND: [where, publicPostWhere],
+    } satisfies Prisma.ChangelogPostWhereInput;
   }
 
   return {
     AND: [
       where,
+      publicPostWhere,
       { isDemo: false },
       { title: { not: { contains: "Demo" } } },
     ],

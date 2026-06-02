@@ -13,6 +13,7 @@ const messages: Record<string, string> = {
   "video-too-large": "Uploaded MP4 files are too large for this NDL instance.",
   "video-type": "Upload video proof as MP4 files.",
   "video-upload-disabled": "MP4 upload is available only when enabled by NDL. Use a link instead.",
+  "slug-conflict": "That slug is already used by another post.",
 };
 
 export function PageMessage({
@@ -28,7 +29,8 @@ export function PageMessage({
     searchParams?.created ||
     searchParams?.updated ||
     searchParams?.reviewed ||
-    searchParams?.converted
+    searchParams?.converted ||
+    searchParams?.archived
       ? "Saved successfully."
       : null;
 

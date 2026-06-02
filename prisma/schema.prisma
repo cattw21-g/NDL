@@ -61,6 +61,15 @@ enum ModerationActionType {
   CHANGELOG_CREATED
 }
 
+enum ChangelogCategory {
+  ANNOUNCEMENT
+  RANKING_UPDATE
+  RULE_UPDATE
+  SITE_UPDATE
+  MODERATION_NOTE
+  OTHER
+}
+
 model User {
   id                      String                   @id @default(cuid())
   email                   String                   @unique
@@ -80,6 +89,7 @@ model User {
   reviewedLevelSuggestions LevelSuggestion[]       @relation("LevelSuggestionReviewer")
   records                 Record[]                 @relation("RecordPlayer")
   moderationActions       ModerationAction[]       @relation("ModerationActor")
+  adminAuditLogs          AdminAuditLog[]          @relation("AdminAuditActor")
   levelHistory            LevelHistory[]           @relation("LevelHistoryActor")
   changelogPosts          ChangelogPost[]          @relation("ChangelogAuthor")
   emailVerificationTokens EmailVerificationToken[]
@@ -286,6 +296,31 @@ model ModerationAction {
   @@index([type, createdAt])
 }
 
+model AdminAuditLog {
+  id            String   @id @default(cuid())
+  actorUserId   String?
+  actorHandle   String
+  actorName     String
+  actorRole     String
+  action        String
+  entityType    String
+  entityId      String
+  entityLabel   String
+  beforeJson    Json?
+  afterJson     Json?
+  note          String?
+  ipHash        String?
+  userAgentHash String?
+  createdAt     DateTime @default(now())
+  actor         User?    @relation("AdminAuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([action, createdAt])
+  @@index([entityType, entityId])
+  @@index([actorUserId, createdAt])
+  @@index([entityLabel])
+}
+
 model LevelHistory {
   id        String   @id @default(cuid())
   levelId   String
@@ -300,16 +335,25 @@ model LevelHistory {
 }
 
 model ChangelogPost {
-  id          String   @id @default(cuid())
+  id          String            @id @default(cuid())
   title       String
-  slug        String   @unique
+  slug        String            @unique
+  category    ChangelogCategory @default(SITE_UPDATE)
+  summary     String            @default("")
   content     String
-  isDemo      Boolean  @default(false)
-  publishedAt DateTime @default(now())
+  isPublished Boolean           @default(true)
+  isPinned    Boolean           @default(false)
+  isDemo      Boolean           @default(false)
+  publishedAt DateTime?
+  updatedAt   DateTime          @updatedAt
+  archivedAt  DateTime?
   authorId    String?
-  author      User?    @relation("ChangelogAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  author      User?             @relation("ChangelogAuthor", fields: [authorId], references: [id], onDelete: SetNull)
 
   @@index([publishedAt])
+  @@index([isPublished, archivedAt, isPinned, publishedAt])
+  @@index([category, publishedAt])
+  @@index([isDemo, isPublished])
   @@index([isDemo])
 }
 

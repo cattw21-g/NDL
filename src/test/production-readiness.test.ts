@@ -38,6 +38,7 @@ describe("production readiness guardrails", () => {
       "app/admin/users/page.tsx",
       "app/admin/rules/page.tsx",
       "app/admin/changelog/page.tsx",
+      "app/admin/audit/page.tsx",
     ]) {
       expect(source(path)).toContain("await requireAdmin()");
     }
@@ -112,6 +113,48 @@ describe("production readiness guardrails", () => {
     expect(source("actions/admin.ts")).toContain("sourceSuggestionId");
     expect(source("actions/admin.ts")).toContain("CONVERTED");
     expect(source("components/app-shell.tsx")).toContain("/suggest-level");
+  });
+
+  it("keeps moderation queue filters, pagination, and final-status handling wired", () => {
+    const moderationPage = source("app/moderation/page.tsx");
+    const queueHelper = source("lib/moderation-queue.ts");
+
+    expect(moderationPage).toContain("await requireModerator()");
+    expect(moderationPage).toContain("parseModerationFilters(params)");
+    expect(moderationPage).toContain("getFilteredRecordSubmissions");
+    expect(moderationPage).toContain("countFilteredRecordSubmissions");
+    expect(moderationPage).toContain("getFilteredLevelSuggestions");
+    expect(moderationPage).toContain("countFilteredLevelSuggestions");
+
+    for (const param of [
+      'name="recordStatus"',
+      'name="suggestionStatus"',
+      'name="q"',
+      'name="recordSort"',
+      'name="suggestionSort"',
+      "recordPage",
+      "suggestionPage",
+    ]) {
+      expect(moderationPage).toContain(param);
+    }
+
+    expect(moderationPage).toContain(
+      "No record submissions match these filters.",
+    );
+    expect(moderationPage).toContain(
+      "No level suggestions match these filters.",
+    );
+    expect(moderationPage).toContain('submission.status === "PENDING"');
+    expect(moderationPage).toContain('submission.status === "NEEDS_CHANGES"');
+    expect(moderationPage).toContain('suggestion.status === "PENDING"');
+    expect(moderationPage).toContain('suggestion.status === "NEEDS_CHANGES"');
+    expect(moderationPage).toContain("ReviewSummary");
+
+    expect(queueHelper).toContain("moderationPageSize = 25");
+    expect(queueHelper).toContain("recordSubmissionWhere");
+    expect(queueHelper).toContain("levelSuggestionWhere");
+    expect(queueHelper).toContain("moderatorNotes");
+    expect(queueHelper).toContain("createdLevelId: null");
   });
 
   it("keeps suggestion thumbnails optional without disabled upload copy", () => {
@@ -232,6 +275,7 @@ describe("production readiness guardrails", () => {
       "/suggest-level",
       "/players",
       "/changelog",
+      "/news",
       "/login",
       "/register",
       "/verify-email",
@@ -245,8 +289,164 @@ describe("production readiness guardrails", () => {
     expect(footer).not.toContain(forbiddenPointercrateCopy);
   });
 
+  it("keeps the admin audit log schema, helper, workflows, and page wired", () => {
+    const schema = rootSource("prisma/schema.prisma");
+    const migration = rootSource(
+      "prisma/migrations/20260602120000_add_admin_audit_log/migration.sql",
+    );
+    const auditHelper = source("lib/audit-log.ts");
+    const adminActions = source("actions/admin.ts");
+    const submissionWorkflow = source("lib/submission-workflow.ts");
+    const suggestionActions = source("actions/level-suggestions.ts");
+    const auditPage = source("app/admin/audit/page.tsx");
+
+    expect(schema).toContain("model AdminAuditLog");
+    expect(schema).toContain("actorUserId");
+    expect(schema).toContain("beforeJson");
+    expect(schema).toContain("afterJson");
+    expect(schema).toContain("@@index([action, createdAt])");
+    expect(schema).toContain("@@index([entityType, entityId])");
+    expect(migration).toContain('CREATE TABLE "AdminAuditLog"');
+    expect(migration).toContain('"ipHash" TEXT');
+    expect(migration).toContain('"userAgentHash" TEXT');
+
+    expect(auditHelper).toContain("writeAuditLog");
+    expect(auditHelper).toContain("safeWriteAuditLog");
+    expect(auditHelper).toContain("redactAuditValue");
+    expect(auditHelper).toContain("passwordhash");
+    expect(auditHelper).toContain("rawfootageurl");
+    expect(auditHelper).toContain("createHmac");
+
+    for (const action of [
+      "LEVEL_CREATED",
+      "LEVEL_UPDATED",
+      "LEVEL_RANK_CHANGED",
+      "LEVEL_STATUS_CHANGED",
+      "LEVEL_THUMBNAIL_CHANGED",
+      "LEVEL_SUGGESTION_CONVERTED",
+      "USER_ROLE_CHANGED",
+      "RULES_UPDATED",
+      "CHANGELOG_CREATED",
+      "CHANGELOG_EDITED",
+      "CHANGELOG_PUBLISHED",
+      "CHANGELOG_UNPUBLISHED",
+      "CHANGELOG_PINNED",
+      "CHANGELOG_UNPINNED",
+      "CHANGELOG_ARCHIVED",
+    ]) {
+      expect(adminActions).toContain(action);
+    }
+
+    for (const action of [
+      "RECORD_ACCEPTED",
+      "RECORD_REJECTED",
+      "RECORD_NEEDS_CHANGES",
+    ]) {
+      expect(submissionWorkflow).toContain(action);
+    }
+
+    for (const action of [
+      "LEVEL_SUGGESTION_APPROVED",
+      "LEVEL_SUGGESTION_REJECTED",
+      "LEVEL_SUGGESTION_NEEDS_CHANGES",
+    ]) {
+      expect(suggestionActions).toContain(action);
+    }
+
+    expect(rootSource("scripts/recalculate-points.ts")).toContain(
+      "RECORD_POINTS_RECALCULATED",
+    );
+    expect(source("app/admin/page.tsx")).toContain("/admin/audit");
+    expect(auditPage).toContain("await requireAdmin()");
+    expect(auditPage).toContain("prisma.adminAuditLog.findMany");
+    expect(auditPage).toContain('name="action"');
+    expect(auditPage).toContain('name="entityType"');
+    expect(auditPage).toContain('name="actor"');
+    expect(auditPage).toContain('name="from"');
+    expect(auditPage).toContain('name="to"');
+    expect(auditPage).toContain('name="q"');
+    expect(auditPage).toContain("<details");
+    expect(auditPage).not.toContain("passwordHash");
+    expect(auditPage).not.toContain("tokenHash");
+    expect(auditPage).not.toContain("rawFootageUrl");
+  });
+
   it("keeps /news available as the public news alias", () => {
     expect(source("app/news/page.tsx")).toContain('redirect("/changelog")');
+    expect(source("app/news/[slug]/page.tsx")).toContain(
+      "redirect(`/changelog/${slug}`)",
+    );
+  });
+
+  it("keeps the public changelog/news system production-ready", () => {
+    const schema = rootSource("prisma/schema.prisma");
+    const migration = rootSource(
+      "prisma/migrations/20260602133000_expand_changelog_posts/migration.sql",
+    );
+    const changelogPage = source("app/changelog/page.tsx");
+    const postPage = source("app/changelog/[slug]/page.tsx");
+    const adminPage = source("app/admin/changelog/page.tsx");
+    const adminActions = source("actions/admin.ts");
+    const homePage = source("app/page.tsx");
+
+    expect(schema).toContain("enum ChangelogCategory");
+    expect(schema).toContain("ANNOUNCEMENT");
+    expect(schema).toContain("RANKING_UPDATE");
+    expect(schema).toContain("RULE_UPDATE");
+    expect(schema).toContain("SITE_UPDATE");
+    expect(schema).toContain("MODERATION_NOTE");
+    expect(schema).toContain("summary");
+    expect(schema).toContain("isPublished");
+    expect(schema).toContain("isPinned");
+    expect(schema).toContain("archivedAt");
+    expect(schema).toContain("@@index([isPublished, archivedAt, isPinned, publishedAt])");
+    expect(migration).toContain('CREATE TYPE "ChangelogCategory"');
+    expect(migration).toContain('ADD COLUMN "summary"');
+    expect(migration).toContain('ADD COLUMN "archivedAt"');
+    expect(migration).toContain("DROP NOT NULL");
+
+    expect(source("lib/demo-visibility.ts")).toContain("isPublished: true");
+    expect(source("lib/demo-visibility.ts")).toContain("archivedAt: null");
+    expect(changelogPage).toContain("publicChangelogWhere()");
+    expect(changelogPage).toContain("orderBy: [{ isPinned: \"desc\" }, { publishedAt: \"desc\" }]");
+    expect(changelogPage).toContain("Featured");
+    expect(changelogPage).toContain("Read full update");
+    expect(postPage).toContain("publicChangelogWhere({");
+    expect(postPage).toContain("notFound()");
+    expect(postPage).toContain("Back to changelog");
+    expect(postPage).toContain("plainTextParagraphs(post.content)");
+    expect(changelogPage).not.toContain("dangerouslySetInnerHTML");
+    expect(postPage).not.toContain("dangerouslySetInnerHTML");
+
+    expect(homePage).toContain("title=\"Latest update\"");
+    expect(homePage).toContain("latestPost.summary");
+    expect(homePage).toContain("href={`/changelog/${latestPost.slug}`}");
+
+    expect(adminPage).toContain("await requireAdmin()");
+    expect(adminPage).toContain("createChangelogAction");
+    expect(adminPage).toContain("updateChangelogAction");
+    expect(adminPage).toContain("archiveChangelogAction");
+    expect(adminPage).toContain('name="category"');
+    expect(adminPage).toContain('name="summary"');
+    expect(adminPage).toContain('name="isPublished"');
+    expect(adminPage).toContain('name="isPinned"');
+    expect(adminPage).toContain("Archive post");
+
+    for (const action of [
+      "CHANGELOG_CREATED",
+      "CHANGELOG_EDITED",
+      "CHANGELOG_PUBLISHED",
+      "CHANGELOG_UNPUBLISHED",
+      "CHANGELOG_PINNED",
+      "CHANGELOG_UNPINNED",
+      "CHANGELOG_ARCHIVED",
+    ]) {
+      expect(adminActions).toContain(action);
+    }
+
+    expect(source("lib/validation.ts")).toContain("changelogSchema");
+    expect(source("lib/changelog.ts")).toContain("normalizeChangelogSlug");
+    expect(source("lib/changelog.ts")).toContain("plainTextParagraphs");
   });
 
   it("renders level thumbnails through the safe thumbnail component", () => {
@@ -455,6 +655,61 @@ describe("production readiness guardrails", () => {
     expect(source("lib/submission-workflow.ts")).not.toContain(
       "pointsAwarded: submission.level.points",
     );
+  });
+
+  it("keeps the public level detail page complete and privacy-safe", () => {
+    const levelPage = source("app/levels/[slug]/page.tsx");
+
+    expect(levelPage).toContain("SafeThumbnail");
+    expect(levelPage).toContain("aspect-video");
+    expect(levelPage).toContain(
+      "lg:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.65fr)]",
+    );
+    expect(levelPage).toContain("lg:min-h-[24rem]");
+    expect(levelPage).toContain("const currentLevelPoints = calculateCurrentLevelPoints(level)");
+    expect(levelPage).not.toContain("<PointsPill points={level.points}");
+    expect(levelPage).not.toContain("{record.pointsAwarded}");
+    expect(levelPage).not.toContain("1000");
+
+    for (const label of [
+      "Original level",
+      "Publisher/host",
+      "Nerf creator",
+      "Verifier",
+      "GD level ID",
+      "Placement date",
+      "Current status",
+      "Current rank",
+    ]) {
+      expect(levelPage).toContain(label);
+    }
+
+    expect(levelPage).toContain("No description provided.");
+    expect(levelPage).toContain("No version notes provided.");
+    expect(levelPage).toContain("No accepted records yet");
+    expect(levelPage).toContain("100%");
+    expect(levelPage).toContain("Completion video");
+    expect(levelPage).toContain("Video linked");
+    expect(levelPage).toContain("Raw footage on file");
+    expect(levelPage).toContain("Submitted");
+    expect(levelPage).toContain("Accepted");
+
+    for (const href of ['href="/"', 'href="/submit"', 'href="/rules"', 'href="/suggest-level"']) {
+      expect(levelPage).toContain(href);
+    }
+
+    expect(levelPage).toContain("min-w-0");
+    expect(levelPage).toContain("sm:grid-cols-2");
+    expect(levelPage).toContain("md:grid-cols-[4rem_minmax(0,1fr)_6rem_7rem_8rem_10rem]");
+    expect(levelPage).not.toContain("player: true");
+    expect(levelPage).not.toContain("email");
+    expect(levelPage).not.toContain("password");
+    expect(levelPage).not.toContain("session.delete");
+    expect(levelPage).not.toContain("moderatorNotes");
+    expect(levelPage).not.toContain("proofNotes");
+    expect(levelPage).not.toContain("clickAudioNotes");
+    expect(levelPage).not.toContain("deviceNotes");
+    expect(levelPage).not.toContain("href={record.rawFootageUrl}");
   });
 
   it("wires the stored points recalculation script and docs", () => {

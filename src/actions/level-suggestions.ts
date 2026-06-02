@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { ModerationActionType } from "@/generated/prisma/enums";
+import { writeAuditLog } from "@/lib/audit-log";
 import { requireAdmin, requireModerator, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import {
@@ -137,6 +138,8 @@ export async function reviewLevelSuggestionAction(formData: FormData) {
     redirect("/moderation?error=transition");
   }
 
+  const reviewedAt = new Date();
+
   await prisma.$transaction(async (tx) => {
     await tx.levelSuggestion.update({
       where: {
@@ -146,7 +149,7 @@ export async function reviewLevelSuggestionAction(formData: FormData) {
         status: parsed.data.status,
         moderatorNotes: parsed.data.moderatorNotes,
         reviewerId: moderator.id,
-        reviewedAt: new Date(),
+        reviewedAt,
       },
     });
 
@@ -158,6 +161,30 @@ export async function reviewLevelSuggestionAction(formData: FormData) {
         targetId: suggestion.id,
         summary: `${moderator.displayName} marked ${suggestion.name} as ${parsed.data.status.toLowerCase().replace("_", " ")}.`,
       },
+    });
+
+    await writeAuditLog(tx, {
+      actor: moderator,
+      action:
+        parsed.data.status === "APPROVED"
+          ? "LEVEL_SUGGESTION_APPROVED"
+          : parsed.data.status === "REJECTED"
+            ? "LEVEL_SUGGESTION_REJECTED"
+            : "LEVEL_SUGGESTION_NEEDS_CHANGES",
+      entityType: "LevelSuggestion",
+      entityId: suggestion.id,
+      entityLabel: suggestion.name,
+      before: {
+        status: suggestion.status,
+        reviewerId: suggestion.reviewerId,
+        reviewedAt: suggestion.reviewedAt,
+      },
+      after: {
+        status: parsed.data.status,
+        reviewerId: moderator.id,
+        reviewedAt,
+      },
+      note: parsed.data.moderatorNotes,
     });
   });
 

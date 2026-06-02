@@ -76,6 +76,7 @@ describe("submission workflow", () => {
       submissionUpdates: [] as unknown[],
       recordUpserts: [] as unknown[],
       moderationActions: [] as unknown[],
+      auditLogs: [] as unknown[],
     };
     const tx = {
       recordSubmission: {
@@ -96,6 +97,12 @@ describe("submission workflow", () => {
           return args;
         },
       },
+      adminAuditLog: {
+        create: async (args: unknown) => {
+          calls.auditLogs.push(args);
+          return args;
+        },
+      },
     } as unknown as SubmissionReviewClient;
 
     await applySubmissionReview(
@@ -108,6 +115,7 @@ describe("submission workflow", () => {
         rawFootageUrl: "https://example.com/raw",
         fps: 240,
         cbfUsed: true,
+        status: "PENDING",
         level: {
           name: "Demo Level",
           rank: 1,
@@ -132,6 +140,7 @@ describe("submission workflow", () => {
     expect(calls.submissionUpdates).toHaveLength(1);
     expect(calls.recordUpserts).toHaveLength(1);
     expect(calls.moderationActions).toHaveLength(1);
+    expect(calls.auditLogs).toHaveLength(1);
 
     const recordUpsert = asRecord(calls.recordUpserts[0]);
     const create = asRecord(recordUpsert.create);
@@ -141,5 +150,10 @@ describe("submission workflow", () => {
     const action = asRecord(asRecord(calls.moderationActions[0]).data);
     expect(action.type).toBe("SUBMISSION_ACCEPTED");
     expect(action.summary).toContain("Demo Player");
+
+    const audit = asRecord(asRecord(calls.auditLogs[0]).data);
+    expect(audit.action).toBe("RECORD_ACCEPTED");
+    expect(audit.entityType).toBe("RecordSubmission");
+    expect(audit.entityLabel).toContain("Demo Player");
   });
 });

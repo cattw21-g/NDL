@@ -24,7 +24,7 @@ npm.cmd run db:migrate:deploy
 
 If Neon recommends different direct and pooled URLs, use the direct URL for one-off migration commands and the pooled/runtime URL for Vercel.
 
-Production must use `npm.cmd run db:migrate:deploy`, not `prisma migrate dev`. After deploying the password reset release, run `npm.cmd run db:migrate:deploy` once so Neon creates the `PasswordResetToken` table before users request reset emails. If this migration is skipped, password reset requests will fail at runtime because the table does not exist.
+Production must use `npm.cmd run db:migrate:deploy`, not `prisma migrate dev`. After deploying the password reset release, audit log release, or public news/changelog release, run `npm.cmd run db:migrate:deploy` once so Neon creates required tables and fields such as `PasswordResetToken`, `AdminAuditLog`, and the expanded `ChangelogPost` columns. If these migrations are skipped, password reset, `/admin/audit`, or `/changelog` publishing will fail at runtime because the database shape does not match the app.
 
 After deploying a scoring formula change or importing/reranking production levels, recalculate stored level and accepted-record points against the target database:
 
@@ -34,6 +34,8 @@ npm.cmd run points:recalculate
 ```
 
 Public pages compute points from current rank/status at runtime, but this command keeps stored `Level.points` and `Record.pointsAwarded` rows aligned for admin views, future moderation writes, and database consistency.
+
+Public news is managed from `/admin/changelog`. `/changelog` is the canonical public index and `/news` redirects to it; `/news/[slug]` redirects to the matching `/changelog/[slug]` post. Draft and archived posts stay hidden publicly.
 
 ## 3. Vercel Deployment
 
@@ -199,9 +201,11 @@ Set `APP_URL` and `NEXT_PUBLIC_SITE_URL` to the final HTTPS domain after the dom
 8. Migrations have been run with `npm.cmd run db:migrate:deploy`.
 9. Baseline seed has been run with `npm.cmd run db:seed`.
 10. `npm.cmd run points:recalculate` has been run after any scoring formula change or production data import.
-11. First admin can log in.
-12. `public/og-image.svg` and `src/app/favicon.ico` have been replaced with final launch assets if desired.
-13. `/admin` shows no hidden demo warning, or any hidden demo rows have been intentionally removed before public launch.
+11. `/admin/audit` loads for admins and records a test admin action.
+12. First admin can log in.
+13. `/admin/changelog` can create a draft, publish it, pin it, and archive it.
+14. `public/og-image.svg` and `src/app/favicon.ico` have been replaced with final launch assets if desired.
+15. `/admin` shows no hidden demo warning, or any hidden demo rows have been intentionally removed before public launch.
 
 ## 9. Pre-Launch QA
 
@@ -226,6 +230,7 @@ Manual QA checklist:
 5. Submit a level suggestion; confirm it appears in `/level-suggestions` and `/moderation`.
 6. Approve the level suggestion as staff, confirm `/moderation` shows the admin-only conversion button, and convert it as admin from the prefilled `/admin/levels` form.
 7. Confirm `/admin` and `/moderation` reject normal player accounts.
-8. Confirm rejected and needs-changes records/suggestions are visible only to submitter and staff.
-9. Toggle light, dark, and system theme across public, auth, submit, moderation, and admin routes.
-10. Confirm production has no visible demo levels, demo users, demo records, or demo thumbnails unless `ENABLE_DEMO_SEED=true`.
+8. Confirm `/admin/audit` shows the conversion, record review, and role/rules/changelog test actions with redacted details.
+9. Confirm rejected and needs-changes records/suggestions are visible only to submitter and staff.
+10. Toggle light, dark, and system theme across public, auth, submit, moderation, and admin routes.
+11. Confirm production has no visible demo levels, demo users, demo records, or demo thumbnails unless `ENABLE_DEMO_SEED=true`.

@@ -320,8 +320,14 @@ async function seedDemo() {
     data: {
       title: "Demo NDL environment seeded",
       slug: "demo-environment-seeded",
+      category: "SITE_UPDATE",
+      summary:
+        "Demo-only changelog entry confirming that local seeded data was created.",
       content:
         "This local database contains clearly labeled demo levels, users, and records so the NDL MVP can be verified without presenting fake real-world claims.",
+      isPublished: true,
+      isPinned: false,
+      publishedAt: new Date(),
       authorId: admin.id,
       isDemo: true,
     },

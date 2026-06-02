@@ -151,7 +151,7 @@ npm.cmd run db:generate
 npm.cmd run db:migrate:deploy
 ```
 
-Production must use `npm.cmd run db:migrate:deploy`, not `prisma migrate dev`. Password reset requires the `PasswordResetToken` table, so run deploy migrations after shipping password reset changes and before relying on `/forgot-password`.
+Production must use `npm.cmd run db:migrate:deploy`, not `prisma migrate dev`. Password reset requires the `PasswordResetToken` table, the admin audit log requires the `AdminAuditLog` table, and the public news/changelog system requires the expanded `ChangelogPost` columns, so run deploy migrations after shipping these releases and before relying on `/forgot-password`, `/admin/audit`, or `/admin/changelog`.
 
 Then create or promote the first admin account by running the production-safe seed with admin env values:
 
@@ -191,6 +191,18 @@ npm.cmd run points:recalculate
 
 Run this against the target database with the same `DATABASE_URL` and production safety environment used for other one-off maintenance commands.
 
+## Admin Audit Log
+
+NDL stores a separate admin audit trail for staff decisions, level changes, role changes, rules/changelog publishing, suggestion conversion, and stored-points recalculation. The audit viewer is admin-only at `/admin/audit` and stores sanitized before/after snapshots with sensitive token, password, session, and private proof fields redacted.
+
+This feature adds a Prisma migration. Production deploys must run:
+
+```powershell
+npm.cmd run db:migrate:deploy
+```
+
+before admins rely on `/admin/audit`.
+
 ## Scripts
 
 ```powershell
@@ -213,8 +225,9 @@ npm.cmd run points:recalculate
 - Guests can view the ranked list, level pages, rules, changelog, accepted records, player profiles, and player leaderboard.
 - Players can register, verify email, log in, submit records, suggest levels, and view their private submission/suggestion statuses.
 - Moderators can review pending or needs-changes record submissions and level suggestions, accept/approve, reject, request changes, and leave notes.
-- Admins can manage levels/rankings/statuses, assign roles, publish rules, and publish changelog posts.
+- Admins can manage levels/rankings/statuses, assign roles, publish rules, publish changelog posts, and review the admin audit log.
 - Admins can convert approved level suggestions into pending, ranked, or legacy level entries.
+- `/changelog` is the canonical public news index. `/news` and `/news/[slug]` redirect to the matching changelog routes. Draft and archived posts remain admin-only.
 
 ## Privacy And Route Guard Verification
 
@@ -243,6 +256,7 @@ Before public launch, replace the placeholder OpenGraph image and favicon with f
 - Set production `DATABASE_URL`, `NODE_ENV=production`, `APP_URL`, `NEXT_PUBLIC_SITE_URL`, `SESSION_COOKIE_NAME`, and `SESSION_SECRET`.
 - Set production SMTP variables so registration verification email can be sent.
 - Run `npm.cmd run db:generate`, `npm.cmd run db:migrate:deploy`, and `npm.cmd run db:seed`.
+- Confirm `/admin/audit` loads after deployment and records a test admin action.
 - Run `npm.cmd run points:recalculate` after scoring formula changes or production data imports.
 - Create the first admin through `npm.cmd run db:seed` with `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `ADMIN_HANDLE`, or run `npm.cmd run admin:create`.
 - Confirm `ENABLE_DEMO_SEED` and `NDL_SEED_RESET` are unset or `false` in production.

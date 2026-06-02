@@ -2,6 +2,7 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 import { PrismaClient } from "../src/generated/prisma/client";
+import { safeWriteAuditLog } from "../src/lib/audit-log";
 import { recalculateStoredPoints } from "../src/lib/points-recalculation";
 import { assertProductionEnv, requireDatabaseUrl } from "../src/lib/production-env";
 
@@ -18,6 +19,15 @@ const prisma = new PrismaClient({
 
 async function main() {
   const result = await prisma.$transaction((tx) => recalculateStoredPoints(tx));
+
+  await safeWriteAuditLog(prisma, {
+    action: "RECORD_POINTS_RECALCULATED",
+    entityType: "Points",
+    entityId: "stored-points",
+    entityLabel: "Stored level and record points",
+    after: result,
+    note: "Stored level points and accepted record awards were recalculated from current ranks/statuses.",
+  });
 
   console.log(
     [

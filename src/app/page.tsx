@@ -11,6 +11,7 @@ import Link from "next/link";
 
 import { LevelList } from "@/components/level-list";
 import { Eyebrow, MetricTile, SectionPanel } from "@/components/ui";
+import { changelogCategoryLabel } from "@/lib/changelog";
 import { prisma } from "@/lib/db";
 import {
   demoModeEnabled,
@@ -71,9 +72,7 @@ export default async function Home() {
       }),
       prisma.changelogPost.findFirst({
         where: publicChangelogWhere(),
-        orderBy: {
-          publishedAt: "desc",
-        },
+        orderBy: [{ isPinned: "desc" }, { publishedAt: "desc" }],
       }),
     ]);
 
@@ -239,22 +238,28 @@ export default async function Home() {
 
           <SidebarCard
             icon={<Newspaper className="h-5 w-5 text-cyan-700" />}
-            title="NDL news"
+            title="Latest update"
           >
             {latestPost ? (
               <div>
-                <p className="text-xs font-bold uppercase text-slate-500">
+                <p className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">
+                  {changelogCategoryLabel(latestPost.category)} ·{" "}
                   {formatDate(latestPost.publishedAt)}
                 </p>
-                <h2 className="mt-1 font-black text-slate-950">
+                <Link
+                  href={`/changelog/${latestPost.slug}`}
+                  className="mt-1 block rounded-sm font-black text-slate-950 transition hover:text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:text-slate-50 dark:hover:text-cyan-200"
+                >
                   {latestPost.title}
-                </h2>
-                <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
-                  {latestPost.content}
+                </Link>
+                <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  {latestPost.summary}
                 </p>
               </div>
             ) : (
-              <p className="text-sm text-slate-600">No changelog posts yet.</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                No changelog posts yet.
+              </p>
             )}
             <Link
               href="/changelog"

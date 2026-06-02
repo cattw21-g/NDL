@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { changelogCategoryValues } from "@/lib/changelog";
+
 import { isValidPublicUploadMediaPath, isValidThumbnailSource } from "./media";
 
 const emptyToUndefined = (value: unknown) => {
@@ -231,7 +233,26 @@ export const rulesSchema = z.object({
 
 export const changelogSchema = z.object({
   title: z.string().trim().min(3).max(120),
-  content: z.string().trim().min(20).max(6000),
+  slug: z.preprocess(emptyToUndefined, z.string().trim().max(160).optional()),
+  category: z.enum(changelogCategoryValues),
+  summary: z.string().trim().min(5).max(500),
+  content: z.string().trim().min(20).max(12000),
+  isPublished: z.preprocess(
+    (value) => value === "on" || value === "true",
+    z.boolean(),
+  ),
+  isPinned: z.preprocess(
+    (value) => value === "on" || value === "true",
+    z.boolean(),
+  ),
+});
+
+export const changelogUpdateSchema = changelogSchema.extend({
+  id: z.string().min(1),
+});
+
+export const changelogArchiveSchema = z.object({
+  id: z.string().min(1),
 });
 
 export const verifyEmailCodeSchema = z.object({
