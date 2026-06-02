@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { logoutAction } from "@/actions/auth";
 import { NavLink } from "@/components/nav-link";
+import { SiteFooter } from "@/components/site-footer";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getCurrentUser } from "@/lib/auth";
 import { demoModeEnabled } from "@/lib/demo-visibility";
@@ -22,7 +23,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   const isDemoMode = demoModeEnabled();
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#f6f8fb] text-slate-950 dark:bg-[#080c13] dark:text-slate-100">
+    <div
+      id="top"
+      className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#f6f8fb] text-slate-950 dark:bg-[#080c13] dark:text-slate-100"
+    >
       <div className="pointer-events-none fixed inset-x-0 top-0 h-56 bg-[linear-gradient(180deg,#eaf6fb_0%,rgba(246,248,251,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(14,116,144,0.22)_0%,rgba(8,12,19,0)_100%)]" />
       <DecorativeRail side="left" />
       <DecorativeRail side="right" />
@@ -119,6 +123,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 px-3 py-5 sm:px-5 sm:py-7">
         {children}
       </main>
+      <SiteFooter />
     </div>
   );
 }

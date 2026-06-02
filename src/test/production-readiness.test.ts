@@ -198,6 +198,53 @@ describe("production readiness guardrails", () => {
     expect(source("components/theme-toggle.tsx")).toContain("system");
   });
 
+  it("keeps the production footer wired on public pages only", () => {
+    const appShell = source("components/app-shell.tsx");
+    const footer = source("components/site-footer.tsx");
+    const forbiddenPointercrateCopy =
+      "Copyright © Pointercrate. All rights reserved.";
+
+    expect(appShell).toContain("SiteFooter");
+    expect(appShell).toContain('id="top"');
+    expect(appShell).toContain("<SiteFooter />");
+    expect(footer).toContain("usePathname");
+    expect(footer).toContain('pathname === "/moderation"');
+    expect(footer).toContain('pathname.startsWith("/admin")');
+    expect(footer).toContain("© 2026 Nerfed Demonlist");
+    expect(footer).toContain(
+      "NDL is a community-ranked list for approved nerfed Geometry Dash",
+    );
+    expect(footer).toContain(
+      "Nerfed Demonlist is not affiliated with RobTopGames, Geometry Dash,",
+    );
+    expect(footer).toContain(
+      "Pointercrate, or the official Demonlist",
+    );
+    expect(footer).toContain(
+      "Rules, rankings, records, and points are maintained by NDL staff",
+    );
+    expect(footer).toContain("Back to top");
+    expect(footer).toContain('href="#top"');
+
+    for (const href of [
+      "/rules",
+      "/submit",
+      "/suggest-level",
+      "/players",
+      "/changelog",
+      "/login",
+      "/register",
+      "/verify-email",
+    ]) {
+      expect(footer).toContain(`href: "${href}"`);
+    }
+
+    expect(footer).toContain("dark:border-slate");
+    expect(footer).toContain("dark:bg-slate");
+    expect(footer).toContain("dark:text-slate");
+    expect(footer).not.toContain(forbiddenPointercrateCopy);
+  });
+
   it("keeps /news available as the public news alias", () => {
     expect(source("app/news/page.tsx")).toContain('redirect("/changelog")');
   });
