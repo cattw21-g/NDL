@@ -9,6 +9,7 @@ import {
   serializeStaffLevelSuggestion,
   serializeStaffRecordSubmission,
   type ApiLevel,
+  type ApiRecord,
 } from "@/lib/api-serializers";
 import {
   publicLevelWhere,
@@ -18,16 +19,18 @@ import {
 
 export const discordInteractionEndpointPath = "/api/discord/interactions";
 export const discordInteractionEndpointUrl =
-  "https://nerfeddemonlist.net/api/discord/interactions";
+  "https://www.nerfeddemonlist.net/api/discord/interactions";
 
 export const DiscordInteractionType = {
   Ping: 1,
   ApplicationCommand: 2,
+  ApplicationCommandAutocomplete: 4,
 } as const;
 
 export const DiscordInteractionResponseType = {
   Pong: 1,
   ChannelMessageWithSource: 4,
+  ApplicationCommandAutocompleteResult: 8,
 } as const;
 
 export const DiscordMessageFlags = {
@@ -41,9 +44,41 @@ const commandOptionType = {
 
 const ndlColor = 0x0ea5e9;
 const defaultLimit = 10;
-const maxLimit = 50;
+const maxPublicLimit = 50;
+const maxCompactLimit = 25;
+const autocompleteLimit = 25;
 const staffPermissionDeniedMessage =
   "You do not have permission to use this command.";
+
+const publicCommandNames = [
+  "top",
+  "level",
+  "player",
+  "records",
+  "recent",
+  "search",
+  "rules",
+  "level-records",
+  "leaderboard",
+  "about",
+  "status",
+] as const;
+
+const staffCommandNames = [
+  "pending-records",
+  "pending-suggestions",
+  "submission",
+  "suggestion",
+  "audit",
+  "stats",
+] as const;
+
+type TopStatusFilter = "ranked" | "legacy" | "all-public";
+
+type DiscordCommandChoice = {
+  name: string;
+  value: string | number;
+};
 
 export type DiscordCommandDefinition = {
   name: string;
@@ -55,13 +90,15 @@ export type DiscordCommandDefinition = {
     required?: boolean;
     min_value?: number;
     max_value?: number;
+    autocomplete?: boolean;
+    choices?: DiscordCommandChoice[];
   }>;
 };
 
 export const discordCommandDefinitions: DiscordCommandDefinition[] = [
   {
     name: "top",
-    description: "Show the top ranked NDL levels.",
+    description: "Show top NDL levels.",
     options: [
       {
         name: "count",
@@ -69,6 +106,16 @@ export const discordCommandDefinitions: DiscordCommandDefinition[] = [
         type: commandOptionType.Integer,
         min_value: 1,
         max_value: 50,
+      },
+      {
+        name: "status",
+        description: "Which public levels to include.",
+        type: commandOptionType.String,
+        choices: [
+          { name: "ranked", value: "ranked" },
+          { name: "legacy", value: "legacy" },
+          { name: "all-public", value: "all-public" },
+        ],
       },
     ],
   },
@@ -81,6 +128,7 @@ export const discordCommandDefinitions: DiscordCommandDefinition[] = [
         description: "Level name, original level, GD ID, creator, or verifier.",
         type: commandOptionType.String,
         required: true,
+        autocomplete: true,
       },
     ],
   },
@@ -93,6 +141,7 @@ export const discordCommandDefinitions: DiscordCommandDefinition[] = [
         description: "Player username/handle.",
         type: commandOptionType.String,
         required: true,
+        autocomplete: true,
       },
     ],
   },
@@ -105,12 +154,29 @@ export const discordCommandDefinitions: DiscordCommandDefinition[] = [
         description: "Player username/handle.",
         type: commandOptionType.String,
         required: true,
+        autocomplete: true,
+      },
+      {
+        name: "limit",
+        description: "Number of records to show.",
+        type: commandOptionType.Integer,
+        min_value: 1,
+        max_value: 25,
       },
     ],
   },
   {
     name: "recent",
     description: "Show recent accepted NDL records.",
+    options: [
+      {
+        name: "count",
+        description: "Number of records to show.",
+        type: commandOptionType.Integer,
+        min_value: 1,
+        max_value: 25,
+      },
+    ],
   },
   {
     name: "search",
@@ -129,12 +195,71 @@ export const discordCommandDefinitions: DiscordCommandDefinition[] = [
     description: "Show the NDL rules link and summary.",
   },
   {
+    name: "level-records",
+    description: "Show accepted records for an NDL level.",
+    options: [
+      {
+        name: "level",
+        description: "Level name, original level, GD ID, creator, or verifier.",
+        type: commandOptionType.String,
+        required: true,
+        autocomplete: true,
+      },
+      {
+        name: "limit",
+        description: "Number of records to show.",
+        type: commandOptionType.Integer,
+        min_value: 1,
+        max_value: 25,
+      },
+    ],
+  },
+  {
+    name: "leaderboard",
+    description: "Show top NDL players by points.",
+    options: [
+      {
+        name: "count",
+        description: "Number of players to show.",
+        type: commandOptionType.Integer,
+        min_value: 1,
+        max_value: 50,
+      },
+    ],
+  },
+  {
+    name: "about",
+    description: "Show what NDL and this bot do.",
+  },
+  {
+    name: "status",
+    description: "Show safe NDL API and bot status.",
+  },
+  {
     name: "pending-records",
     description: "Show pending NDL record submissions.",
+    options: [
+      {
+        name: "limit",
+        description: "Number of submissions to show.",
+        type: commandOptionType.Integer,
+        min_value: 1,
+        max_value: 25,
+      },
+    ],
   },
   {
     name: "pending-suggestions",
     description: "Show pending NDL level suggestions.",
+    options: [
+      {
+        name: "limit",
+        description: "Number of suggestions to show.",
+        type: commandOptionType.Integer,
+        min_value: 1,
+        max_value: 25,
+      },
+    ],
   },
   {
     name: "submission",
@@ -191,6 +316,7 @@ export type DiscordInteraction = {
 type DiscordInteractionOption = {
   name: string;
   value?: string | number | boolean;
+  focused?: boolean;
 };
 
 type DiscordEmbed = {
@@ -203,7 +329,20 @@ type DiscordEmbed = {
     value: string;
     inline?: boolean;
   }>;
+  footer?: {
+    text: string;
+  };
+  timestamp?: string;
 };
+
+type DiscordAutocompleteChoice = {
+  name: string;
+  value: string;
+};
+
+type StaffRecordSubmission = ReturnType<typeof serializeStaffRecordSubmission>;
+type StaffLevelSuggestion = ReturnType<typeof serializeStaffLevelSuggestion>;
+type ApiAuditLogEntry = ReturnType<typeof serializeAuditLogEntry>;
 
 export type DiscordInteractionResponse =
   | {
@@ -218,6 +357,12 @@ export type DiscordInteractionResponse =
         allowed_mentions: {
           parse: [];
         };
+      };
+    }
+  | {
+      type: typeof DiscordInteractionResponseType.ApplicationCommandAutocompleteResult;
+      data: {
+        choices: DiscordAutocompleteChoice[];
       };
     };
 
@@ -271,13 +416,18 @@ export async function handleDiscordInteraction(
     };
   }
 
+  const service = options.service ?? createDiscordDataService();
+  const env = options.env ?? process.env;
+
+  if (interaction.type === DiscordInteractionType.ApplicationCommandAutocomplete) {
+    return autocompleteCommand(interaction, service);
+  }
+
   if (interaction.type !== DiscordInteractionType.ApplicationCommand) {
     return messageResponse("Unsupported Discord interaction.", true);
   }
 
   const commandName = interaction.data?.name ?? "";
-  const service = options.service ?? createDiscordDataService();
-  const env = options.env ?? process.env;
 
   if (isStaffCommand(commandName) && !hasDiscordStaffRole(interaction, env)) {
     return messageResponse(staffPermissionDeniedMessage, true);
@@ -286,31 +436,39 @@ export async function handleDiscordInteraction(
   try {
     switch (commandName) {
       case "top":
-        return topCommand(interaction, service, env);
+        return await topCommand(interaction, service, env);
       case "level":
-        return levelCommand(interaction, service, env);
+        return await levelCommand(interaction, service, env);
       case "player":
-        return playerCommand(interaction, service, env);
+        return await playerCommand(interaction, service, env);
       case "records":
-        return recordsCommand(interaction, service, env);
+        return await recordsCommand(interaction, service, env);
       case "recent":
-        return recentCommand(service, env);
+        return await recentCommand(interaction, service, env);
       case "search":
-        return searchCommand(interaction, service, env);
+        return await searchCommand(interaction, service, env);
       case "rules":
-        return rulesCommand(service, env);
+        return await rulesCommand(service, env);
+      case "level-records":
+        return await levelRecordsCommand(interaction, service, env);
+      case "leaderboard":
+        return await leaderboardCommand(interaction, service, env);
+      case "about":
+        return aboutCommand(env);
+      case "status":
+        return await statusCommand(service, env);
       case "pending-records":
-        return pendingRecordsCommand(service, env);
+        return await pendingRecordsCommand(interaction, service, env);
       case "pending-suggestions":
-        return pendingSuggestionsCommand(service, env);
+        return await pendingSuggestionsCommand(interaction, service, env);
       case "submission":
-        return submissionCommand(interaction, service);
+        return await submissionCommand(interaction, service, env);
       case "suggestion":
-        return suggestionCommand(interaction, service);
+        return await suggestionCommand(interaction, service, env);
       case "audit":
-        return auditCommand(interaction, service);
+        return await auditCommand(interaction, service, env);
       case "stats":
-        return statsCommand(service);
+        return await statsCommand(service, env);
       default:
         return messageResponse("Unknown NDL command.", true);
     }
@@ -321,14 +479,17 @@ export async function handleDiscordInteraction(
 
 export function createDiscordDataService() {
   return {
-    async getTopLevels(limit: number) {
+    async getTopLevels(limit: number, statusFilter: TopStatusFilter) {
       const db = await getPrisma();
+      const where =
+        statusFilter === "legacy"
+          ? publicLevelWhere({ status: "LEGACY" })
+          : statusFilter === "all-public"
+            ? publicLevelWhere({ status: { in: ["RANKED", "LEGACY"] } })
+            : publicLevelWhere({ status: "RANKED" });
+
       const levels = await db.level.findMany({
-        where: publicLevelWhere({
-          status: {
-            in: ["RANKED", "LEGACY"],
-          },
-        }),
+        where,
         include: {
           _count: {
             select: {
@@ -339,13 +500,18 @@ export function createDiscordDataService() {
           },
         },
         orderBy: [{ rank: "asc" }, { name: "asc" }],
-        take: limit,
+        take: statusFilter === "all-public" ? limit * 2 : limit,
       });
 
-      return levels.map(serializePublicLevel);
+      return levels
+        .map(serializePublicLevel)
+        .sort(sortPublicLevels)
+        .slice(0, limit);
     },
     async search(query: string, limit: number) {
-      if (!query) {
+      const normalizedQuery = query.trim();
+
+      if (!normalizedQuery) {
         return { levels: [], players: [] };
       }
 
@@ -354,12 +520,13 @@ export function createDiscordDataService() {
         db.level.findMany({
           where: publicLevelWhere({
             OR: [
-              { name: { contains: query, mode: "insensitive" } },
-              { originalName: { contains: query, mode: "insensitive" } },
-              { gdLevelId: { contains: query, mode: "insensitive" } },
-              { publisher: { contains: query, mode: "insensitive" } },
-              { nerfCreator: { contains: query, mode: "insensitive" } },
-              { verifier: { contains: query, mode: "insensitive" } },
+              { slug: { contains: normalizedQuery, mode: "insensitive" } },
+              { name: { contains: normalizedQuery, mode: "insensitive" } },
+              { originalName: { contains: normalizedQuery, mode: "insensitive" } },
+              { gdLevelId: { contains: normalizedQuery, mode: "insensitive" } },
+              { publisher: { contains: normalizedQuery, mode: "insensitive" } },
+              { nerfCreator: { contains: normalizedQuery, mode: "insensitive" } },
+              { verifier: { contains: normalizedQuery, mode: "insensitive" } },
             ],
           }),
           include: {
@@ -377,8 +544,8 @@ export function createDiscordDataService() {
         db.user.findMany({
           where: publicUserWhere({
             OR: [
-              { playerName: { contains: query, mode: "insensitive" } },
-              { displayName: { contains: query, mode: "insensitive" } },
+              { playerName: { contains: normalizedQuery, mode: "insensitive" } },
+              { displayName: { contains: normalizedQuery, mode: "insensitive" } },
             ],
           }),
           orderBy: { playerName: "asc" },
@@ -387,41 +554,137 @@ export function createDiscordDataService() {
       ]);
 
       return {
-        levels: levels.map(serializePublicLevel),
+        levels: levels.map(serializePublicLevel).sort(sortPublicLevels),
         players: players.map(serializePublicPlayer),
       };
     },
-    async getPlayer(handle: string) {
+    async getLevelRecords(query: string, limit: number) {
+      const normalizedQuery = query.trim();
+
+      if (!normalizedQuery) {
+        return null;
+      }
+
       const db = await getPrisma();
-      const player = await db.user.findFirst({
-        where: publicUserWhere({
-          playerName: handle,
+      const levels = await db.level.findMany({
+        where: publicLevelWhere({
+          OR: [
+            { slug: { contains: normalizedQuery, mode: "insensitive" } },
+            { name: { contains: normalizedQuery, mode: "insensitive" } },
+            { originalName: { contains: normalizedQuery, mode: "insensitive" } },
+            { gdLevelId: { contains: normalizedQuery, mode: "insensitive" } },
+            { publisher: { contains: normalizedQuery, mode: "insensitive" } },
+            { nerfCreator: { contains: normalizedQuery, mode: "insensitive" } },
+            { verifier: { contains: normalizedQuery, mode: "insensitive" } },
+          ],
         }),
         include: {
-          records: {
-            where: publicRecordWhere({
-              level: {
-                status: {
-                  in: ["RANKED", "LEGACY"],
-                },
+          _count: {
+            select: {
+              records: {
+                where: publicRecordWhere(),
               },
-            }),
-            include: {
-              player: true,
-              level: true,
             },
           },
         },
+        orderBy: [{ rank: "asc" }, { name: "asc" }],
+        take: 3,
       });
+
+      const [level] = levels.map(serializePublicLevel).sort(sortPublicLevels);
+
+      if (!level) {
+        return null;
+      }
+
+      const records = await db.record.findMany({
+        where: publicRecordWhere({
+          levelId: level.id,
+        }),
+        include: {
+          player: true,
+          level: true,
+        },
+        orderBy: {
+          acceptedAt: "desc",
+        },
+        take: limit,
+      });
+
+      return {
+        level,
+        matches: levels.map(serializePublicLevel).sort(sortPublicLevels),
+        records: records.map(serializePublicRecord),
+      };
+    },
+    async getLeaderboard(limit: number) {
+      const db = await getPrisma();
+      const records = await db.record.findMany({
+        where: publicRecordWhere({
+          level: {
+            status: {
+              in: ["RANKED", "LEGACY"],
+            },
+          },
+        }),
+        include: {
+          player: true,
+          level: true,
+        },
+      });
+
+      return serializePublicLeaderboard(records).slice(0, limit);
+    },
+    async getPlayer(handle: string) {
+      const db = await getPrisma();
+      const [player, leaderboardRecords] = await Promise.all([
+        db.user.findFirst({
+          where: publicUserWhere({
+            playerName: handle,
+          }),
+          include: {
+            records: {
+              where: publicRecordWhere({
+                level: {
+                  status: {
+                    in: ["RANKED", "LEGACY"],
+                  },
+                },
+              }),
+              include: {
+                player: true,
+                level: true,
+              },
+            },
+          },
+        }),
+        db.record.findMany({
+          where: publicRecordWhere({
+            level: {
+              status: {
+                in: ["RANKED", "LEGACY"],
+              },
+            },
+          }),
+          include: {
+            player: true,
+            level: true,
+          },
+        }),
+      ]);
 
       if (!player) {
         return null;
       }
 
+      const summary = serializePublicLeaderboard(leaderboardRecords).find(
+        (row) => row.handle === player.playerName,
+      );
+
       return {
         player: serializePublicPlayer(player),
         summary:
-          serializePublicLeaderboard(player.records)[0] ??
+          summary ??
           ({
             rank: null,
             handle: player.playerName,
@@ -490,6 +753,53 @@ export function createDiscordDataService() {
           publishedAt: "desc",
         },
       });
+    },
+    async getStatusStats() {
+      const db = await getPrisma();
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const [
+        rankedLevels,
+        legacyLevels,
+        acceptedRecords7d,
+        latestAcceptedRecord,
+      ] = await Promise.all([
+        db.level.count({
+          where: publicLevelWhere({
+            status: "RANKED",
+          }),
+        }),
+        db.level.count({
+          where: publicLevelWhere({
+            status: "LEGACY",
+          }),
+        }),
+        db.record.count({
+          where: publicRecordWhere({
+            acceptedAt: {
+              gte: sevenDaysAgo,
+            },
+          }),
+        }),
+        db.record.findFirst({
+          where: publicRecordWhere(),
+          orderBy: {
+            acceptedAt: "desc",
+          },
+          select: {
+            acceptedAt: true,
+          },
+        }),
+      ]);
+
+      return {
+        apiReachable: true,
+        rankedLevels,
+        legacyLevels,
+        acceptedRecords7d,
+        latestAcceptedAt: latestAcceptedRecord?.acceptedAt.toISOString() ?? null,
+        botMode: "Vercel HTTP interactions",
+        generatedAt: new Date().toISOString(),
+      };
     },
     async getPendingRecords(limit: number) {
       const db = await getPrisma();
@@ -586,13 +896,16 @@ export function createDiscordDataService() {
     },
     async getStats() {
       const db = await getPrisma();
-      const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
       const [
         pendingRecords,
         pendingSuggestions,
         rankedLevels,
+        legacyLevels,
         users,
         acceptedRecords,
+        acceptedRecords7d,
         moderationActions24h,
         auditEvents24h,
       ] = await Promise.all([
@@ -617,19 +930,31 @@ export function createDiscordDataService() {
             status: "RANKED",
           },
         }),
+        db.level.count({
+          where: {
+            status: "LEGACY",
+          },
+        }),
         db.user.count(),
         db.record.count(),
+        db.record.count({
+          where: {
+            acceptedAt: {
+              gte: since7d,
+            },
+          },
+        }),
         db.moderationAction.count({
           where: {
             createdAt: {
-              gte: since,
+              gte: since24h,
             },
           },
         }),
         db.adminAuditLog.count({
           where: {
             createdAt: {
-              gte: since,
+              gte: since24h,
             },
           },
         }),
@@ -639,8 +964,10 @@ export function createDiscordDataService() {
         pendingRecords,
         pendingSuggestions,
         rankedLevels,
+        legacyLevels,
         users,
         acceptedRecords,
+        acceptedRecords7d,
         moderationActions24h,
         auditEvents24h,
         generatedAt: new Date().toISOString(),
@@ -663,9 +990,59 @@ export function hasDiscordStaffRole(
 }
 
 export function containsSensitiveDiscordOutput(value: unknown) {
-  return /\b(email|password|session|token|secret|database_url|smtp|rawFootageUrl|moderatorNotes)\b/i.test(
+  return /\b(email|password|session|token|secret|database_url|smtp|rawFootageUrl|moderatorNotes|adminNotes)\b/i.test(
     JSON.stringify(value),
   );
+}
+
+async function autocompleteCommand(
+  interaction: DiscordInteraction,
+  service: DiscordDataService,
+): Promise<DiscordInteractionResponse> {
+  const commandName = interaction.data?.name ?? "";
+  const focusedOption = getFocusedOption(interaction);
+  const query = typeof focusedOption?.value === "string" ? focusedOption.value : "";
+
+  if (!query.trim()) {
+    return autocompleteResponse([]);
+  }
+
+  try {
+    if (
+      (commandName === "level" && focusedOption?.name === "query") ||
+      (commandName === "level-records" && focusedOption?.name === "level")
+    ) {
+      const { levels } = await service.search(query, autocompleteLimit);
+
+      return autocompleteResponse(
+        levels.slice(0, autocompleteLimit).map((level) => ({
+          name: truncate(
+            `${rankLabel(level)} ${level.name} - ${level.verifier}`,
+            100,
+          ),
+          value: truncate(level.name, 100),
+        })),
+      );
+    }
+
+    if (
+      (commandName === "player" || commandName === "records") &&
+      focusedOption?.name === "handle"
+    ) {
+      const { players } = await service.search(query, autocompleteLimit);
+
+      return autocompleteResponse(
+        players.slice(0, autocompleteLimit).map((player) => ({
+          name: truncate(`${player.displayName} (${player.handle})`, 100),
+          value: truncate(player.handle, 100),
+        })),
+      );
+    }
+  } catch {
+    return autocompleteResponse([]);
+  }
+
+  return autocompleteResponse([]);
 }
 
 async function topCommand(
@@ -673,20 +1050,23 @@ async function topCommand(
   service: DiscordDataService,
   env: Record<string, string | undefined>,
 ) {
-  const levels = await service.getTopLevels(getIntegerOption(interaction, "count", defaultLimit));
+  const count = getIntegerOption(interaction, "count", defaultLimit, maxPublicLimit);
+  const status = getTopStatusOption(interaction);
+  const levels = await service.getTopLevels(count, status);
+  const title =
+    status === "legacy"
+      ? "NDL Legacy Levels"
+      : status === "all-public"
+        ? "NDL Public Levels"
+        : "NDL Top Ranked Levels";
+
   return embedResponse(
     [
       embed(
-        "NDL Top Levels",
+        title,
         levels.length
-          ? levels
-              .slice(0, defaultLimit)
-              .map(
-                (level) =>
-                  `${rankLabel(level)} **${clean(level.name)}** - ${level.points} pts - ${clean(level.verifier)} - ${level.recordCount} records\n${levelUrl(env, level.slug)}`,
-              )
-              .join("\n")
-          : "No ranked levels are available yet.",
+          ? `${formatLevelList(levels)}\n\n${markdownLink("View full ranked list", getSiteBaseUrl(env))}`
+          : "No public levels are available yet.",
         getSiteBaseUrl(env),
       ),
     ],
@@ -712,7 +1092,7 @@ async function levelCommand(
     return messageResponse(`No public level matched "${clean(query)}".`, true);
   }
 
-  return embedResponse([levelEmbed(level, env)], false);
+  return embedResponse([levelEmbed(level, env, levels.slice(1, 3))], false);
 }
 
 async function playerCommand(
@@ -729,12 +1109,13 @@ async function playerCommand(
   const profile = await service.getPlayer(handle);
 
   if (!profile) {
-    return messageResponse("Player not found.", true);
+    return messageResponse("No public player found for that handle.", true);
   }
 
-  const hardest = profile.records
-    .filter((record) => record.level.status === "RANKED" && record.level.rank)
-    .sort((a, b) => (a.level.rank ?? 99999) - (b.level.rank ?? 99999))[0];
+  const topRecords = sortRecordsByRankAndPoints(profile.records).slice(0, 5);
+  const hardest = topRecords.find(
+    (record) => record.level.status === "RANKED" && record.level.rank,
+  );
 
   return embedResponse(
     [
@@ -754,6 +1135,21 @@ async function playerCommand(
               ? `${rankLabel(hardest.level)} ${hardest.level.name} (${hardest.pointsAwarded} pts)`
               : "No ranked records yet.",
           },
+          {
+            name: "Top records",
+            value: topRecords.length
+              ? topRecords
+                  .map(
+                    (record) =>
+                      `${rankLabel(record.level)} ${record.level.name} - ${record.pointsAwarded} pts`,
+                  )
+                  .join("\n")
+              : "No accepted records yet.",
+          },
+          {
+            name: "View more",
+            value: markdownLink("Open player page", playerUrl(env, profile.player.handle)),
+          },
         ],
       ),
     ],
@@ -767,15 +1163,16 @@ async function recordsCommand(
   env: Record<string, string | undefined>,
 ) {
   const handle = getStringOption(interaction, "handle");
+  const limit = getIntegerOption(interaction, "limit", defaultLimit, maxCompactLimit);
 
   if (!handle) {
     return messageResponse("Provide a player username.", true);
   }
 
-  const records = await service.getPlayerRecords(handle, maxLimit);
+  const records = await service.getPlayerRecords(handle, limit);
 
   if (!records) {
-    return messageResponse("Player not found.", true);
+    return messageResponse("No public player found for that handle.", true);
   }
 
   return embedResponse(
@@ -783,13 +1180,7 @@ async function recordsCommand(
       embed(
         `Records for ${handle}`,
         records.length
-          ? records
-              .slice(0, defaultLimit)
-              .map(
-                (record) =>
-                  `${rankLabel(record.level)} **${clean(record.level.name)}** - ${record.pointsAwarded} pts - 100%\n${record.videoUrl}`,
-              )
-              .join("\n")
+          ? `${formatRecordList(records)}\n\n${markdownLink("View more on NDL", playerUrl(env, handle))}`
           : "No accepted records found.",
         playerUrl(env, handle),
       ),
@@ -799,21 +1190,24 @@ async function recordsCommand(
 }
 
 async function recentCommand(
+  interaction: DiscordInteraction,
   service: DiscordDataService,
   env: Record<string, string | undefined>,
 ) {
-  const records = await service.getRecentRecords(defaultLimit);
+  const count = getIntegerOption(interaction, "count", defaultLimit, maxCompactLimit);
+  const records = await service.getRecentRecords(count);
+
   return embedResponse(
     [
       embed(
         "Recent Accepted Records",
         records.length
-          ? records
+          ? `${records
               .map(
                 (record) =>
-                  `**${clean(record.player.displayName)}** - ${rankLabel(record.level)} ${clean(record.level.name)} - ${record.pointsAwarded} pts - ${formatDate(record.acceptedAt)}`,
+                  `${markdownLink(record.player.displayName, playerUrl(env, record.player.handle))} - ${markdownLink(`${rankLabel(record.level)} ${record.level.name}`, levelUrl(env, record.level.slug))} - ${record.pointsAwarded} pts - ${formatDate(record.acceptedAt)}`,
               )
-              .join("\n")
+              .join("\n")}\n\n${markdownLink("View NDL", getSiteBaseUrl(env))}`
           : "No accepted records are available yet.",
         getSiteBaseUrl(env),
       ),
@@ -834,6 +1228,7 @@ async function searchCommand(
   }
 
   const { levels, players } = await service.search(query, defaultLimit);
+
   return embedResponse(
     [
       embed("NDL Search", `Results for "${clean(query)}"`, getSiteBaseUrl(env), [
@@ -844,7 +1239,7 @@ async function searchCommand(
                 .slice(0, 5)
                 .map(
                   (level) =>
-                    `${rankLabel(level)} [${clean(level.name)}](${levelUrl(env, level.slug)}) - ${level.points} pts`,
+                    `${rankLabel(level)} ${markdownLink(level.name, levelUrl(env, level.slug))} - ${level.points} pts`,
                 )
                 .join("\n")
             : "No level matches.",
@@ -854,9 +1249,8 @@ async function searchCommand(
           value: players.length
             ? players
                 .slice(0, 5)
-                .map(
-                  (player) =>
-                    `[${clean(player.displayName)}](${playerUrl(env, player.handle)})`,
+                .map((player) =>
+                  markdownLink(player.displayName, playerUrl(env, player.handle)),
                 )
                 .join("\n")
             : "No player matches.",
@@ -872,22 +1266,130 @@ async function rulesCommand(
   env: Record<string, string | undefined>,
 ) {
   const rules = await service.getRules();
+  const fields: DiscordEmbed["fields"] = [
+    {
+      name: "Core summary",
+      value:
+        "Accepted NDL versions are required.\nVideo proof is required.\nHigh-ranked records need raw footage for staff review.\nMacros, replay bots, noclip, and equivalent completion cheats are banned.\nCBF is currently allowed.",
+    },
+    {
+      name: "Read the full rules",
+      value: markdownLink("Open NDL rules", `${getSiteBaseUrl(env)}/rules`),
+    },
+  ];
 
-  if (!rules) {
-    return messageResponse("Rules document not found.", true);
+  if (rules) {
+    fields.push({
+      name: "Version",
+      value: `${rules.version} - ${formatDate(rules.publishedAt.toISOString())}`,
+      inline: true,
+    });
   }
 
   return embedResponse(
     [
       embed(
         "NDL Rules",
-        `${firstParagraph(rules.content)}\n\nRead the full rules: ${getSiteBaseUrl(env)}/rules`,
+        "A concise summary for Discord. The website rules are the source of truth.",
         `${getSiteBaseUrl(env)}/rules`,
+        fields,
+      ),
+    ],
+    false,
+  );
+}
+
+async function levelRecordsCommand(
+  interaction: DiscordInteraction,
+  service: DiscordDataService,
+  env: Record<string, string | undefined>,
+) {
+  const query = getStringOption(interaction, "level");
+  const limit = getIntegerOption(interaction, "limit", defaultLimit, maxCompactLimit);
+
+  if (!query) {
+    return messageResponse("Provide a level search query.", true);
+  }
+
+  const result = await service.getLevelRecords(query, limit);
+
+  if (!result) {
+    return messageResponse(`No public level matched "${clean(query)}".`, true);
+  }
+
+  return embedResponse(
+    [
+      embed(
+        `Records for ${result.level.name}`,
+        result.records.length
+          ? `${formatRecordList(result.records)}\n\n${markdownLink("Open level page", levelUrl(env, result.level.slug))}`
+          : "No accepted records found for this level.",
+        levelUrl(env, result.level.slug),
+        result.matches.length > 1
+          ? [
+              {
+                name: "Other matches",
+                value: formatLevelSuggestions(result.matches.slice(1, 3), env),
+              },
+            ]
+          : undefined,
+      ),
+    ],
+    false,
+  );
+}
+
+async function leaderboardCommand(
+  interaction: DiscordInteraction,
+  service: DiscordDataService,
+  env: Record<string, string | undefined>,
+) {
+  const count = getIntegerOption(interaction, "count", defaultLimit, maxPublicLimit);
+  const players = await service.getLeaderboard(count);
+
+  return embedResponse(
+    [
+      embed(
+        "NDL Player Leaderboard",
+        players.length
+          ? `${players
+              .map(
+                (player) =>
+                  `#${player.rank} ${markdownLink(player.displayName, playerUrl(env, player.handle))} - ${player.points} pts - ${player.records} records`,
+              )
+              .join("\n")}\n\n${markdownLink("View full leaderboard", `${getSiteBaseUrl(env)}/players`)}`
+          : "No accepted records are available yet.",
+        `${getSiteBaseUrl(env)}/players`,
+      ),
+    ],
+    false,
+  );
+}
+
+function aboutCommand(env: Record<string, string | undefined>) {
+  const siteUrl = getSiteBaseUrl(env);
+
+  return embedResponse(
+    [
+      embed(
+        "About Nerfed Demonlist",
+        "NDL is a community-ranked list for approved nerfed Geometry Dash demon versions.",
+        siteUrl,
         [
           {
-            name: "Version",
-            value: `${rules.version} - ${formatDate(rules.publishedAt.toISOString())}`,
+            name: "Site",
+            value: markdownLink("Open Nerfed Demonlist", siteUrl),
             inline: true,
+          },
+          {
+            name: "Bot commands",
+            value:
+              "/top, /level, /player, /records, /recent, /search, /rules, /level-records, /leaderboard, /about, /status",
+          },
+          {
+            name: "Non-affiliation",
+            value:
+              "Nerfed Demonlist is not affiliated with RobTopGames, Geometry Dash, Pointercrate, or the official Demonlist.",
           },
         ],
       ),
@@ -896,22 +1398,50 @@ async function rulesCommand(
   );
 }
 
-async function pendingRecordsCommand(
+async function statusCommand(
   service: DiscordDataService,
   env: Record<string, string | undefined>,
 ) {
-  const submissions = await service.getPendingRecords(defaultLimit);
+  const stats = await service.getStatusStats();
+
+  return embedResponse(
+    [
+      embed("NDL Status", "Safe public status for the Discord integration.", getSiteBaseUrl(env), [
+        { name: "API reachable", value: yesNo(stats.apiReachable), inline: true },
+        { name: "Ranked levels", value: String(stats.rankedLevels), inline: true },
+        {
+          name: "Recent accepted records",
+          value: `${stats.acceptedRecords7d} in the last 7 days`,
+          inline: true,
+        },
+        { name: "Bot mode", value: stats.botMode, inline: true },
+        {
+          name: "Latest accepted record",
+          value: stats.latestAcceptedAt ? formatDate(stats.latestAcceptedAt) : "None yet.",
+          inline: true,
+        },
+      ]),
+    ],
+    false,
+  );
+}
+
+async function pendingRecordsCommand(
+  interaction: DiscordInteraction,
+  service: DiscordDataService,
+  env: Record<string, string | undefined>,
+) {
+  const limit = getIntegerOption(interaction, "limit", defaultLimit, maxCompactLimit);
+  const submissions = await service.getPendingRecords(limit);
+
   return embedResponse(
     [
       embed(
         "Pending Record Submissions",
         submissions.length
-          ? submissions
-              .map(
-                (submission) =>
-                  `\`${submission.id}\` - **${clean(submission.player.displayName)}** on ${rankLabel(submission.level)} ${clean(submission.level.name)} - ${submission.status}\nVideo: ${submission.videoUrl}`,
-              )
-              .join("\n")
+          ? `${submissions
+              .map(formatPendingRecordLine)
+              .join("\n")}\n\n${markdownLink("Open moderation queue", `${getSiteBaseUrl(env)}/moderation`)}`
           : "No pending record submissions.",
         `${getSiteBaseUrl(env)}/moderation`,
       ),
@@ -921,21 +1451,21 @@ async function pendingRecordsCommand(
 }
 
 async function pendingSuggestionsCommand(
+  interaction: DiscordInteraction,
   service: DiscordDataService,
   env: Record<string, string | undefined>,
 ) {
-  const suggestions = await service.getPendingSuggestions(defaultLimit);
+  const limit = getIntegerOption(interaction, "limit", defaultLimit, maxCompactLimit);
+  const suggestions = await service.getPendingSuggestions(limit);
+
   return embedResponse(
     [
       embed(
         "Pending Level Suggestions",
         suggestions.length
-          ? suggestions
-              .map(
-                (suggestion) =>
-                  `\`${suggestion.id}\` - **${clean(suggestion.name)}** by ${clean(suggestion.submitter.displayName)} - ${suggestion.status}`,
-              )
-              .join("\n")
+          ? `${suggestions
+              .map(formatPendingSuggestionLine)
+              .join("\n")}\n\n${markdownLink("Open moderation queue", `${getSiteBaseUrl(env)}/moderation`)}`
           : "No pending level suggestions.",
         `${getSiteBaseUrl(env)}/moderation`,
       ),
@@ -947,6 +1477,7 @@ async function pendingSuggestionsCommand(
 async function submissionCommand(
   interaction: DiscordInteraction,
   service: DiscordDataService,
+  env: Record<string, string | undefined>,
 ) {
   const id = getStringOption(interaction, "id");
 
@@ -962,12 +1493,24 @@ async function submissionCommand(
 
   return embedResponse(
     [
-      embed(`Submission ${submission.id}`, `${submission.status} - ${submission.player.displayName} on ${submission.level.name}`, undefined, [
-        { name: "Video", value: submission.videoUrl },
-        { name: "Raw footage", value: submission.rawFootageUrl ?? "No raw footage link." },
-        { name: "Proof", value: `${submission.fps} FPS\nCBF: ${yesNo(submission.cbfUsed)}\nClick audio: ${yesNo(submission.clickAudioIncluded)}` },
-        { name: "Moderator notes", value: submission.moderatorNotes ?? "No moderator notes." },
-      ]),
+      embed(
+        `Submission ${submission.id}`,
+        `${submission.status} - ${submission.player.displayName} on ${submission.level.name}`,
+        `${getSiteBaseUrl(env)}/moderation?q=${encodeURIComponent(submission.id)}`,
+        [
+          { name: "Level", value: `${rankLabel(submission.level)} ${submission.level.name}`, inline: true },
+          { name: "Player", value: submission.player.displayName, inline: true },
+          { name: "Submitted", value: formatDate(submission.submittedAt), inline: true },
+          {
+            name: "Proof summary",
+            value: `${submission.fps} FPS\nCBF: ${yesNo(submission.cbfUsed)}\nClick audio: ${yesNo(submission.clickAudioIncluded)}\nPrivate proof on file: ${yesNo(Boolean(submission.rawFootageUrl || submission.proofImageUrl))}`,
+          },
+          {
+            name: "Review on NDL",
+            value: markdownLink("Open moderation queue", `${getSiteBaseUrl(env)}/moderation?q=${encodeURIComponent(submission.id)}`),
+          },
+        ],
+      ),
     ],
     true,
   );
@@ -976,6 +1519,7 @@ async function submissionCommand(
 async function suggestionCommand(
   interaction: DiscordInteraction,
   service: DiscordDataService,
+  env: Record<string, string | undefined>,
 ) {
   const id = getStringOption(interaction, "id");
 
@@ -991,17 +1535,23 @@ async function suggestionCommand(
 
   return embedResponse(
     [
-      embed(`Suggestion ${suggestion.id}`, `${suggestion.status} - ${suggestion.name}`, undefined, [
-        { name: "Original level", value: suggestion.originalName, inline: true },
-        { name: "Submitter", value: suggestion.submitter.displayName, inline: true },
-        { name: "GD ID", value: suggestion.gdLevelId, inline: true },
-        { name: "Showcase", value: suggestion.showcaseUrl },
-        {
-          name: "Compatibility notes",
-          value: suggestion.compatibilityNotes || "No compatibility notes.",
-        },
-        { name: "Moderator notes", value: suggestion.moderatorNotes ?? "No moderator notes." },
-      ]),
+      embed(
+        `Suggestion ${suggestion.id}`,
+        `${suggestion.status} - ${suggestion.name}`,
+        `${getSiteBaseUrl(env)}/moderation?q=${encodeURIComponent(suggestion.id)}`,
+        [
+          { name: "Original level", value: suggestion.originalName, inline: true },
+          { name: "Submitter", value: suggestion.submitter.displayName, inline: true },
+          { name: "GD ID", value: suggestion.gdLevelId, inline: true },
+          { name: "Nerf creator", value: suggestion.nerfCreator, inline: true },
+          { name: "Verifier", value: suggestion.verifier, inline: true },
+          { name: "Showcase", value: suggestion.showcaseUrl || "No showcase link." },
+          {
+            name: "Review on NDL",
+            value: markdownLink("Open moderation queue", `${getSiteBaseUrl(env)}/moderation?q=${encodeURIComponent(suggestion.id)}`),
+          },
+        ],
+      ),
     ],
     true,
   );
@@ -1010,38 +1560,42 @@ async function suggestionCommand(
 async function auditCommand(
   interaction: DiscordInteraction,
   service: DiscordDataService,
+  env: Record<string, string | undefined>,
 ) {
   const query = getStringOption(interaction, "query");
   const entries = await service.getAudit(query, defaultLimit);
+
   return embedResponse(
     [
       embed(
         "NDL Audit",
         entries.length
-          ? entries
-              .map(
-                (entry) =>
-                  `\`${entry.action}\` - ${clean(entry.entityType)}:${clean(entry.entityLabel)} - ${clean(entry.actor.displayName)} - ${formatDate(entry.createdAt)}`,
-              )
-              .join("\n")
+          ? `${entries
+              .map(formatAuditLine)
+              .join("\n")}\n\n${markdownLink("Open audit log", `${getSiteBaseUrl(env)}/admin/audit`)}`
           : `No audit entries found${query ? ` for "${clean(query)}"` : ""}.`,
+        `${getSiteBaseUrl(env)}/admin/audit`,
       ),
     ],
     true,
   );
 }
 
-async function statsCommand(service: DiscordDataService) {
+async function statsCommand(
+  service: DiscordDataService,
+  env: Record<string, string | undefined>,
+) {
   const stats = await service.getStats();
+
   return embedResponse(
     [
-      embed("NDL Staff Stats", `Generated ${formatDate(stats.generatedAt)}`, undefined, [
+      embed("NDL Staff Stats", `Generated ${formatDate(stats.generatedAt)}`, `${getSiteBaseUrl(env)}/admin`, [
         { name: "Pending records", value: String(stats.pendingRecords), inline: true },
         { name: "Pending suggestions", value: String(stats.pendingSuggestions), inline: true },
         { name: "Ranked levels", value: String(stats.rankedLevels), inline: true },
+        { name: "Legacy levels", value: String(stats.legacyLevels), inline: true },
         { name: "Users", value: String(stats.users), inline: true },
-        { name: "Accepted records", value: String(stats.acceptedRecords), inline: true },
-        { name: "Moderation actions 24h", value: String(stats.moderationActions24h), inline: true },
+        { name: "Accepted records 7d", value: String(stats.acceptedRecords7d), inline: true },
       ]),
     ],
     true,
@@ -1049,14 +1603,7 @@ async function statsCommand(service: DiscordDataService) {
 }
 
 function isStaffCommand(commandName: string) {
-  return [
-    "pending-records",
-    "pending-suggestions",
-    "submission",
-    "suggestion",
-    "audit",
-    "stats",
-  ].includes(commandName);
+  return (staffCommandNames as readonly string[]).includes(commandName);
 }
 
 function messageResponse(
@@ -1066,7 +1613,7 @@ function messageResponse(
   return {
     type: DiscordInteractionResponseType.ChannelMessageWithSource,
     data: {
-      content,
+      content: truncate(content, 2000),
       flags: ephemeral ? DiscordMessageFlags.Ephemeral : undefined,
       allowed_mentions: { parse: [] },
     },
@@ -1080,9 +1627,23 @@ function embedResponse(
   return {
     type: DiscordInteractionResponseType.ChannelMessageWithSource,
     data: {
-      embeds,
+      embeds: embeds.slice(0, 10),
       flags: ephemeral ? DiscordMessageFlags.Ephemeral : undefined,
       allowed_mentions: { parse: [] },
+    },
+  };
+}
+
+function autocompleteResponse(
+  choices: DiscordAutocompleteChoice[],
+): DiscordInteractionResponse {
+  return {
+    type: DiscordInteractionResponseType.ApplicationCommandAutocompleteResult,
+    data: {
+      choices: choices.slice(0, autocompleteLimit).map((choice) => ({
+        name: truncate(choice.name, 100),
+        value: truncate(choice.value, 100),
+      })),
     },
   };
 }
@@ -1098,27 +1659,87 @@ function embed(
     description: truncate(description, 4096),
     color: ndlColor,
     url,
-    fields: fields?.map((field) => ({
+    fields: fields?.slice(0, 25).map((field) => ({
       ...field,
       name: truncate(field.name, 256),
-      value: truncate(field.value, 1024),
+      value: truncate(field.value || "None.", 1024),
     })),
+    footer: {
+      text: "Nerfed Demonlist",
+    },
+    timestamp: new Date().toISOString(),
   };
 }
 
-function levelEmbed(level: ApiLevel, env: Record<string, string | undefined>) {
-  return embed(
-    `${rankLabel(level)} ${level.name}`,
-    `${level.status.toLowerCase()} - ${level.points} pts - ${level.recordCount} records`,
-    levelUrl(env, level.slug),
-    [
-      { name: "Original level", value: level.originalName, inline: true },
-      { name: "Verifier", value: level.verifier, inline: true },
-      { name: "Nerf creator", value: level.nerfCreator, inline: true },
-      { name: "GD ID", value: level.gdLevelId, inline: true },
-      { name: "Showcase", value: level.showcaseUrl || "No showcase link." },
-    ],
-  );
+function levelEmbed(
+  level: ApiLevel,
+  env: Record<string, string | undefined>,
+  otherMatches: ApiLevel[] = [],
+) {
+  const fields: DiscordEmbed["fields"] = [
+    { name: "Rank/status", value: rankLabel(level), inline: true },
+    { name: "Points", value: `${level.points} pts`, inline: true },
+    { name: "Records", value: String(level.recordCount), inline: true },
+    { name: "Original level", value: level.originalName, inline: true },
+    { name: "Publisher/host", value: level.publisher, inline: true },
+    { name: "Nerf creator", value: level.nerfCreator, inline: true },
+    { name: "Verifier", value: level.verifier, inline: true },
+    { name: "GD level ID", value: level.gdLevelId, inline: true },
+    { name: "Showcase", value: level.showcaseUrl || "No showcase link." },
+  ];
+
+  if (otherMatches.length > 0) {
+    fields.push({
+      name: "Other matches",
+      value: formatLevelSuggestions(otherMatches, env),
+    });
+  }
+
+  fields.push({
+    name: "View on NDL",
+    value: markdownLink("Open level page", levelUrl(env, level.slug)),
+  });
+
+  return embed(level.name, `${level.status.toLowerCase()} - ${level.points} pts`, levelUrl(env, level.slug), fields);
+}
+
+function formatLevelList(levels: ApiLevel[]) {
+  return levels
+    .map(
+      (level) =>
+        `${rankLabel(level)} **${clean(level.name)}** - ${level.points} pts - ${clean(level.verifier)} - ${level.recordCount} records`,
+    )
+    .join("\n");
+}
+
+function formatRecordList(records: ApiRecord[]) {
+  return records
+    .map(
+      (record) =>
+        `${rankLabel(record.level)} **${clean(record.level.name)}** - ${record.pointsAwarded} pts - 100% - ${formatDate(record.acceptedAt)}\n${record.videoUrl}`,
+    )
+    .join("\n");
+}
+
+function formatLevelSuggestions(levels: ApiLevel[], env: Record<string, string | undefined>) {
+  return levels
+    .map(
+      (level) =>
+        `${rankLabel(level)} ${markdownLink(level.name, levelUrl(env, level.slug))} - ${level.points} pts`,
+    )
+    .join("\n");
+}
+
+function formatPendingRecordLine(submission: StaffRecordSubmission) {
+  return `\`${submission.id}\` - **${clean(submission.player.displayName)}** on ${rankLabel(submission.level)} ${clean(submission.level.name)} - ${submission.status} - ${formatDate(submission.submittedAt)}`;
+}
+
+function formatPendingSuggestionLine(suggestion: StaffLevelSuggestion) {
+  return `\`${suggestion.id}\` - **${clean(suggestion.name)}** by ${clean(suggestion.submitter.displayName)} - ${suggestion.status} - ${formatDate(suggestion.submittedAt)}`;
+}
+
+function formatAuditLine(entry: ApiAuditLogEntry) {
+  return `\`${clean(entry.action)}\` - ${clean(entry.entityType)}:${clean(entry.entityLabel)} - ${clean(entry.actor.displayName)} - ${formatDate(entry.createdAt)}`;
 }
 
 function getStringOption(interaction: DiscordInteraction, name: string) {
@@ -1130,6 +1751,7 @@ function getIntegerOption(
   interaction: DiscordInteraction,
   name: string,
   fallback: number,
+  maximum: number,
 ) {
   const value = interaction.data?.options?.find((option) => option.name === name)?.value;
   const numberValue = typeof value === "number" ? value : Number(value);
@@ -1138,14 +1760,24 @@ function getIntegerOption(
     return fallback;
   }
 
-  return Math.min(numberValue, maxLimit);
+  return Math.min(numberValue, maximum);
+}
+
+function getFocusedOption(interaction: DiscordInteraction) {
+  return interaction.data?.options?.find((option) => option.focused);
+}
+
+function getTopStatusOption(interaction: DiscordInteraction): TopStatusFilter {
+  const status = getStringOption(interaction, "status");
+
+  return status === "legacy" || status === "all-public" ? status : "ranked";
 }
 
 function getSiteBaseUrl(env: Record<string, string | undefined>) {
   return (
     env.NEXT_PUBLIC_SITE_URL?.trim() ||
     env.APP_URL?.trim() ||
-    "https://nerfeddemonlist.net"
+    "https://www.nerfeddemonlist.net"
   ).replace(/\/+$/, "");
 }
 
@@ -1157,18 +1789,12 @@ function playerUrl(env: Record<string, string | undefined>, handle: string) {
   return `${getSiteBaseUrl(env)}/players/${encodeURIComponent(handle)}`;
 }
 
-function rankLabel(level: Pick<ApiLevel, "rank" | "status">) {
-  return level.rank && level.status === "RANKED" ? `#${level.rank}` : level.status;
+function markdownLink(label: string, url: string) {
+  return `[${clean(label).replace(/[[\]]/g, "")}](${url})`;
 }
 
-function firstParagraph(content: string) {
-  return truncate(
-    content
-      .split(/\n\s*\n/)
-      .map((paragraph) => paragraph.trim())
-      .find(Boolean) ?? "NDL rules are available on the website.",
-    500,
-  );
+function rankLabel(level: Pick<ApiLevel, "rank" | "status">) {
+  return level.rank && level.status === "RANKED" ? `#${level.rank}` : level.status;
 }
 
 function clean(value: string) {
@@ -1176,7 +1802,7 @@ function clean(value: string) {
 }
 
 function truncate(value: string, maxLength: number) {
-  return value.length > maxLength ? `${value.slice(0, maxLength - 1)}...` : value;
+  return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
 }
 
 function formatDate(value: string) {
@@ -1197,12 +1823,40 @@ function yesNo(value: boolean) {
   return value ? "yes" : "no";
 }
 
+function sortPublicLevels(first: ApiLevel, second: ApiLevel) {
+  const firstStatus = first.status === "RANKED" ? 0 : 1;
+  const secondStatus = second.status === "RANKED" ? 0 : 1;
+
+  return (
+    firstStatus - secondStatus ||
+    (first.rank ?? 99999) - (second.rank ?? 99999) ||
+    first.name.localeCompare(second.name)
+  );
+}
+
+function sortRecordsByRankAndPoints(records: ApiRecord[]) {
+  return [...records].sort(
+    (first, second) =>
+      (first.level.rank ?? 99999) - (second.level.rank ?? 99999) ||
+      second.pointsAwarded - first.pointsAwarded ||
+      first.level.name.localeCompare(second.level.name),
+  );
+}
+
 function formatDiscordCommandError(error: unknown) {
   if (error instanceof Error) {
     console.error("Discord interaction command failed", {
       message: error.message,
       name: error.name,
     });
+
+    if (/\b429\b|rate/i.test(error.message)) {
+      return "NDL is rate limiting requests. Wait a bit and try again.";
+    }
+
+    if (/\b404\b|not found/i.test(error.message)) {
+      return "NDL could not find that result.";
+    }
   } else {
     console.error("Discord interaction command failed", { error });
   }
@@ -1227,4 +1881,11 @@ function hexToBytes(value: string) {
   }
 
   return bytes;
+}
+
+export function getDiscordCommandGroups() {
+  return {
+    public: [...publicCommandNames],
+    staff: [...staffCommandNames],
+  };
 }
