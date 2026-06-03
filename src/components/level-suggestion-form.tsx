@@ -5,11 +5,13 @@ import {
   type FormEvent,
   type RefObject,
   useActionState,
+  useEffect,
   useRef,
   useState,
 } from "react";
 
 import { submitLevelSuggestionAction } from "@/actions/level-suggestions";
+import { SafeThumbnail } from "@/components/safe-thumbnail";
 import { SubmitButton } from "@/components/submit-button";
 import {
   cx,
@@ -54,10 +56,21 @@ export function LevelSuggestionForm({
     null,
   );
   const values = state.values;
+  const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState(
+    values.thumbnailUrl,
+  );
   const uploadsAvailable = imageUploadProvider !== "disabled";
   const thumbnailFileErrors = thumbnailFileError
     ? [thumbnailFileError]
     : state.fieldErrors.thumbnailFile;
+
+  useEffect(() => {
+    return () => {
+      if (thumbnailPreviewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(thumbnailPreviewUrl);
+      }
+    };
+  }, [thumbnailPreviewUrl]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     if (imageUploadProvider !== "blob" || skipBlobUploadRef.current) {
@@ -103,6 +116,8 @@ export function LevelSuggestionForm({
         thumbnailUrlInputRef.current.value = blob.url;
       }
 
+      setThumbnailPreviewUrl(blob.url);
+
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -118,6 +133,26 @@ export function LevelSuggestionForm({
     } finally {
       setBlobUploading(false);
     }
+  }
+
+  function handleThumbnailFileChange(file: File | null) {
+    setThumbnailFileError(null);
+
+    if (!file) {
+      setThumbnailPreviewUrl(thumbnailUrlInputRef.current?.value ?? "");
+      return;
+    }
+
+    const maxBytes = maxImageMb * 1024 * 1024;
+    const validationError = validateThumbnailUploadCandidate(file, maxBytes);
+
+    if (validationError) {
+      setThumbnailFileError(validationError);
+      setThumbnailPreviewUrl(thumbnailUrlInputRef.current?.value ?? "");
+      return;
+    }
+
+    setThumbnailPreviewUrl(URL.createObjectURL(file));
   }
 
   return (
@@ -153,6 +188,7 @@ export function LevelSuggestionForm({
             <TextInput
               name="name"
               label="Level name"
+              placeholder="Nerfed Bloodbath"
               defaultValue={values.name}
               errors={state.fieldErrors.name}
             />
@@ -160,12 +196,14 @@ export function LevelSuggestionForm({
               name="originalName"
               label="Original level"
               help={fieldHelp.originalName}
+              placeholder="Bloodbath"
               defaultValue={values.originalName}
               errors={state.fieldErrors.originalName}
             />
             <TextInput
               name="gdLevelId"
               label="GD level ID"
+              placeholder="12345678"
               defaultValue={values.gdLevelId}
               errors={state.fieldErrors.gdLevelId}
             />
@@ -173,6 +211,7 @@ export function LevelSuggestionForm({
               name="publisher"
               label="Publisher/host"
               help={fieldHelp.publisher}
+              placeholder="Riot"
               defaultValue={values.publisher}
               errors={state.fieldErrors.publisher}
             />
@@ -180,6 +219,7 @@ export function LevelSuggestionForm({
               name="nerfCreator"
               label="Nerf creator"
               help={fieldHelp.nerfCreator}
+              placeholder="Creator handle"
               defaultValue={values.nerfCreator}
               errors={state.fieldErrors.nerfCreator}
             />
@@ -187,6 +227,7 @@ export function LevelSuggestionForm({
               name="verifier"
               label="Verifier"
               help={fieldHelp.verifier}
+              placeholder="Verifier handle"
               defaultValue={values.verifier}
               errors={state.fieldErrors.verifier}
             />
@@ -203,6 +244,7 @@ export function LevelSuggestionForm({
               label="Showcase link"
               help={fieldHelp.showcaseUrl}
               type="url"
+              placeholder="https://youtu.be/..."
               defaultValue={values.showcaseUrl}
               errors={state.fieldErrors.showcaseUrl}
             />
@@ -233,6 +275,7 @@ export function LevelSuggestionForm({
                     : `Optional PNG, JPG, or WebP up to ${maxImageMb} MB. Upload wins over the URL.`
                 }
                 errors={thumbnailFileErrors}
+                onChange={handleThumbnailFileChange}
               />
             ) : (
               <p className="rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-semibold leading-6 text-slate-600 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
@@ -246,11 +289,28 @@ export function LevelSuggestionForm({
               help="Optional direct image URL. Staff can add or replace it during review."
               type="url"
               required={false}
+              placeholder="https://example.com/thumbnail.webp"
               inputRef={thumbnailUrlInputRef}
               defaultValue={values.thumbnailUrl}
               errors={state.fieldErrors.thumbnailUrl}
+              onChange={(value) => setThumbnailPreviewUrl(value)}
             />
           </div>
+          {thumbnailPreviewUrl ? (
+            <div className="mt-4 grid gap-2">
+              <p className="text-xs font-black uppercase text-slate-500 dark:text-slate-400">
+                Proposed preview
+              </p>
+              <div className="aspect-video w-full max-w-xl overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950/60">
+                <SafeThumbnail
+                  src={thumbnailPreviewUrl}
+                  alt="Suggested thumbnail preview"
+                  allowObjectUrl={thumbnailPreviewUrl.startsWith("blob:")}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            </div>
+          ) : null}
         </FormSection>
 
         <FormSection
@@ -289,6 +349,8 @@ function TextInput({
   defaultValue,
   errors,
   help,
+  placeholder,
+  onChange,
 }: {
   name: LevelSuggestionField;
   label: string;
@@ -298,18 +360,22 @@ function TextInput({
   defaultValue: string;
   errors?: string[];
   help?: string;
+  placeholder?: string;
+  onChange?: (value: string) => void;
 }) {
   const hasErrors = Boolean(errors?.length);
 
   return (
-    <FieldLabel label={label} help={help}>
+    <FieldLabel label={labelWithRequired(label, required)} help={help}>
       <input
         ref={inputRef}
         name={name}
         type={type}
         required={required}
         defaultValue={defaultValue}
+        placeholder={placeholder}
         aria-invalid={hasErrors}
+        onChange={(event) => onChange?.(event.currentTarget.value)}
         className={cx(inputClass, "w-full min-w-0", hasErrors && invalidClass)}
       />
       <FieldErrors errors={errors} />
@@ -324,6 +390,7 @@ function FileInput({
   hint,
   errors,
   help,
+  onChange,
 }: {
   inputRef: RefObject<HTMLInputElement | null>;
   name: LevelSuggestionField;
@@ -331,6 +398,7 @@ function FileInput({
   hint: string;
   errors?: string[];
   help?: string;
+  onChange?: (file: File | null) => void;
 }) {
   const hasErrors = Boolean(errors?.length);
 
@@ -342,6 +410,7 @@ function FileInput({
         type="file"
         accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
         aria-invalid={hasErrors}
+        onChange={(event) => onChange?.(event.currentTarget.files?.[0] ?? null)}
         className={cx(
           inputClass,
           "w-full min-w-0 max-w-full text-xs file:mr-3 file:max-w-[9rem] file:truncate file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-black file:text-white dark:file:bg-cyan-300 dark:file:text-slate-950",
@@ -372,7 +441,7 @@ function TextArea({
   const hasErrors = Boolean(errors?.length);
 
   return (
-    <FieldLabel label={label} help={help}>
+    <FieldLabel label={labelWithRequired(label)} help={help}>
       <textarea
         name={name}
         rows={4}
@@ -383,6 +452,10 @@ function TextArea({
       <FieldErrors errors={errors} />
     </FieldLabel>
   );
+}
+
+function labelWithRequired(label: string, required = true) {
+  return required ? `${label} (required)` : label;
 }
 
 function FieldErrors({ errors }: { errors?: string[] }) {

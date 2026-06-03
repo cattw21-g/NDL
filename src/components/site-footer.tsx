@@ -22,22 +22,42 @@ const footerColumns = [
       { href: "/level-suggestions", label: "Level Suggestions" },
     ],
   },
-  {
-    title: "Account",
-    links: [
-      { href: "/login", label: "Login" },
-      { href: "/register", label: "Register" },
-      { href: "/verify-email", label: "Verify Email" },
-    ],
-  },
 ] as const;
 
-export function SiteFooter() {
+export function SiteFooter({
+  user,
+}: {
+  user?: {
+    playerName: string;
+    isModerator: boolean;
+    isAdmin: boolean;
+  } | null;
+}) {
   const pathname = usePathname();
 
-  if (pathname === "/moderation" || pathname.startsWith("/admin")) {
+  if (pathname === "/moderation" || pathname === "/review" || pathname.startsWith("/admin")) {
     return null;
   }
+
+  const accountLinks = user
+    ? [
+        { href: `/players/${user.playerName}`, label: "Profile" },
+        { href: "/submit", label: "Submit Record" },
+        ...(user.isModerator ? [{ href: "/moderation", label: "Review" }] : []),
+        ...(user.isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
+      ]
+    : [
+        { href: "/login", label: "Login" },
+        { href: "/register", label: "Register" },
+        { href: "/verify-email", label: "Verify Email" },
+      ];
+  const columns = [
+    ...footerColumns,
+    {
+      title: "Account",
+      links: accountLinks,
+    },
+  ];
 
   return (
     <footer className="relative z-10 border-t border-slate-300 bg-white/82 px-3 py-6 text-sm text-slate-700 backdrop-blur dark:border-slate-800 dark:bg-slate-950/72 dark:text-slate-300 sm:px-5">
@@ -51,7 +71,7 @@ export function SiteFooter() {
             </span>
             <div className="min-w-0">
               <p className="font-black text-slate-950 dark:text-slate-50">
-                © 2026 Nerfed Demonlist
+                &copy; 2026 Nerfed Demonlist
               </p>
               <p className="mt-1 text-xs font-semibold uppercase tracking-[0.08em] text-cyan-800 dark:text-cyan-300">
                 Community reviewed nerfed demons
@@ -75,7 +95,7 @@ export function SiteFooter() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          {footerColumns.map((column) => (
+          {columns.map((column) => (
             <nav key={column.title} aria-label={`${column.title} footer links`}>
               <h2 className="border-b border-slate-300 pb-2 text-xs font-black uppercase tracking-[0.08em] text-slate-500 dark:border-slate-800 dark:text-slate-400">
                 {column.title}

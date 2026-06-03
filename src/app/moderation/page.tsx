@@ -39,6 +39,11 @@ import { isAdminRole } from "@/lib/permissions";
 import { calculateCurrentLevelPoints } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "Review - NDL",
+  description:
+    "Staff review queue for Nerfed Demonlist record submissions and level suggestions.",
+};
 
 export default async function ModerationPage({
   searchParams,
@@ -107,7 +112,7 @@ export default async function ModerationPage({
       orderBy: {
         createdAt: "desc",
       },
-      take: 12,
+      take: 10,
     }),
   ]);
   const canConvertSuggestions = isAdminRole(moderator.role);
@@ -144,9 +149,30 @@ export default async function ModerationPage({
 
       <PageMessage searchParams={params} />
 
+      <nav
+        aria-label="Review sections"
+        className="flex flex-wrap gap-2 rounded-md border border-slate-300 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-900"
+      >
+        {[
+          ["#record-submissions", "Record submissions"],
+          ["#level-suggestions", "Level suggestions"],
+          ["#recent-accepted", "Recent accepted"],
+          ["#recent-rejected", "Recent rejected"],
+        ].map(([href, label]) => (
+          <a
+            key={href}
+            href={href}
+            className="inline-flex min-h-9 items-center rounded-md border border-slate-300 bg-white px-3 font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
+
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-6">
           <QueueBlock
+            id="record-submissions"
             title="Record submissions"
             description={`${recordSubmissionCount} record submission${recordSubmissionCount === 1 ? "" : "s"} match the current filters.`}
           >
@@ -173,6 +199,7 @@ export default async function ModerationPage({
           </QueueBlock>
 
           <QueueBlock
+            id="level-suggestions"
             title="Level suggestions"
             description={`${levelSuggestionCount} level suggestion${levelSuggestionCount === 1 ? "" : "s"} match the current filters.`}
           >
@@ -203,6 +230,7 @@ export default async function ModerationPage({
           </QueueBlock>
 
           <QueueBlock
+            id="recent-accepted"
             title="Recent accepted"
             description="Recently accepted public records and approved level suggestions."
           >
@@ -243,6 +271,7 @@ export default async function ModerationPage({
           </QueueBlock>
 
           <QueueBlock
+            id="recent-rejected"
             title="Recent rejected"
             description="Recently rejected records remain private to submitter and staff."
           >
@@ -625,16 +654,18 @@ function MetricQueue({ label, pending }: { label: string; pending: number }) {
 }
 
 function QueueBlock({
+  id,
   title,
   description,
   children,
 }: {
+  id: string;
   title: string;
   description: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-3">
+    <section id={id} className="scroll-mt-24 space-y-3">
       <div>
         <h2 className="text-2xl font-black text-slate-950 dark:text-slate-50">
           {title}

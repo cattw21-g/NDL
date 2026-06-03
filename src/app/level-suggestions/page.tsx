@@ -16,6 +16,11 @@ import { formatDateTime } from "@/lib/format";
 import { isModeratorRole } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "Level Suggestions - NDL",
+  description:
+    "View your Nerfed Demonlist level suggestions and their staff review status.",
+};
 
 export default async function LevelSuggestionsPage({
   searchParams,

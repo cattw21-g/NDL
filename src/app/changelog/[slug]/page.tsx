@@ -13,6 +13,11 @@ import { publicChangelogWhere } from "@/lib/demo-visibility";
 import { formatDate, formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "Changelog Update - NDL",
+  description:
+    "Read a public Nerfed Demonlist announcement, ranking update, rule update, or staff note.",
+};
 
 export default async function ChangelogPostPage({
   params,
@@ -58,9 +63,9 @@ export default async function ChangelogPostPage({
         <div className="mt-4 text-sm font-bold text-slate-500 dark:text-slate-400">
           Published {formatDate(post.publishedAt)}
           {post.updatedAt > (post.publishedAt ?? post.updatedAt)
-            ? ` · Updated ${formatDateTime(post.updatedAt)}`
+            ? ` - Updated ${formatDateTime(post.updatedAt)}`
             : ""}
-          {post.author ? ` · ${post.author.displayName}` : ""}
+          {post.author ? ` - ${post.author.displayName}` : ""}
         </div>
       </section>
 

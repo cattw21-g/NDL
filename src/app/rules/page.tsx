@@ -1,10 +1,16 @@
 import { BookOpen, GitCompareArrows, ShieldAlert } from "lucide-react";
+import Link from "next/link";
 
 import { EmptyState, Eyebrow, SectionPanel } from "@/components/ui";
 import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "Rules - NDL",
+  description:
+    "Official Nerfed Demonlist record, proof, level eligibility, moderation, ranking, and points rules.",
+};
 
 export default async function RulesPage() {
   const rules = await prisma.rulesDocument.findFirst({
@@ -15,6 +21,11 @@ export default async function RulesPage() {
       publishedAt: "desc",
     },
   });
+  const headings =
+    rules?.content
+      .split("\n")
+      .filter((line) => line.startsWith("## "))
+      .map((line) => line.replace("## ", "")) ?? [];
 
   return (
     <div className="space-y-5">
@@ -30,6 +41,20 @@ export default async function RulesPage() {
             The proof standards moderators use before accepting and scoring a
             record.
           </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/submit"
+              className="inline-flex min-h-10 items-center justify-center rounded-md bg-cyan-700 px-4 text-sm font-black text-white transition hover:bg-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
+            >
+              Submit a record
+            </Link>
+            <Link
+              href="/suggest-level"
+              className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
+            >
+              Suggest a level
+            </Link>
+          </div>
         </div>
         <SectionPanel className="p-4 shadow-none">
           <div className="flex items-center gap-2 font-black text-slate-950">
@@ -47,20 +72,21 @@ export default async function RulesPage() {
         <SectionPanel className="p-5">
           {rules ? (
             <>
-              <p className="text-sm font-bold text-slate-500">
-                Version {rules.version} - published{" "}
-                {formatDate(rules.publishedAt)}
+              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                Version v1.0 - Last updated {formatDate(rules.updatedAt)}
               </p>
-              <div className="mt-4 space-y-3 text-sm leading-7 text-slate-700">
+              <div className="mt-4 space-y-3 text-sm leading-7 text-slate-700 dark:text-slate-300">
                 {rules.content.split("\n").map((line, index) => {
                   const key = `${index}-${line}`;
                   if (line.startsWith("## ")) {
+                    const title = line.replace("## ", "");
                     return (
                       <h2
                         key={key}
-                        className="pt-4 text-2xl font-black text-slate-950"
+                        id={sectionId(title)}
+                        className="pt-4 text-2xl font-black text-slate-950 dark:text-slate-50"
                       >
-                        {line.replace("## ", "")}
+                        {title}
                       </h2>
                     );
                   }
@@ -80,6 +106,27 @@ export default async function RulesPage() {
           )}
         </SectionPanel>
         <aside className="space-y-3">
+          {headings.length > 0 ? (
+            <SectionPanel className="p-4 lg:sticky lg:top-24">
+              <h2 className="border-b border-slate-300 pb-3 text-xl font-black text-slate-950 dark:border-slate-700 dark:text-slate-50">
+                Table of contents
+              </h2>
+              <nav
+                aria-label="Rules sections"
+                className="mt-3 flex flex-wrap gap-2 lg:grid"
+              >
+                {headings.map((heading) => (
+                  <a
+                    key={heading}
+                    href={`#${sectionId(heading)}`}
+                    className="inline-flex min-h-9 items-center rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
+                  >
+                    {heading}
+                  </a>
+                ))}
+              </nav>
+            </SectionPanel>
+          ) : null}
           <SectionPanel className="p-4">
             <h2 className="border-b border-slate-300 pb-3 text-xl font-black text-slate-950">
               Hard bans
@@ -112,4 +159,11 @@ export default async function RulesPage() {
       </section>
     </div>
   );
+}
+
+function sectionId(title: string) {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }

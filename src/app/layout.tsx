@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
+import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,10 +14,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  process.env.APP_URL ??
-  "http://localhost:3000";
+const siteUrl = getSiteUrl();
 const siteDescription =
   "A moderated Geometry Dash community leaderboard for approved nerfed demon completions.";
 const themeScript = `
@@ -40,6 +38,9 @@ export const metadata: Metadata = {
   },
   description: siteDescription,
   applicationName: "NDL",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "NDL - Nerfed Demonlist",
     description: siteDescription,

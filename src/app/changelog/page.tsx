@@ -12,6 +12,11 @@ import { publicChangelogWhere } from "@/lib/demo-visibility";
 import { formatDate, formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "News & Changelog - NDL",
+  description:
+    "Read Nerfed Demonlist announcements, ranking updates, rule updates, site updates, and staff notes.",
+};
 
 export default async function ChangelogPage() {
   const posts = await prisma.changelogPost.findMany({
@@ -52,9 +57,9 @@ export default async function ChangelogPage() {
                   <div className="mt-3 text-sm font-bold text-slate-500 dark:text-slate-400">
                     {formatDate(post.publishedAt)}
                     {post.updatedAt > (post.publishedAt ?? post.updatedAt)
-                      ? ` · Updated ${formatDateTime(post.updatedAt)}`
+                      ? ` - Updated ${formatDateTime(post.updatedAt)}`
                       : ""}
-                    {post.author ? ` · ${post.author.displayName}` : ""}
+                    {post.author ? ` - ${post.author.displayName}` : ""}
                   </div>
                   <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-slate-50">
                     <Link
@@ -83,7 +88,7 @@ export default async function ChangelogPage() {
             })
           ) : (
             <EmptyState
-              title="No changelog posts yet"
+              title="No public updates yet"
               description="Public list updates, rule changes, and moderation notices will appear here."
             />
           )}

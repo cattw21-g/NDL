@@ -35,7 +35,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-5 gap-y-3 px-3 py-3 sm:px-5">
           <Link
             href="/"
-              className="group flex min-w-[17rem] flex-1 items-center gap-3 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-300"
+            className="group flex min-w-0 flex-[1_1_14rem] items-center gap-3 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-300"
           >
             <span className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-md border border-cyan-900 bg-cyan-800 text-sm font-black text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18),0_6px_16px_rgba(15,23,42,0.16)]">
               <span className="absolute left-0 top-0 h-4 w-4 border-b border-r border-white/35 bg-cyan-400/40" />
@@ -123,7 +123,17 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 px-3 py-5 sm:px-5 sm:py-7">
         {children}
       </main>
-      <SiteFooter />
+      <SiteFooter
+        user={
+          user
+            ? {
+                playerName: user.playerName,
+                isModerator: isModeratorRole(user.role),
+                isAdmin: isAdminRole(user.role),
+              }
+            : null
+        }
+      />
     </div>
   );
 }
@@ -145,7 +155,7 @@ function DecorativeRail({ side }: { side: "left" | "right" }) {
       aria-hidden="true"
       className={`pointer-events-none fixed top-32 hidden w-28 ${position} 2xl:block`}
     >
-      <div className="flex flex-col gap-3 opacity-30">
+      <div className="flex flex-col gap-3 opacity-15">
         {blocks.map((block, index) => (
           <span
             key={block}

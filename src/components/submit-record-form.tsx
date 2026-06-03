@@ -1,7 +1,7 @@
 "use client";
 
 import { FileVideo } from "lucide-react";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { submitRecordAction } from "@/actions/submissions";
 import { SubmitButton } from "@/components/submit-button";
@@ -26,6 +26,9 @@ type SubmitLevelOption = {
   id: string;
   rank: number | null;
   name: string;
+  verifier: string;
+  status: string;
+  points: number;
 };
 
 export function SubmitRecordForm({
@@ -46,6 +49,9 @@ export function SubmitRecordForm({
     createSubmissionFormState(),
   );
   const values = state.values;
+  const [selectedLevelId, setSelectedLevelId] = useState(values.levelId);
+  const selectedLevel = levels.find((level) => level.id === selectedLevelId);
+  const uploadsAvailable = imageUploadsEnabled || mp4UploadsEnabled;
 
   return (
     <form action={formAction} aria-busy={pending} className="grid min-w-0 gap-4">
@@ -66,6 +72,17 @@ export function SubmitRecordForm({
       ) : null}
 
       <SectionPanel className="grid gap-4 p-4">
+        <div className="rounded-md border border-cyan-300 bg-cyan-50 p-3 text-sm leading-6 text-cyan-950 dark:border-cyan-500/50 dark:bg-cyan-950/30 dark:text-cyan-100">
+          <h2 className="font-black">Before you submit</h2>
+          <ul className="mt-2 grid gap-1 sm:grid-cols-2">
+            <li>Accepted NDL version</li>
+            <li>Completion video link</li>
+            <li>FPS and CBF settings</li>
+            <li>Click audio proof</li>
+            <li>Raw footage for high-ranked records</li>
+          </ul>
+        </div>
+
         <FormSection
           title="Level"
           description="Choose the exact accepted NDL version you completed."
@@ -74,6 +91,7 @@ export function SubmitRecordForm({
             name="levelId"
             label="Level"
             defaultValue={values.levelId}
+            onChange={(value) => setSelectedLevelId(value)}
             errors={state.fieldErrors.levelId}
           >
             <option value="">Choose a ranked NDL level</option>
@@ -84,6 +102,16 @@ export function SubmitRecordForm({
               </option>
             ))}
           </SelectField>
+          {selectedLevel ? (
+            <div className="grid gap-2 rounded-md border border-slate-300 bg-slate-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-950/60 sm:grid-cols-3">
+              <PreviewFact
+                label="Rank"
+                value={selectedLevel.rank ? `#${selectedLevel.rank}` : selectedLevel.status}
+              />
+              <PreviewFact label="Points" value={`${selectedLevel.points} pts`} />
+              <PreviewFact label="Verifier" value={selectedLevel.verifier} />
+            </div>
+          ) : null}
         </FormSection>
 
         <FormSection
@@ -94,6 +122,7 @@ export function SubmitRecordForm({
             <TextInput
               name="videoUrl"
               label="Completion video link"
+              placeholder="https://youtu.be/..."
               defaultValue={values.videoUrl}
               required={!mp4UploadsEnabled}
               errors={state.fieldErrors.videoUrl}
@@ -102,12 +131,14 @@ export function SubmitRecordForm({
               name="rawFootageUrl"
               label="Raw footage link"
               help={fieldHelp.rawFootageUrl}
+              placeholder="https://drive.google.com/..."
               defaultValue={values.rawFootageUrl}
               errors={state.fieldErrors.rawFootageUrl}
             />
             <TextInput
               name="proofImageUrl"
               label="Proof image link"
+              placeholder="https://imgur.com/..."
               defaultValue={values.proofImageUrl}
               errors={state.fieldErrors.proofImageUrl}
             />
@@ -120,50 +151,42 @@ export function SubmitRecordForm({
           />
         </FormSection>
 
-        <FormSection
-          title="Optional uploads"
-          description="Links remain the default. Local uploads are for development or self-hosted review."
-        >
-          <div className="rounded-md border border-slate-300 bg-slate-50 p-3 text-sm leading-6 text-slate-700 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
-            {mp4UploadsEnabled ? (
-              <p className="font-bold">
-                Optional MP4 uploads are enabled for local review. Links still
-                work and remain recommended.
-              </p>
-            ) : (
-              <p className="font-bold">
-                Video links are recommended. Uploads may be disabled on
-                production. MP4 upload is available only when enabled by NDL.
-              </p>
-            )}
-            <div className="mt-3 grid min-w-0 gap-3 xl:grid-cols-3">
-              <FileInput
-                name="completionVideoFile"
-                label="Completion MP4 upload"
-                accept="video/mp4,.mp4"
-                disabled={!mp4UploadsEnabled}
-                hint={`MP4 only, up to ${maxVideoMb} MB.`}
-                errors={state.fieldErrors.completionVideoFile}
-              />
-              <FileInput
-                name="rawFootageFile"
-                label="Raw footage MP4 upload"
-                accept="video/mp4,.mp4"
-                disabled={!mp4UploadsEnabled}
-                hint={`MP4 only, up to ${maxVideoMb} MB.`}
-                errors={state.fieldErrors.rawFootageFile}
-              />
-              <FileInput
-                name="proofImageFile"
-                label="Proof image upload"
-                accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
-                disabled={!imageUploadsEnabled}
-                hint={`PNG, JPG, or WebP, up to ${maxImageMb} MB.`}
-                errors={state.fieldErrors.proofImageFile}
-              />
+        {uploadsAvailable ? (
+          <FormSection
+            title="Optional uploads"
+            description="Proof links remain the primary review path. Uploads win over matching URL fields when used."
+          >
+            <div className="grid min-w-0 gap-3 xl:grid-cols-3">
+              {mp4UploadsEnabled ? (
+                <>
+                  <FileInput
+                    name="completionVideoFile"
+                    label="Completion MP4 upload"
+                    accept="video/mp4,.mp4"
+                    hint={`MP4 only, up to ${maxVideoMb} MB.`}
+                    errors={state.fieldErrors.completionVideoFile}
+                  />
+                  <FileInput
+                    name="rawFootageFile"
+                    label="Raw footage MP4 upload"
+                    accept="video/mp4,.mp4"
+                    hint={`MP4 only, up to ${maxVideoMb} MB.`}
+                    errors={state.fieldErrors.rawFootageFile}
+                  />
+                </>
+              ) : null}
+              {imageUploadsEnabled ? (
+                <FileInput
+                  name="proofImageFile"
+                  label="Proof image upload"
+                  accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
+                  hint={`PNG, JPG, or WebP, up to ${maxImageMb} MB.`}
+                  errors={state.fieldErrors.proofImageFile}
+                />
+              ) : null}
             </div>
-          </div>
-        </FormSection>
+          </FormSection>
+        ) : null}
 
         <FormSection title="Recording settings">
           <div className="grid gap-4 md:grid-cols-2">
@@ -286,6 +309,7 @@ function TextInput({
   label,
   type = "url",
   required = false,
+  placeholder,
   defaultValue,
   errors,
   help,
@@ -294,6 +318,7 @@ function TextInput({
   label: string;
   type?: string;
   required?: boolean;
+  placeholder?: string;
   defaultValue: string;
   errors?: string[];
   help?: string;
@@ -301,11 +326,12 @@ function TextInput({
   const hasErrors = Boolean(errors?.length);
 
   return (
-    <FieldLabel label={label} help={help}>
+    <FieldLabel label={labelWithRequired(label, required)} help={help}>
       <input
         name={name}
         type={type}
         required={required}
+        placeholder={placeholder}
         defaultValue={defaultValue}
         aria-invalid={hasErrors}
         className={cx(inputClass, "w-full min-w-0", hasErrors && invalidClass)}
@@ -321,6 +347,7 @@ function SelectField({
   defaultValue,
   errors,
   help,
+  onChange,
   children,
 }: {
   name: SubmissionFormField;
@@ -328,16 +355,18 @@ function SelectField({
   defaultValue: string;
   errors?: string[];
   help?: string;
+  onChange?: (value: string) => void;
   children: React.ReactNode;
 }) {
   const hasErrors = Boolean(errors?.length);
 
   return (
-    <FieldLabel label={label} help={help}>
+    <FieldLabel label={labelWithRequired(label, true)} help={help}>
       <select
         name={name}
         required
         defaultValue={defaultValue}
+        onChange={(event) => onChange?.(event.currentTarget.value)}
         aria-invalid={hasErrors}
         className={cx(inputClass, "w-full min-w-0", hasErrors && invalidClass)}
       >
@@ -384,14 +413,12 @@ function FileInput({
   name,
   label,
   accept,
-  disabled,
   hint,
   errors,
 }: {
   name: SubmissionFormField;
   label: string;
   accept: string;
-  disabled: boolean;
   hint: string;
   errors?: string[];
 }) {
@@ -400,25 +427,41 @@ function FileInput({
   return (
     <div className="min-w-0">
       <FieldLabel label={label}>
-        <input
-          name={name}
-          type="file"
-          accept={accept}
-          disabled={disabled}
-          aria-invalid={hasErrors}
-          className={cx(
-            inputClass,
-            "w-full min-w-0 max-w-full text-xs file:mr-3 file:max-w-[9rem] file:truncate file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-black file:text-white disabled:cursor-not-allowed disabled:opacity-60 dark:file:bg-cyan-300 dark:file:text-slate-950",
-            hasErrors && invalidClass,
-          )}
-        />
-        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-          {disabled ? "Uploads are disabled on this NDL instance." : hint}
-        </span>
+      <input
+        name={name}
+        type="file"
+        accept={accept}
+        aria-invalid={hasErrors}
+        className={cx(
+          inputClass,
+          "w-full min-w-0 max-w-full text-xs file:mr-3 file:max-w-[9rem] file:truncate file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-black file:text-white dark:file:bg-cyan-300 dark:file:text-slate-950",
+          hasErrors && invalidClass,
+        )}
+      />
+      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+        {hint}
+      </span>
         <FieldErrors errors={errors} />
       </FieldLabel>
     </div>
   );
+}
+
+function PreviewFact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <div className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">
+        {label}
+      </div>
+      <div className="truncate font-black text-slate-950 dark:text-slate-50">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function labelWithRequired(label: string, required: boolean) {
+  return required ? `${label} (required)` : label;
 }
 
 function TextArea({

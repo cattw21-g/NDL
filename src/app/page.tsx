@@ -24,6 +24,11 @@ import { formatDate } from "@/lib/format";
 import { calculateCurrentLevelPoints } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "NDL - Nerfed Demonlist",
+  description:
+    "Browse the Nerfed Demonlist ranked list, accepted records, player standings, rules, and staff updates.",
+};
 
 export default async function Home() {
   const isDemoMode = demoModeEnabled();
@@ -92,7 +97,7 @@ export default async function Home() {
                 </Eyebrow>
               ) : (
                 <Eyebrow icon={ShieldCheck} tone="emerald">
-                  Production-safe view
+                  Staff-reviewed standings
                 </Eyebrow>
               )}
             </div>
@@ -124,7 +129,7 @@ export default async function Home() {
           <p>
             {isDemoMode
               ? "Demo mode is enabled, so clearly marked demo levels and records may appear."
-              : "Demo entries are hidden from the public list unless demo mode is explicitly enabled."}
+              : "Public entries appear after staff review, with points computed from the current ranked list."}
           </p>
           <span className="font-bold text-cyan-800">
             {pendingCount} submission{pendingCount === 1 ? "" : "s"} awaiting
@@ -213,9 +218,18 @@ export default async function Home() {
                 })}
               </div>
             ) : (
-              <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Accepted records will appear here after moderation.
-              </p>
+              <div className="space-y-3">
+                <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  No accepted records yet. Submit a record to appear here after
+                  review.
+                </p>
+                <Link
+                  href="/submit"
+                  className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-cyan-800 bg-cyan-800 px-3 text-sm font-black text-white transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+                >
+                  Submit a record
+                </Link>
+              </div>
             )}
           </SidebarCard>
 
@@ -243,7 +257,7 @@ export default async function Home() {
             {latestPost ? (
               <div>
                 <p className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">
-                  {changelogCategoryLabel(latestPost.category)} ·{" "}
+                  {changelogCategoryLabel(latestPost.category)} -{" "}
                   {formatDate(latestPost.publishedAt)}
                 </p>
                 <Link
@@ -258,7 +272,7 @@ export default async function Home() {
               </div>
             ) : (
               <p className="text-sm text-slate-600 dark:text-slate-300">
-                No changelog posts yet.
+                Launch notes and staff updates will appear here.
               </p>
             )}
             <Link

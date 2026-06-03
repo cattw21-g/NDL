@@ -15,6 +15,11 @@ import {
 } from "@/lib/upload-storage";
 
 export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "Suggest a Level - NDL",
+  description:
+    "Suggest a nerfed Geometry Dash demon version for Nerfed Demonlist staff review.",
+};
 
 export default async function SuggestLevelPage({
   searchParams,
@@ -40,7 +45,10 @@ export default async function SuggestLevelPage({
         </Link>
       </PageHeader>
 
-      <PageMessage searchParams={params} />
+      <PageMessage
+        searchParams={params}
+        successMessage="Level suggestion submitted. Staff will review it before it becomes an NDL level."
+      />
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <LevelSuggestionForm
@@ -58,8 +66,15 @@ export default async function SuggestLevelPage({
               <li>Use a real GD level ID and stable showcase link.</li>
               <li>Credit the original level, host, nerf creator, and verifier.</li>
               <li>Explain route/timing fidelity and any compatibility exception.</li>
+              <li>Staff may replace the thumbnail during review.</li>
               <li>Staff can approve, reject, or request changes.</li>
             </ul>
+            <Link
+              href="/rules"
+              className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
+            >
+              Read the rules
+            </Link>
           </SectionPanel>
         </aside>
       </div>

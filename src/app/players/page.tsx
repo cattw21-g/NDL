@@ -10,6 +10,11 @@ import {
 } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "Players - NDL",
+  description:
+    "View Nerfed Demonlist player standings based on accepted public records.",
+};
 
 export default async function PlayersPage() {
   const records = await prisma.record.findMany({
@@ -48,8 +53,8 @@ export default async function PlayersPage() {
             Player leaderboard
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
-            Accepted records only. If a player has multiple accepted records on
-            one level, only their best score for that level counts.
+            Only accepted records count. If a player has multiple accepted
+            records on one level, only their best score for that level counts.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -109,8 +114,16 @@ export default async function PlayersPage() {
             <div className="p-4">
               <EmptyState
                 title="No accepted records yet"
-                description="The leaderboard will populate after moderators accept player submissions."
+                description="No accepted records yet. Be the first to submit a record."
               />
+              <div className="mt-4">
+                <Link
+                  href="/submit"
+                  className="inline-flex min-h-10 items-center justify-center rounded-md bg-cyan-700 px-4 text-sm font-black text-white transition hover:bg-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
+                >
+                  Submit a record
+                </Link>
+              </div>
             </div>
           )}
         </SectionPanel>
@@ -122,9 +135,9 @@ export default async function PlayersPage() {
               Scoring notes
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-700">
-              Points count each player&apos;s best accepted record per ranked
-              or legacy level. Pending and rejected submissions do not affect
-              standings.
+              Accepted records only. Points count each player&apos;s best accepted
+              record per ranked or legacy level. Pending and rejected
+              submissions do not affect standings.
             </p>
           </SectionPanel>
           <SectionPanel className="p-4">
@@ -136,6 +149,12 @@ export default async function PlayersPage() {
               Records must include proof links, FPS, CBF usage, click/audio
               notes, and device details before review.
             </p>
+            <Link
+              href="/submit"
+              className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
+            >
+              Submit a record
+            </Link>
           </SectionPanel>
         </aside>
       </div>

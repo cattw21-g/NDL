@@ -9,17 +9,19 @@ const messages: Record<string, string> = {
   forbidden: "You do not have permission to perform that action.",
   "image-too-large": "Uploaded images are too large for this NDL instance.",
   "image-type": "Upload images as PNG, JPG, or WebP files.",
-  "image-upload-disabled": "Local image uploads are disabled. Use a proof link instead.",
+  "image-upload-disabled": "Image upload is unavailable. Use a proof link instead.",
   "video-too-large": "Uploaded MP4 files are too large for this NDL instance.",
   "video-type": "Upload video proof as MP4 files.",
-  "video-upload-disabled": "MP4 upload is available only when enabled by NDL. Use a link instead.",
+  "video-upload-disabled": "MP4 upload is unavailable. Use a link instead.",
   "slug-conflict": "That slug is already used by another post.",
 };
 
 export function PageMessage({
   searchParams,
+  successMessage = "Saved successfully.",
 }: {
   searchParams?: Record<string, string | string[] | undefined>;
+  successMessage?: string;
 }) {
   const error =
     typeof searchParams?.error === "string"
@@ -31,7 +33,7 @@ export function PageMessage({
     searchParams?.reviewed ||
     searchParams?.converted ||
     searchParams?.archived
-      ? "Saved successfully."
+      ? successMessage
       : null;
 
   if (!error && !success) {

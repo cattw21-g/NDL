@@ -1,4 +1,5 @@
 import { ShieldAlert, Upload } from "lucide-react";
+import Link from "next/link";
 
 import { PageMessage } from "@/components/message";
 import { SubmitRecordForm } from "@/components/submit-record-form";
@@ -15,8 +16,14 @@ import {
   maxVideoUploadBytes,
   videoUploadsEnabled,
 } from "@/lib/upload-storage";
+import { calculateCurrentLevelPoints } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "Submit a Record - NDL",
+  description:
+    "Submit a Nerfed Demonlist record with proof links, run settings, and notes for staff review.",
+};
 
 export default async function SubmitPage({
   searchParams,
@@ -50,13 +57,15 @@ export default async function SubmitPage({
           Submit a record
         </h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
-          Send proof links, run settings, and notes for moderator review. NDL
-          stores reviewer links by default, with optional local uploads when the
-          NDL instance enables them.
+          Send proof links, run settings, and notes for moderator review. Use
+          proof links first; staff may request additional proof if needed.
         </p>
       </section>
 
-      <PageMessage searchParams={params} />
+      <PageMessage
+        searchParams={params}
+        successMessage="Record submitted for review. Staff may request more proof."
+      />
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <SubmitRecordForm
@@ -64,6 +73,9 @@ export default async function SubmitPage({
             id: level.id,
             rank: level.rank,
             name: level.name,
+            verifier: level.verifier,
+            status: level.status,
+            points: calculateCurrentLevelPoints(level),
           }))}
           imageUploadsEnabled={imageUploadsEnabled}
           mp4UploadsEnabled={mp4UploadsEnabled}
@@ -87,15 +99,17 @@ export default async function SubmitPage({
               <li>Raw footage is required for high-ranked records.</li>
               <li>FPS overlay, CPS counter, and endscreen must be visible.</li>
               <li>Macros and replay bots are banned for records.</li>
-              <li>
-                Use http/https links, or enabled local upload controls, for
-                proof resources.
-              </li>
+              <li>Use http/https links for proof resources.</li>
             </ul>
             <p className="mt-3 rounded-md border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-bold leading-6 text-cyan-900 dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-100">
-              NDL stores proof links by default. Local uploads are for
-              development or self-hosted review only.
+              Use proof links. Staff may request additional proof if needed.
             </p>
+            <Link
+              href="/rules"
+              className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
+            >
+              Read the rules
+            </Link>
           </SectionPanel>
           <SectionPanel className="p-4">
             <h2 className="border-b border-slate-300 pb-3 font-black text-slate-950 dark:border-slate-700 dark:text-slate-50">

@@ -53,10 +53,15 @@ describe("production readiness guardrails", () => {
     expect(seedFlags).toContain("ENABLE_DEMO_SEED=true is required");
     expect(seedFlags).toContain("NDL_SEED_DEMO is deprecated");
     expect(seed).toContain("Refusing to create demo data");
-    expect(seed).toContain("No demo users, levels, submissions, records");
+    expect(seed).toContain("No demo users, levels, submissions");
     expect(seed).toContain("isDemo: true");
     expect(seed).toContain("if (seedDemoData)");
     expect(seed).toContain("await seedRules(rulesVersion)");
+    expect(seed).toContain("ndl-public-beta-is-live");
+    expect(seed).toContain("seedLaunchPost");
+    expect(seed).toContain("prisma.changelogPost.upsert");
+    expect(seed).toContain("isPublished: true");
+    expect(seed).toContain("isPinned: true");
   });
 
   it("keeps public surfaces behind demo visibility filters", () => {
@@ -149,6 +154,11 @@ describe("production readiness guardrails", () => {
     expect(moderationPage).toContain('suggestion.status === "PENDING"');
     expect(moderationPage).toContain('suggestion.status === "NEEDS_CHANGES"');
     expect(moderationPage).toContain("ReviewSummary");
+    expect(moderationPage).toContain('id="record-submissions"');
+    expect(moderationPage).toContain('id="level-suggestions"');
+    expect(moderationPage).toContain('id="recent-accepted"');
+    expect(moderationPage).toContain('take: 10');
+    expect(source("app/review/page.tsx")).toContain('redirect("/moderation")');
 
     expect(queueHelper).toContain("moderationPageSize = 25");
     expect(queueHelper).toContain("recordSubmissionWhere");
@@ -165,6 +175,8 @@ describe("production readiness guardrails", () => {
     );
     expect(form).toContain("Optional thumbnail");
     expect(form).toContain("Thumbnail URL (optional)");
+    expect(form).toContain("Proposed preview");
+    expect(form).toContain("SafeThumbnail");
     expect(form).toContain("uploadsAvailable ? (");
     expect(form).toContain(
       "Uploads are unavailable right now. You can paste a direct image",
@@ -175,6 +187,80 @@ describe("production readiness guardrails", () => {
     expect(source("lib/level-suggestion-form-state.ts")).toContain(
       "\"thumbnailUrl\"",
     );
+  });
+
+  it("keeps public v1 launch polish copy production-safe", () => {
+    const publicSources = [
+      source("app/page.tsx"),
+      source("app/submit/page.tsx"),
+      source("components/submit-record-form.tsx"),
+      source("app/suggest-level/page.tsx"),
+      source("components/level-suggestion-form.tsx"),
+      source("app/players/page.tsx"),
+      source("app/players/[playerName]/page.tsx"),
+      source("app/rules/page.tsx"),
+      source("app/changelog/page.tsx"),
+    ].join("\n").toLowerCase();
+
+    for (const phrase of [
+      "demo entries are hidden",
+      "demo local accounts",
+      "db:seed:demo",
+      "seed commands",
+      "self-hosted",
+      "local uploads",
+      "uploads are disabled on this ndl instance",
+      "local image uploads are disabled",
+      "terminal",
+      "dev console",
+      "smtp fallback",
+      "admin bootstrap",
+    ]) {
+      expect(publicSources).not.toContain(phrase);
+    }
+
+    expect(source("app/page.tsx")).toContain(
+      "No accepted records yet. Submit a record to appear here after",
+    );
+    expect(source("components/submit-record-form.tsx")).toContain(
+      "Before you submit",
+    );
+    expect(source("components/submit-record-form.tsx")).toContain(
+      "selectedLevel",
+    );
+    expect(source("components/submit-record-form.tsx")).not.toContain(
+      "Uploads are disabled on this NDL instance.",
+    );
+    expect(source("components/level-suggestion-form.tsx")).toContain(
+      "Upload or link a proposed thumbnail. Staff may replace it during review.",
+    );
+    expect(source("components/level-suggestion-form.tsx")).not.toContain(
+      "Thumbnail uploads are disabled on this NDL instance.",
+    );
+    expect(source("app/players/[playerName]/page.tsx")).toContain(
+      "Your public profile",
+    );
+    expect(source("app/players/[playerName]/page.tsx")).toContain(
+      "Share profile",
+    );
+  });
+
+  it("keeps the public rules page readable and tied to v1 rule content", () => {
+    const rulesPage = source("app/rules/page.tsx");
+    const seed = rootSource("prisma/seed.ts");
+
+    expect(rulesPage).toContain("Table of contents");
+    expect(rulesPage).toContain("Version v1.0");
+    expect(rulesPage).toContain("Last updated");
+    expect(rulesPage).toContain('href="/submit"');
+    expect(rulesPage).toContain('href="/suggest-level"');
+    expect(rulesPage).toContain("sectionId");
+    expect(seed).toContain("High-ranked means main-list rank #1-#50");
+    expect(seed).toContain(
+      "Raw footage links are visible only to staff unless the submitter chooses to make them public.",
+    );
+    expect(seed).toContain("Rank #1 awards 320 points");
+    expect(seed).toContain("Legacy levels award a fixed 25 points");
   });
 
   it("keeps production environment safety checks wired in", () => {
@@ -280,15 +366,22 @@ describe("production readiness guardrails", () => {
 
   it("keeps global SEO and social metadata configured", () => {
     const layout = source("app/layout.tsx");
+    const siteUrl = source("lib/site-url.ts");
 
     expect(layout).toContain("NDL - Nerfed Demonlist");
     expect(layout).toContain(
       "A moderated Geometry Dash community leaderboard",
     );
-    expect(layout).toContain("process.env.APP_URL");
+    expect(layout).toContain("getSiteUrl");
+    expect(siteUrl).toContain("https://www.nerfeddemonlist.net");
     expect(layout).toContain("openGraph");
+    expect(layout).toContain("alternates");
     expect(layout).toContain("/og-image.svg");
     expect(layout).toContain("/favicon.ico");
+    expect(source("app/sitemap.ts")).toContain("absoluteSiteUrl");
+    expect(source("app/robots.ts")).toContain("sitemap");
+    expect(source("app/robots.ts")).toContain('disallow: ["/admin", "/moderation", "/review", "/api/bot"]');
+    expect(source("app/not-found.tsx")).toContain("Page not found");
   });
 
   it("keeps dedicated email logo asset and email templates wired", () => {
@@ -322,11 +415,14 @@ describe("production readiness guardrails", () => {
 
     expect(appShell).toContain("SiteFooter");
     expect(appShell).toContain('id="top"');
-    expect(appShell).toContain("<SiteFooter />");
+    expect(appShell).toContain("<SiteFooter");
+    expect(appShell).toContain("isModerator: isModeratorRole(user.role)");
+    expect(appShell).toContain("isAdmin: isAdminRole(user.role)");
     expect(footer).toContain("usePathname");
     expect(footer).toContain('pathname === "/moderation"');
+    expect(footer).toContain('pathname === "/review"');
     expect(footer).toContain('pathname.startsWith("/admin")');
-    expect(footer).toContain("© 2026 Nerfed Demonlist");
+    expect(footer).toContain("&copy; 2026 Nerfed Demonlist");
     expect(footer).toContain(
       "NDL is a community-ranked list for approved nerfed Geometry Dash",
     );
@@ -352,6 +448,8 @@ describe("production readiness guardrails", () => {
       "/login",
       "/register",
       "/verify-email",
+      "/moderation",
+      "/admin",
     ]) {
       expect(footer).toContain(`href: "${href}"`);
     }

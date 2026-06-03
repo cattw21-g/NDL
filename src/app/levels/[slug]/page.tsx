@@ -30,6 +30,11 @@ import { formatDate, formatDateTime, statusLabel } from "@/lib/format";
 import { calculateCurrentLevelPoints } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "Level Detail - NDL",
+  description:
+    "View a Nerfed Demonlist level's rank, computed points, metadata, and accepted public records.",
+};
 
 export default async function LevelPage({
   params,

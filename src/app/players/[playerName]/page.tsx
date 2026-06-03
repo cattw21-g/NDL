@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 
 import { StatusBadge } from "@/components/status-badge";
 import {
@@ -16,8 +17,14 @@ import {
   calculateCurrentLevelPoints,
   calculateLeaderboard,
 } from "@/lib/points";
+import { absoluteSiteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "Player Profile - NDL",
+  description:
+    "View a Nerfed Demonlist player's accepted records and public scoring profile.",
+};
 
 export default async function PlayerProfilePage({
   params,
@@ -81,11 +88,18 @@ export default async function PlayerProfilePage({
 
   const canViewPrivate =
     viewer && canSeeSubmission(viewer.role, viewer.id, player.id);
+  const isOwnProfile = Boolean(viewer && viewer.id === player.id);
+  const profileUrl = absoluteSiteUrl(`/players/${player.playerName}`);
 
   return (
     <div className="space-y-5">
       <section className="grid gap-4 rounded-md border border-slate-300 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_14px_30px_rgba(0,0,0,0.28)] md:grid-cols-[minmax(0,1fr)_20rem] md:items-end">
         <div className="min-w-0">
+          {isOwnProfile ? (
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.08em] text-cyan-800 dark:text-cyan-300">
+              Your public profile
+            </p>
+          ) : null}
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <StatusBadge value={player.role} />
             <FactPill label="Handle" value={`@${player.playerName}`} />
@@ -141,6 +155,14 @@ export default async function PlayerProfilePage({
                   title="No accepted records yet"
                   description="Accepted records will appear here after moderator review."
                 />
+                <div className="mt-4">
+                  <Link
+                    href="/submit"
+                    className="inline-flex min-h-10 items-center justify-center rounded-md bg-cyan-700 px-4 text-sm font-black text-white transition hover:bg-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
+                  >
+                    Submit a record
+                  </Link>
+                </div>
               </div>
             )}
           </SectionPanel>
@@ -157,6 +179,17 @@ export default async function PlayerProfilePage({
                 Pending, rejected, and needs-changes submissions are visible to
                 the player and staff only.
               </p>
+              {isOwnProfile ? (
+                <div className="mt-4 grid gap-2">
+                  <Link
+                    href="/submit"
+                    className="inline-flex min-h-9 items-center justify-center rounded-md bg-cyan-700 px-3 text-sm font-black text-white transition hover:bg-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
+                  >
+                    Submit a record
+                  </Link>
+                  <FieldCopy value={profileUrl} />
+                </div>
+              ) : null}
             </SectionPanel>
             {player.submissions.length > 0 ? (
               player.submissions.map((submission) => (
@@ -196,10 +229,29 @@ export default async function PlayerProfilePage({
                 This page shows accepted public records only. Private
                 submissions are hidden unless you are the player or staff.
               </p>
+              <Link
+                href="/submit"
+                className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
+              >
+                Submit a record
+              </Link>
             </SectionPanel>
           </aside>
         )}
       </section>
     </div>
+  );
+}
+
+function FieldCopy({ value }: { value: string }) {
+  return (
+    <label className="grid gap-1 text-xs font-bold text-slate-600 dark:text-slate-400">
+      Share profile
+      <input
+        readOnly
+        value={value}
+        className="min-w-0 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300"
+      />
+    </label>
   );
 }
