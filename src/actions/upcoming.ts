@@ -22,6 +22,7 @@ export async function addUpcomingLevelAction(formData: FormData) {
   const verifier = String(formData.get("verifier") || "").trim();
   const showcaseUrl = String(formData.get("showcaseUrl") || "").trim();
   const verificationVideoUrl = String(formData.get("verificationVideoUrl") || "").trim() || null;
+  const thumbnailUrl = String(formData.get("thumbnailUrl") || "").trim() || FALLBACK_THUMBNAIL_SRC;
   const difficultyRaw = String(formData.get("difficulty") || "EXTREME").toUpperCase();
   const description = String(formData.get("description") || "").trim() || `Nerfed version of ${originalName}.`;
 
@@ -69,7 +70,7 @@ export async function addUpcomingLevelAction(formData: FormData) {
       description,
       status: LevelStatus.PENDING,
       rank: null,
-      thumbnailUrl: FALLBACK_THUMBNAIL_SRC,
+      thumbnailUrl,
     },
   });
 
@@ -85,6 +86,50 @@ export async function addUpcomingLevelAction(formData: FormData) {
     entityId: level.id,
     entityLabel: `${level.name} (Upcoming)`,
     note: verifier ? `Currently Verifying by ${verifier}` : "Waiting for Verifier",
+  });
+
+  revalidatePath("/upcoming");
+  revalidatePath("/admin/upcoming");
+  revalidatePath("/admin/levels");
+}
+
+export async function updateUpcomingThumbnailAction(formData: FormData) {
+  const admin = await requireAdmin();
+
+  const levelId = String(formData.get("levelId") || "").trim();
+  const thumbnailUrl = String(formData.get("thumbnailUrl") || "").trim();
+
+  if (!levelId) {
+    throw new Error("Level ID is required.");
+  }
+
+  const level = await prisma.level.findUnique({
+    where: { id: levelId },
+  });
+
+  if (!level) {
+    throw new Error("Level not found.");
+  }
+
+  await prisma.level.update({
+    where: { id: levelId },
+    data: {
+      thumbnailUrl: thumbnailUrl || FALLBACK_THUMBNAIL_SRC,
+    },
+  });
+
+  await writeAuditLog(prisma, {
+    actor: {
+      id: admin.id,
+      playerName: admin.playerName,
+      displayName: admin.displayName,
+      role: admin.role,
+    },
+    action: "UPCOMING_THUMBNAIL_UPDATED",
+    entityType: "Level",
+    entityId: level.id,
+    entityLabel: `${level.name} (Upcoming Thumbnail)`,
+    note: `Updated thumbnail to ${thumbnailUrl || "fallback"}`,
   });
 
   revalidatePath("/upcoming");

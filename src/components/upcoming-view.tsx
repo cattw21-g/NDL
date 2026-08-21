@@ -192,130 +192,12 @@ export function UpcomingView({
       {filteredList.length > 0 ? (
         <div className="grid gap-5 md:grid-cols-2">
           {filteredList.map((lvl) => (
-            <SectionPanel key={lvl.id} className="flex flex-col justify-between p-5">
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cx(
-                          "rounded px-2 py-0.5 text-xs font-black",
-                          activeTab === "verifying"
-                            ? "bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300"
-                            : "bg-cyan-100 text-cyan-900 dark:bg-cyan-950/60 dark:text-cyan-300",
-                        )}
-                      >
-                        {activeTab === "verifying" ? "CURRENTLY VERIFYING" : "WAITING FOR VICTOR"}
-                      </span>
-                      <span className="rounded bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                        {lvl.difficulty}
-                      </span>
-                    </div>
-                    <h2 className="mt-1.5 text-2xl font-black text-slate-950 dark:text-slate-50">
-                      {lvl.name}
-                    </h2>
-                    <p className="text-xs font-bold text-slate-500">
-                      Nerfed version of{" "}
-                      <span className="text-slate-800 dark:text-slate-200">
-                        {lvl.originalName}
-                      </span>
-                    </p>
-                  </div>
-
-                  {lvl.gdLevelId ? (
-                    <CopyButton
-                      text={lvl.gdLevelId}
-                      label={`GD: ${lvl.gdLevelId}`}
-                      className="text-xs"
-                    />
-                  ) : null}
-                </div>
-
-                {/* Info Box */}
-                <div className="grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-950/40 sm:grid-cols-2">
-                  <div>
-                    <span className="font-bold text-slate-500">
-                      {activeTab === "verifying" ? "Verifier:" : "Status:"}
-                    </span>
-                    <p className="font-black text-slate-900 dark:text-slate-100">
-                      {lvl.verifier || "Open for Verification"}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="font-bold text-slate-500">Nerf Creator:</span>
-                    <p className="font-black text-slate-900 dark:text-slate-100">
-                      {lvl.nerfCreator}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="font-bold text-slate-500">Publisher:</span>
-                    <p className="font-bold text-slate-700 dark:text-slate-300">
-                      {lvl.publisher}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="font-bold text-slate-500">GD Level ID:</span>
-                    <p className="font-bold text-slate-700 dark:text-slate-300">
-                      {lvl.gdLevelId || "Unreleased"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Video Showcase Player */}
-                {lvl.showcaseUrl || lvl.verificationVideoUrl ? (
-                  <div className="mt-3">
-                    <span className="mb-1 block text-xs font-bold text-slate-600 dark:text-slate-400">
-                      Showcase / Preview:
-                    </span>
-                    <LevelVideoEmbed
-                      showcaseUrl={lvl.showcaseUrl}
-                      verificationUrl={lvl.verificationVideoUrl}
-                      levelName={lvl.name}
-                    />
-                  </div>
-                ) : (
-                  <div className="relative aspect-video overflow-hidden rounded-md border border-slate-200 dark:border-slate-800">
-                    <SafeThumbnail
-                      src={lvl.thumbnailUrl}
-                      alt={lvl.name}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                )}
-
-                {lvl.description ? (
-                  <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-                    {lvl.description}
-                  </p>
-                ) : null}
-              </div>
-
-              {/* Card Footer Actions */}
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
-                <Link
-                  href={lvl.isSuggestion ? "/level-suggestions" : `/levels/${lvl.slug}`}
-                  className="inline-flex items-center gap-1 text-xs font-black text-cyan-700 hover:text-cyan-800 dark:text-cyan-400"
-                >
-                  {lvl.isSuggestion ? "View Suggestion Details &rarr;" : "View Level Details &rarr;"}
-                </Link>
-
-                {isAdmin ? (
-                  <Link
-                    href="/admin/upcoming"
-                    className="inline-flex items-center gap-1 rounded bg-amber-100 px-2.5 py-1 text-xs font-black text-amber-900 hover:bg-amber-200 dark:bg-amber-950 dark:text-amber-200"
-                  >
-                    Manage / Promote &rarr;
-                  </Link>
-                ) : (
-                  <Link
-                    href="/submit"
-                    className="inline-flex items-center gap-1 rounded bg-slate-200 px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300"
-                  >
-                    Submit Run
-                  </Link>
-                )}
-              </div>
-            </SectionPanel>
+            <UpcomingCard
+              key={lvl.id}
+              lvl={lvl}
+              activeTab={activeTab}
+              isAdmin={isAdmin}
+            />
           ))}
         </div>
       ) : (
@@ -348,5 +230,163 @@ export function UpcomingView({
         </SectionPanel>
       )}
     </div>
+  );
+}
+
+function UpcomingCard({
+  lvl,
+  activeTab,
+  isAdmin,
+}: {
+  lvl: UpcomingLevelItem;
+  activeTab: "verifying" | "waiting";
+  isAdmin: boolean;
+}) {
+  const hasVideo = Boolean(lvl.showcaseUrl || lvl.verificationVideoUrl);
+  const [showVideo, setShowVideo] = useState(false);
+
+  return (
+    <SectionPanel className="group flex flex-col justify-between overflow-hidden p-5 transition hover:border-cyan-500/60 dark:hover:border-cyan-500/50">
+      <div className="space-y-3">
+        {/* Media Banner: Thumbnail Image with Video Toggle */}
+        <div className="relative aspect-video w-full overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950">
+          {showVideo && hasVideo ? (
+            <div className="h-full w-full">
+              <LevelVideoEmbed
+                showcaseUrl={lvl.showcaseUrl}
+                verificationUrl={lvl.verificationVideoUrl}
+                levelName={lvl.name}
+              />
+            </div>
+          ) : (
+            <>
+              <SafeThumbnail
+                src={lvl.thumbnailUrl}
+                alt={`${lvl.name} thumbnail`}
+                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-black/20" />
+
+              {/* Status & Tier Badges Overlaid on Thumbnail */}
+              <div className="absolute left-2.5 top-2.5 flex flex-wrap items-center gap-1.5">
+                <span
+                  className={cx(
+                    "rounded px-2 py-0.5 text-[11px] font-black shadow-sm",
+                    activeTab === "verifying"
+                      ? "bg-amber-500 text-slate-950"
+                      : "bg-cyan-500 text-slate-950",
+                  )}
+                >
+                  {activeTab === "verifying" ? "CURRENTLY VERIFYING" : "WAITING FOR VICTOR"}
+                </span>
+                <span className="rounded bg-slate-900/80 px-2 py-0.5 text-[11px] font-black text-white backdrop-blur-sm">
+                  {lvl.difficulty}
+                </span>
+              </div>
+            </>
+          )}
+
+          {/* Video Toggle Button */}
+          {hasVideo ? (
+            <div className="absolute bottom-2.5 right-2.5 z-10">
+              <button
+                type="button"
+                onClick={() => setShowVideo(!showVideo)}
+                className="inline-flex items-center gap-1.5 rounded-md bg-slate-950/85 px-2.5 py-1 text-xs font-black text-white shadow-md backdrop-blur transition hover:bg-cyan-600 hover:text-white"
+              >
+                {showVideo ? "🖼️ View Image" : "▶️ Watch Video"}
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        {/* Level Title & GD Level ID */}
+        <div className="flex flex-wrap items-start justify-between gap-2 pt-1">
+          <div>
+            <h2 className="text-2xl font-black text-slate-950 dark:text-slate-50">
+              {lvl.name}
+            </h2>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              Nerfed version of{" "}
+              <span className="text-slate-800 dark:text-slate-200">
+                {lvl.originalName}
+              </span>
+            </p>
+          </div>
+
+          {lvl.gdLevelId ? (
+            <CopyButton
+              text={lvl.gdLevelId}
+              label={`GD: ${lvl.gdLevelId}`}
+              className="text-xs font-mono"
+            />
+          ) : null}
+        </div>
+
+        {/* Info Box */}
+        <div className="grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-950/40 sm:grid-cols-2">
+          <div>
+            <span className="font-bold text-slate-500 dark:text-slate-400">
+              {activeTab === "verifying" ? "Verifier:" : "Status:"}
+            </span>
+            <p className="font-black text-slate-900 dark:text-slate-100">
+              {lvl.verifier || "Open for Verification"}
+            </p>
+          </div>
+          <div>
+            <span className="font-bold text-slate-500 dark:text-slate-400">Nerf Creator:</span>
+            <p className="font-black text-slate-900 dark:text-slate-100">
+              {lvl.nerfCreator}
+            </p>
+          </div>
+          <div>
+            <span className="font-bold text-slate-500 dark:text-slate-400">Publisher:</span>
+            <p className="font-bold text-slate-700 dark:text-slate-300">
+              {lvl.publisher}
+            </p>
+          </div>
+          <div>
+            <span className="font-bold text-slate-500 dark:text-slate-400">GD Level ID:</span>
+            <p className="font-mono font-bold text-slate-700 dark:text-slate-300">
+              {lvl.gdLevelId || "Unreleased"}
+            </p>
+          </div>
+        </div>
+
+        {lvl.description ? (
+          <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+            {lvl.description}
+          </p>
+        ) : null}
+      </div>
+
+      {/* Card Footer Actions */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
+        <Link
+          href={lvl.isSuggestion ? "/level-suggestions" : `/levels/${lvl.slug}`}
+          className="inline-flex items-center gap-1 text-xs font-black text-cyan-700 hover:text-cyan-800 dark:text-cyan-400"
+        >
+          {lvl.isSuggestion ? "View Suggestion Details &rarr;" : "View Level Details &rarr;"}
+        </Link>
+
+        <div className="flex items-center gap-2">
+          {isAdmin ? (
+            <Link
+              href="/admin/upcoming"
+              className="inline-flex items-center gap-1 rounded bg-amber-100 px-2.5 py-1 text-xs font-black text-amber-900 hover:bg-amber-200 dark:bg-amber-950 dark:text-amber-200"
+            >
+              Manage &rarr;
+            </Link>
+          ) : null}
+
+          <Link
+            href="/submit"
+            className="inline-flex items-center gap-1 rounded bg-slate-200 px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300"
+          >
+            Submit Run
+          </Link>
+        </div>
+      </div>
+    </SectionPanel>
   );
 }

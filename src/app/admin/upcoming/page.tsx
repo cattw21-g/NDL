@@ -10,7 +10,6 @@ import {
 import Link from "next/link";
 
 import {
-  addUpcomingLevelAction,
   assignVerifierAction,
   deleteUpcomingLevelAction,
   deleteUpcomingSuggestionAction,
@@ -18,10 +17,19 @@ import {
   moveSuggestionToWaitingAction,
   promoteUpcomingLevelAction,
 } from "@/actions/upcoming";
+import {
+  AdminUpcomingLevelForm,
+  UpcomingThumbnailInlineEditor,
+} from "@/components/admin-upcoming-form";
+import { SafeThumbnail } from "@/components/safe-thumbnail";
 import { Eyebrow, MetricTile, SectionPanel, inputClass } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/format";
+import {
+  imageUploadProvider,
+  maxImageUploadBytes,
+} from "@/lib/upload-storage";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -59,6 +67,9 @@ export default async function AdminUpcomingPage() {
       lvl.verifier.toLowerCase() === "unassigned",
   );
 
+  const uploads = imageUploadProvider();
+  const maxImageMb = Math.round(maxImageUploadBytes() / 1024 / 1024);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -80,7 +91,7 @@ export default async function AdminUpcomingPage() {
               Upcoming Levels Queue
             </h1>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              Manage levels in verification, assign verifiers to waiting levels, or promote verified levels to the ranked list.
+              Manage levels in verification, assign verifiers to waiting levels, update thumbnails, or promote verified levels to the ranked list.
             </p>
           </div>
 
@@ -99,99 +110,10 @@ export default async function AdminUpcomingPage() {
           Add Level to Upcoming Queue
         </h2>
 
-        <form action={addUpcomingLevelAction} className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="block">
-            <span className="text-xs font-black uppercase text-slate-600 dark:text-slate-400">
-              Level Name (Nerfed Name)
-            </span>
-            <input
-              name="name"
-              placeholder="e.g. Nerfed Slaughterhouse"
-              required
-              className={`${inputClass} mt-1 w-full font-black`}
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-xs font-black uppercase text-slate-600 dark:text-slate-400">
-              Original Demon Name
-            </span>
-            <input
-              name="originalName"
-              placeholder="e.g. Slaughterhouse"
-              required
-              className={`${inputClass} mt-1 w-full`}
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-xs font-black uppercase text-slate-600 dark:text-slate-400">
-              GD Level ID
-            </span>
-            <input
-              name="gdLevelId"
-              placeholder="e.g. 102938475"
-              className={`${inputClass} mt-1 w-full`}
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-xs font-black uppercase text-slate-600 dark:text-slate-400">
-              Verifier (Leave empty for Waiting Levels)
-            </span>
-            <input
-              name="verifier"
-              placeholder="Leave empty or enter player name"
-              className={`${inputClass} mt-1 w-full`}
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-xs font-black uppercase text-slate-600 dark:text-slate-400">
-              Nerf Creator
-            </span>
-            <input
-              name="nerfCreator"
-              placeholder="Creator name"
-              required
-              className={`${inputClass} mt-1 w-full`}
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-xs font-black uppercase text-slate-600 dark:text-slate-400">
-              Difficulty Category
-            </span>
-            <select name="difficulty" defaultValue="EXTREME" className={`${inputClass} mt-1 w-full`}>
-              <option value="EXTREME">Extreme Nerfed</option>
-              <option value="MYTHIC">Mythic Nerfed</option>
-              <option value="ADVANCED">Advanced Nerfed</option>
-              <option value="ENTRY">Entry Nerfed</option>
-              <option value="ASCENT">Ascent Nerfed</option>
-            </select>
-          </label>
-
-          <label className="block sm:col-span-2 lg:col-span-3">
-            <span className="text-xs font-black uppercase text-slate-600 dark:text-slate-400">
-              Showcase / Preview Video URL (YouTube / Medal / TikTok)
-            </span>
-            <input
-              name="showcaseUrl"
-              placeholder="https://youtu.be/... or medal.tv/..."
-              className={`${inputClass} mt-1 w-full`}
-            />
-          </label>
-
-          <div className="sm:col-span-2 lg:col-span-3">
-            <button
-              type="submit"
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-cyan-700 px-5 text-sm font-black text-white transition hover:bg-cyan-800 dark:bg-cyan-500 dark:text-slate-950 dark:hover:bg-cyan-400"
-            >
-              <Plus className="h-4 w-4" />
-              Add Level to Queue
-            </button>
-          </div>
-        </form>
+        <AdminUpcomingLevelForm
+          imageUploadProvider={uploads}
+          maxImageMb={maxImageMb}
+        />
       </SectionPanel>
 
       {/* 1. Currently Verifying Management */}
@@ -208,26 +130,47 @@ export default async function AdminUpcomingPage() {
                 key={lvl.id}
                 className="grid gap-4 py-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
               >
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-base font-black text-slate-950 dark:text-slate-100">
-                      {lvl.name}
-                    </span>
-                    <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-black text-amber-900 dark:bg-amber-950/60 dark:text-amber-300">
-                      VERIFIER: {lvl.verifier}
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      (Original: {lvl.originalName})
-                    </span>
-                    {lvl.gdLevelId ? (
-                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-mono dark:bg-slate-800">
-                        GD: {lvl.gdLevelId}
-                      </span>
-                    ) : null}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                  {/* Level Thumbnail */}
+                  <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950 sm:w-36">
+                    <SafeThumbnail
+                      src={lvl.thumbnailUrl}
+                      alt={lvl.name}
+                      className="h-full w-full object-cover"
+                    />
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    Creator: {lvl.nerfCreator} • Added {formatDate(lvl.createdAt)}
-                  </p>
+
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-base font-black text-slate-950 dark:text-slate-100">
+                        {lvl.name}
+                      </span>
+                      <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-black text-amber-900 dark:bg-amber-950/60 dark:text-amber-300">
+                        VERIFIER: {lvl.verifier}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        (Original: {lvl.originalName})
+                      </span>
+                      {lvl.gdLevelId ? (
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-mono dark:bg-slate-800">
+                          GD: {lvl.gdLevelId}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      Creator: {lvl.nerfCreator} • Difficulty: {lvl.difficulty} • Added {formatDate(lvl.createdAt)}
+                    </p>
+
+                    <div className="pt-1">
+                      <UpcomingThumbnailInlineEditor
+                        levelId={lvl.id}
+                        levelName={lvl.name}
+                        currentThumbnailUrl={lvl.thumbnailUrl}
+                        imageUploadProvider={uploads}
+                        maxImageMb={maxImageMb}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Actions: Promote or Reassign */}
@@ -297,26 +240,47 @@ export default async function AdminUpcomingPage() {
                 key={lvl.id}
                 className="grid gap-4 py-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
               >
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-base font-black text-slate-950 dark:text-slate-100">
-                      {lvl.name}
-                    </span>
-                    <span className="rounded bg-cyan-100 px-2 py-0.5 text-xs font-black text-cyan-900 dark:bg-cyan-950/60 dark:text-cyan-300">
-                      OPEN FOR VERIFIER
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      (Original: {lvl.originalName})
-                    </span>
-                    {lvl.gdLevelId ? (
-                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-mono dark:bg-slate-800">
-                        GD: {lvl.gdLevelId}
-                      </span>
-                    ) : null}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                  {/* Level Thumbnail */}
+                  <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950 sm:w-36">
+                    <SafeThumbnail
+                      src={lvl.thumbnailUrl}
+                      alt={lvl.name}
+                      className="h-full w-full object-cover"
+                    />
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    Creator: {lvl.nerfCreator} • Added {formatDate(lvl.createdAt)}
-                  </p>
+
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-base font-black text-slate-950 dark:text-slate-100">
+                        {lvl.name}
+                      </span>
+                      <span className="rounded bg-cyan-100 px-2 py-0.5 text-xs font-black text-cyan-900 dark:bg-cyan-950/60 dark:text-cyan-300">
+                        OPEN FOR VERIFIER
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        (Original: {lvl.originalName})
+                      </span>
+                      {lvl.gdLevelId ? (
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-mono dark:bg-slate-800">
+                          GD: {lvl.gdLevelId}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      Creator: {lvl.nerfCreator} • Difficulty: {lvl.difficulty} • Added {formatDate(lvl.createdAt)}
+                    </p>
+
+                    <div className="pt-1">
+                      <UpcomingThumbnailInlineEditor
+                        levelId={lvl.id}
+                        levelName={lvl.name}
+                        currentThumbnailUrl={lvl.thumbnailUrl}
+                        imageUploadProvider={uploads}
+                        maxImageMb={maxImageMb}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Assign Verifier Form */}
@@ -373,26 +337,37 @@ export default async function AdminUpcomingPage() {
                 key={sug.id}
                 className="grid gap-4 py-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
               >
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-base font-black text-slate-950 dark:text-slate-100">
-                      {sug.name}
-                    </span>
-                    <span className="rounded bg-teal-100 px-2 py-0.5 text-xs font-black text-teal-900 dark:bg-teal-950/60 dark:text-teal-300">
-                      SUGGESTION
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      (Original: {sug.originalName})
-                    </span>
-                    {sug.gdLevelId ? (
-                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-mono dark:bg-slate-800">
-                        GD: {sug.gdLevelId}
-                      </span>
-                    ) : null}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                  {/* Suggestion Thumbnail */}
+                  <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950 sm:w-36">
+                    <SafeThumbnail
+                      src={sug.thumbnailUrl || "/thumbnails/fallback.png"}
+                      alt={sug.name}
+                      className="h-full w-full object-cover"
+                    />
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    Suggested by: {sug.submitter.displayName} • Added {formatDate(sug.createdAt)}
-                  </p>
+
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-base font-black text-slate-950 dark:text-slate-100">
+                        {sug.name}
+                      </span>
+                      <span className="rounded bg-teal-100 px-2 py-0.5 text-xs font-black text-teal-900 dark:bg-teal-950/60 dark:text-teal-300">
+                        SUGGESTION
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        (Original: {sug.originalName})
+                      </span>
+                      {sug.gdLevelId ? (
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-mono dark:bg-slate-800">
+                          GD: {sug.gdLevelId}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      Suggested by: {sug.submitter.displayName} • Added {formatDate(sug.createdAt)}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
