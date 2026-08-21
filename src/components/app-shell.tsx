@@ -37,6 +37,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-5 gap-y-3 px-3 py-3 sm:px-5">
           <Link
             href="/"
+            prefetch={true}
             className="group flex min-w-0 flex-[1_1_14rem] items-center gap-3 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-300"
           >
             <span className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-md border border-cyan-900 bg-cyan-800 text-sm font-black text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18),0_6px_16px_rgba(15,23,42,0.16)]">

@@ -52,6 +52,7 @@ export function NavLink({
   return (
     <Link
       href={href}
+      prefetch={true}
       aria-current={active ? "page" : undefined}
       className={cx(
         "inline-flex min-h-9 items-center gap-2 rounded-md border px-3 text-sm font-bold transition focus:outline-none focus:ring-2 focus:ring-cyan-300",

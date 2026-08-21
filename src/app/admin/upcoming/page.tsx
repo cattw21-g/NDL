@@ -13,6 +13,7 @@ import {
   addUpcomingLevelAction,
   assignVerifierAction,
   deleteUpcomingLevelAction,
+  deleteUpcomingSuggestionAction,
   promoteUpcomingLevelAction,
 } from "@/actions/upcoming";
 import { Eyebrow, MetricTile, SectionPanel, inputClass } from "@/components/ui";
@@ -355,6 +356,67 @@ export default async function AdminUpcomingPage() {
           )}
         </div>
       </SectionPanel>
+
+      {/* 3. Approved Suggestions in Queue */}
+      {approvedSuggestions.length > 0 ? (
+        <SectionPanel className="p-5">
+          <h2 className="flex items-center gap-2 border-b border-slate-200 pb-3 text-lg font-black text-slate-950 dark:border-slate-800 dark:text-slate-50">
+            <Check className="h-5 w-5 text-emerald-600" />
+            Approved Suggestions in Queue ({approvedSuggestions.length})
+          </h2>
+
+          <div className="mt-4 divide-y divide-slate-200 dark:divide-slate-800">
+            {approvedSuggestions.map((sug) => (
+              <div
+                key={sug.id}
+                className="grid gap-4 py-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
+              >
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-base font-black text-slate-950 dark:text-slate-100">
+                      {sug.name}
+                    </span>
+                    <span className="rounded bg-teal-100 px-2 py-0.5 text-xs font-black text-teal-900 dark:bg-teal-950/60 dark:text-teal-300">
+                      SUGGESTION
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      (Original: {sug.originalName})
+                    </span>
+                    {sug.gdLevelId ? (
+                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-mono dark:bg-slate-800">
+                        GD: {sug.gdLevelId}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    Suggested by: {sug.submitter.displayName} • Added {formatDate(sug.createdAt)}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    href="/admin/levels"
+                    className="inline-flex min-h-9 items-center gap-1 rounded-md bg-teal-700 px-3 text-xs font-black text-white hover:bg-teal-800 dark:bg-teal-500 dark:text-slate-950"
+                  >
+                    Convert to Official Level
+                  </Link>
+
+                  <form action={deleteUpcomingSuggestionAction}>
+                    <input type="hidden" name="suggestionId" value={sug.id} />
+                    <button
+                      type="submit"
+                      title="Delete from queue"
+                      className="inline-flex min-h-9 items-center justify-center rounded-md border border-red-300 bg-red-50 px-2.5 text-red-700 hover:bg-red-100 dark:border-red-800 dark:bg-red-950 dark:text-red-300"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionPanel>
+      ) : null}
     </div>
   );
 }

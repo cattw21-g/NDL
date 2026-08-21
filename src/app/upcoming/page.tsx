@@ -28,6 +28,7 @@ export default async function UpcomingPage() {
       where: {
         status: "APPROVED",
         createdLevelId: null,
+        ...(isDemoMode ? {} : { isDemo: false }),
       },
       include: {
         submitter: true,

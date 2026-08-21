@@ -288,3 +288,42 @@ export async function deleteUpcomingLevelAction(formData: FormData) {
   revalidatePath("/upcoming");
   revalidatePath("/admin/upcoming");
 }
+
+export async function deleteUpcomingSuggestionAction(formData: FormData) {
+  const admin = await requireAdmin();
+
+  const suggestionId = String(formData.get("suggestionId") || "").trim();
+  if (!suggestionId) {
+    throw new Error("Suggestion ID is required.");
+  }
+
+  const suggestion = await prisma.levelSuggestion.findUnique({
+    where: { id: suggestionId },
+  });
+
+  if (!suggestion) {
+    return;
+  }
+
+  await prisma.levelSuggestion.delete({
+    where: { id: suggestionId },
+  });
+
+  await writeAuditLog(prisma, {
+    actor: {
+      id: admin.id,
+      playerName: admin.playerName,
+      displayName: admin.displayName,
+      role: admin.role,
+    },
+    action: "UPCOMING_SUGGESTION_DELETED",
+    entityType: "LevelSuggestion",
+    entityId: suggestionId,
+    entityLabel: `${suggestion.name} (Suggestion)`,
+    note: "Removed from upcoming queue",
+  });
+
+  revalidatePath("/upcoming");
+  revalidatePath("/admin/upcoming");
+  revalidatePath("/level-suggestions");
+}
