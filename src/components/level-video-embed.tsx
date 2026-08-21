@@ -5,65 +5,91 @@ import { useMemo, useState } from "react";
 
 import { cx } from "@/components/ui";
 
-function parseVideoEmbedUrl(url: string | null | undefined): {
-  type: "youtube" | "video" | "link";
+export function parseVideoEmbedUrl(url: string | null | undefined): {
+  type: "youtube" | "iframe" | "video" | "external";
   embedUrl?: string;
   originalUrl: string;
+  providerName: string;
 } | null {
   if (!url) {
     return null;
   }
 
   const trimmed = url.trim();
+  if (!trimmed) {
+    return null;
+  }
 
-  // YouTube standard watch URL: youtube.com/watch?v=xyz
-  const ytWatchMatch = trimmed.match(
-    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
-  );
-  if (ytWatchMatch) {
+  // 1. YouTube: extract 11-char video ID from any format
+  const ytMatch =
+    trimmed.match(
+      /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|live\/|watch\?.*v=))([\w-]{11})/i,
+    ) || trimmed.match(/[?&]v=([\w-]{11})/i);
+
+  if (ytMatch) {
+    const videoId = ytMatch[1];
+    let startSeconds: number | null = null;
+    const timeMatch = trimmed.match(
+      /[?&](?:t|start)=((?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?|(\d+))/i,
+    );
+    if (timeMatch) {
+      if (timeMatch[5]) {
+        startSeconds = parseInt(timeMatch[5], 10);
+      } else {
+        const hours = parseInt(timeMatch[2] || "0", 10);
+        const mins = parseInt(timeMatch[3] || "0", 10);
+        const secs = parseInt(timeMatch[4] || "0", 10);
+        startSeconds = hours * 3600 + mins * 60 + secs;
+      }
+    }
+
+    const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0${startSeconds ? `&start=${startSeconds}` : ""}`;
+
     return {
       type: "youtube",
-      embedUrl: `https://www.youtube-nocookie.com/embed/${ytWatchMatch[1]}?autoplay=1&rel=0`,
+      embedUrl,
       originalUrl: trimmed,
+      providerName: "YouTube",
     };
   }
 
-  // YouTube short URL: youtu.be/xyz
-  const ytShortMatch = trimmed.match(
-    /(?:https?:\/\/)?(?:www\.)?youtu\.be\/([a-zA-Z0-9_-]{11})/,
-  );
-  if (ytShortMatch) {
+  // 2. Streamable
+  const streamableMatch = trimmed.match(/streamable\.com\/([a-zA-Z0-9]+)/i);
+  if (streamableMatch) {
     return {
-      type: "youtube",
-      embedUrl: `https://www.youtube-nocookie.com/embed/${ytShortMatch[1]}?autoplay=1&rel=0`,
+      type: "iframe",
+      embedUrl: `https://streamable.com/e/${streamableMatch[1]}?autoplay=1`,
       originalUrl: trimmed,
+      providerName: "Streamable",
     };
   }
 
-  // YouTube shorts URL: youtube.com/shorts/xyz
-  const ytShortsMatch = trimmed.match(
-    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
-  );
-  if (ytShortsMatch) {
+  // 3. Twitch Clips & VODs
+  const twitchClip = trimmed.match(/clips\.twitch\.tv\/([a-zA-Z0-9_-]+)/i);
+  if (twitchClip) {
     return {
-      type: "youtube",
-      embedUrl: `https://www.youtube-nocookie.com/embed/${ytShortsMatch[1]}?autoplay=1&rel=0`,
+      type: "iframe",
+      embedUrl: `https://clips.twitch.tv/embed?clip=${twitchClip[1]}&parent=nerfeddemonlist.net&parent=localhost&autoplay=true`,
       originalUrl: trimmed,
+      providerName: "Twitch",
     };
   }
 
-  // Direct MP4 / WebM video files
-  if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(trimmed)) {
+  // 4. Direct video files (.mp4, .webm, .ogg, .mov)
+  if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(trimmed)) {
     return {
       type: "video",
       embedUrl: trimmed,
       originalUrl: trimmed,
+      providerName: "Direct Video",
     };
   }
 
+  // 5. External site fallback
   return {
-    type: "link",
+    type: "external",
     originalUrl: trimmed,
+    providerName: "External Link",
   };
 }
 
@@ -76,7 +102,6 @@ export function LevelVideoEmbed({
   showcaseUrl?: string | null;
   levelName: string;
 }) {
-  // Default to verification if available, otherwise showcase
   const defaultTab = verificationUrl ? "verification" : "showcase";
   const [activeTab, setActiveTab] = useState<"verification" | "showcase">(
     defaultTab,
@@ -90,6 +115,19 @@ export function LevelVideoEmbed({
     return null;
   }
 
+  const handleTabChange = (tab: "verification" | "showcase") => {
+    setActiveTab(tab);
+    setIsPlaying(false);
+  };
+
+  const handlePlayClick = () => {
+    if (parsed?.type === "external") {
+      window.open(parsed.originalUrl, "_blank", "noopener,noreferrer");
+    } else {
+      setIsPlaying(true);
+    }
+  };
+
   return (
     <div className="overflow-hidden rounded-md border border-slate-300 bg-slate-950 text-white shadow-[0_10px_24px_rgba(15,23,42,0.18)] dark:border-slate-700">
       {/* Video Source Switcher Tabs */}
@@ -98,10 +136,7 @@ export function LevelVideoEmbed({
           {verificationUrl ? (
             <button
               type="button"
-              onClick={() => {
-                setActiveTab("verification");
-                setIsPlaying(false);
-              }}
+              onClick={() => handleTabChange("verification")}
               className={cx(
                 "inline-flex min-h-8 items-center gap-1.5 rounded px-3 text-xs font-black transition",
                 activeTab === "verification"
@@ -116,10 +151,7 @@ export function LevelVideoEmbed({
           {showcaseUrl ? (
             <button
               type="button"
-              onClick={() => {
-                setActiveTab("showcase");
-                setIsPlaying(false);
-              }}
+              onClick={() => handleTabChange("showcase")}
               className={cx(
                 "inline-flex min-h-8 items-center gap-1.5 rounded px-3 text-xs font-black transition",
                 activeTab === "showcase"
@@ -138,9 +170,9 @@ export function LevelVideoEmbed({
             href={activeUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex min-h-8 items-center gap-1 rounded border border-slate-700 bg-slate-800/60 px-2.5 text-xs font-bold text-slate-300 transition hover:border-slate-500 hover:text-white"
+            className="inline-flex min-h-8 items-center gap-1.5 rounded border border-slate-700 bg-slate-800/60 px-2.5 text-xs font-bold text-slate-300 transition hover:border-slate-500 hover:text-white"
           >
-            Open in new tab
+            <span>Open on {parsed?.providerName ?? "Provider"}</span>
             <ExternalLink className="h-3 w-3" />
           </a>
         ) : null}
@@ -148,7 +180,7 @@ export function LevelVideoEmbed({
 
       {/* Video Player Area */}
       <div className="relative aspect-video w-full bg-slate-950">
-        {parsed?.type === "youtube" && isPlaying ? (
+        {(parsed?.type === "youtube" || parsed?.type === "iframe") && isPlaying && parsed.embedUrl ? (
           <iframe
             src={parsed.embedUrl}
             title={`${levelName} ${activeTab} video`}
@@ -156,7 +188,7 @@ export function LevelVideoEmbed({
             allowFullScreen
             className="h-full w-full border-0"
           />
-        ) : parsed?.type === "video" && isPlaying ? (
+        ) : parsed?.type === "video" && isPlaying && parsed.embedUrl ? (
           <video
             src={parsed.embedUrl}
             controls
@@ -173,11 +205,15 @@ export function LevelVideoEmbed({
             <div className="relative z-10 flex flex-col items-center gap-3">
               <button
                 type="button"
-                onClick={() => setIsPlaying(true)}
+                onClick={handlePlayClick}
                 className="group flex h-16 w-16 items-center justify-center rounded-full bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/30 transition hover:scale-105 hover:bg-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-300"
                 aria-label={`Play ${activeTab} video`}
               >
-                <Play className="h-7 w-7 translate-x-0.5 fill-current" />
+                {parsed?.type === "external" ? (
+                  <ExternalLink className="h-7 w-7" />
+                ) : (
+                  <Play className="h-7 w-7 translate-x-0.5 fill-current" />
+                )}
               </button>
               <div className="max-w-md space-y-1">
                 <p className="text-base font-black text-slate-100">
@@ -186,7 +222,9 @@ export function LevelVideoEmbed({
                     : "Level Showcase"}
                 </p>
                 <p className="text-xs font-medium text-slate-400">
-                  Click to watch the full completion of {levelName} directly inside NDL
+                  {parsed?.type === "external"
+                    ? `Click to watch on ${parsed.providerName}`
+                    : `Click to watch ${levelName} directly inside NDL`}
                 </p>
               </div>
             </div>
