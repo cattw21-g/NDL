@@ -12,6 +12,7 @@ import {
   type LevelSuggestionFormState,
   validateLevelSuggestionFormSubmission,
 } from "@/lib/level-suggestion-form-state";
+import { sendLevelSuggestionStatusEmail } from "@/lib/email";
 import {
   levelSuggestionConversionGate,
   moderationActionForSuggestionStatus,
@@ -189,6 +190,18 @@ export async function reviewLevelSuggestionAction(formData: FormData) {
       note: parsed.data.moderatorNotes,
     });
   });
+
+  if (suggestion.submitter.email) {
+    void sendLevelSuggestionStatusEmail({
+      to: suggestion.submitter.email,
+      submitterName: suggestion.submitter.displayName,
+      levelName: suggestion.name,
+      status: parsed.data.status,
+      moderatorNotes: parsed.data.moderatorNotes || null,
+    }).catch(() => {
+      // Ignore background email delivery error
+    });
+  }
 
   revalidatePath("/moderation");
   revalidatePath("/level-suggestions");

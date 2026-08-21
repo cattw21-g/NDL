@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
+import { CopyButton } from "@/components/copy-button";
 import { StatusBadge } from "@/components/status-badge";
 import {
   cx,
@@ -113,6 +114,10 @@ export default async function PlayerProfilePage({
       })),
   )[0];
 
+  const hardestCompletion = fullCompletions
+    .filter((r) => r.level.rank !== null)
+    .sort((a, b) => (a.level.rank ?? 999) - (b.level.rank ?? 999))[0];
+
   const canViewPrivate =
     viewer && canSeeSubmission(viewer.role, viewer.id, player.id);
   const isOwnProfile = Boolean(viewer && viewer.id === player.id);
@@ -120,7 +125,7 @@ export default async function PlayerProfilePage({
 
   return (
     <div className="space-y-5">
-      <section className="grid gap-4 rounded-md border border-slate-300 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_14px_30px_rgba(0,0,0,0.28)] md:grid-cols-[minmax(0,1fr)_26rem] md:items-end">
+      <section className="grid gap-4 rounded-md border border-slate-300 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_14px_30px_rgba(0,0,0,0.28)] md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <div className="min-w-0">
           {isOwnProfile ? (
             <p className="mb-2 text-xs font-black uppercase tracking-[0.08em] text-cyan-800 dark:text-cyan-300">
@@ -135,10 +140,22 @@ export default async function PlayerProfilePage({
                 {player.verifiedLevels.length} Verified {player.verifiedLevels.length === 1 ? "Level" : "Levels"}
               </span>
             ) : null}
+            {hardestCompletion ? (
+              <span className="rounded border border-purple-300 bg-purple-50 px-2 py-0.5 text-xs font-black text-purple-900 dark:border-purple-500/50 dark:bg-purple-950/40 dark:text-purple-200">
+                Hardest: {hardestCompletion.level.name} (#{hardestCompletion.level.rank})
+              </span>
+            ) : null}
           </div>
-          <h1 className="truncate text-4xl font-black leading-tight text-slate-950 dark:text-slate-50">
-            {player.displayName}
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="truncate text-4xl font-black leading-tight text-slate-950 dark:text-slate-50">
+              {player.displayName}
+            </h1>
+            <CopyButton
+              text={profileUrl}
+              label="Share Profile"
+              copiedLabel="Link Copied!"
+            />
+          </div>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             Member since {formatDate(player.createdAt)}
           </p>

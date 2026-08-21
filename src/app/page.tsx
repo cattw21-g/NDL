@@ -153,6 +153,7 @@ export default async function Home() {
               status: level.status,
               difficulty: level.difficulty,
               points: calculateCurrentLevelPoints(level),
+              gdLevelId: level.gdLevelId,
               _count: level._count,
             }))}
           />

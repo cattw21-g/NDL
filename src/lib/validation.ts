@@ -141,7 +141,12 @@ export const submissionSchema = z
 export const reviewSchema = z.object({
   submissionId: z.string().min(1),
   status: z.enum(["ACCEPTED", "REJECTED", "NEEDS_CHANGES"]),
-  moderatorNotes: z.string().trim().min(3).max(1000),
+  moderatorNotes: z
+    .string()
+    .trim()
+    .max(1000, "Moderator notes must be under 1000 characters.")
+    .optional()
+    .default(""),
 });
 
 export const levelSuggestionSchema = z.object({
@@ -171,7 +176,12 @@ export const levelSuggestionSchema = z.object({
 export const levelSuggestionReviewSchema = z.object({
   suggestionId: z.string().min(1),
   status: z.enum(["APPROVED", "REJECTED", "NEEDS_CHANGES"]),
-  moderatorNotes: z.string().trim().min(3).max(1000),
+  moderatorNotes: z
+    .string()
+    .trim()
+    .max(1000, "Moderator notes must be under 1000 characters.")
+    .optional()
+    .default(""),
 });
 
 export const levelSuggestionConvertSchema = z.object({

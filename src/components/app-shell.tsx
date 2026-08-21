@@ -2,6 +2,7 @@ import { LogIn, LogOut, UserRound } from "lucide-react";
 import Link from "next/link";
 
 import { logoutAction } from "@/actions/auth";
+import { CommandPalette, CommandPaletteTrigger } from "@/components/command-palette";
 import { NavLink } from "@/components/nav-link";
 import { SiteFooter } from "@/components/site-footer";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -80,6 +81,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="flex min-w-fit items-center gap-2 sm:ml-auto">
+            <CommandPaletteTrigger />
             {user ? (
               <>
                 <Link
@@ -112,6 +114,8 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+
+      <CommandPalette />
 
       {isDemoMode ? (
         <div className="relative z-20 border-b border-amber-300 bg-amber-50 px-3 py-2 text-center text-sm font-black text-amber-900 dark:border-amber-500/50 dark:bg-amber-950/50 dark:text-amber-100">

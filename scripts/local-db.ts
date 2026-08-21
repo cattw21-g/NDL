@@ -29,8 +29,8 @@ async function main() {
   try {
     await pg.createDatabase("ndl");
     console.log("Database 'ndl' ready.");
-  } catch (err: any) {
-    if (!err?.message?.includes("already exists")) {
+  } catch (err: unknown) {
+    if (err instanceof Error && !err.message.includes("already exists")) {
       // Database might already exist, which is normal on subsequent runs
     }
   }

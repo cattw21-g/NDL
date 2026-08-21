@@ -10,8 +10,10 @@ import {
 } from "../lib/register-form-state";
 import {
   levelSchema,
+  levelSuggestionReviewSchema,
   registerSchema,
   resetPasswordSchema,
+  reviewSchema,
   submissionSchema,
 } from "../lib/validation";
 
@@ -399,3 +401,48 @@ describe("admin level validation", () => {
     expect(result.success).toBe(true);
   });
 });
+
+describe("moderation review validation", () => {
+  it("accepts record reviews with blank or omitted moderator notes", () => {
+    const withBlank = reviewSchema.safeParse({
+      submissionId: "sub-123",
+      status: "ACCEPTED",
+      moderatorNotes: "",
+    });
+    expect(withBlank.success).toBe(true);
+    if (withBlank.success) {
+      expect(withBlank.data.moderatorNotes).toBe("");
+    }
+
+    const withOmitted = reviewSchema.safeParse({
+      submissionId: "sub-123",
+      status: "REJECTED",
+    });
+    expect(withOmitted.success).toBe(true);
+    if (withOmitted.success) {
+      expect(withOmitted.data.moderatorNotes).toBe("");
+    }
+  });
+
+  it("accepts level suggestion reviews with blank or omitted moderator notes", () => {
+    const withBlank = levelSuggestionReviewSchema.safeParse({
+      suggestionId: "sug-123",
+      status: "APPROVED",
+      moderatorNotes: "",
+    });
+    expect(withBlank.success).toBe(true);
+    if (withBlank.success) {
+      expect(withBlank.data.moderatorNotes).toBe("");
+    }
+
+    const withOmitted = levelSuggestionReviewSchema.safeParse({
+      suggestionId: "sug-123",
+      status: "REJECTED",
+    });
+    expect(withOmitted.success).toBe(true);
+    if (withOmitted.success) {
+      expect(withOmitted.data.moderatorNotes).toBe("");
+    }
+  });
+});
+

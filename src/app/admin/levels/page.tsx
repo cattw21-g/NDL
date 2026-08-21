@@ -92,10 +92,10 @@ export default async function AdminLevelsPage({
                 <div className="flex min-w-0 items-center gap-3">
                   <RankBadge rank={level.rank} />
                   <div className="min-w-0">
-                    <h2 className="truncate text-2xl font-black text-slate-950">
+                    <h2 className="truncate text-2xl font-black text-slate-950 dark:text-slate-50">
                       {level.name}
                     </h2>
-                    <p className="mt-1 text-sm text-slate-500">
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                       {level.originalName}
                     </p>
                   </div>

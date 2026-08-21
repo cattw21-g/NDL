@@ -27,6 +27,8 @@ import {
   LevelSuggestionConversionError,
   levelSuggestionConversionGate,
 } from "@/lib/level-suggestion-workflow";
+import { sendLevelSuggestionStatusEmail } from "@/lib/email";
+import { absoluteSiteUrl } from "@/lib/site-url";
 import { slugify } from "@/lib/slug";
 import {
   cleanupUploads,
@@ -63,6 +65,9 @@ export async function createLevelAction(
     ? await prisma.levelSuggestion.findUnique({
         where: {
           id: parsed.data.sourceSuggestionId,
+        },
+        include: {
+          submitter: true,
         },
       })
     : null;
@@ -195,6 +200,20 @@ export async function createLevelAction(
 
   if (!result.ok) {
     return levelMutationErrorState(parsed.values, result.error);
+  }
+
+  if (sourceSuggestion?.submitter?.email) {
+    const levelUrl = absoluteSiteUrl(`/levels/${result.value.level.slug}`);
+    void sendLevelSuggestionStatusEmail({
+      to: sourceSuggestion.submitter.email,
+      submitterName: sourceSuggestion.submitter.displayName,
+      levelName: result.value.level.name,
+      status: "CONVERTED",
+      moderatorNotes: "Your level suggestion has been approved and placed on the Nerfed Demonlist!",
+      levelUrl,
+    }).catch(() => {
+      // Ignore background email error
+    });
   }
 
   revalidatePath("/");

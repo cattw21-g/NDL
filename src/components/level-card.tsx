@@ -17,6 +17,7 @@ export type LevelCardLevel = {
   status: string;
   difficulty: string;
   points: number;
+  gdLevelId?: string;
   _count?: { records: number };
 };
 

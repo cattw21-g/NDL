@@ -102,6 +102,34 @@ const launchPost = {
     "NDL is now ready for public beta. Players can view ranked nerfed demon versions, submit records for review, suggest new level candidates, and read the official v1.0 rules. Staff will continue to review submissions, tune rankings, and publish updates as the list grows.",
 };
 
+const rcUpdatePost = {
+  title: "Release Candidate (v1.0-RC) is Live!",
+  slug: "release-candidate-v1-0-rc",
+  category: ChangelogCategory.SITE_UPDATE,
+  summary:
+    "Nerfed Demonlist has officially graduated to Release Candidate status! Enjoy inline video showcase playback, global Ctrl+K command search, leaderboard champion podiums, one-click level sharing, instant on-page status tracking, and automated email alerts.",
+  content: `## 🎬 Embedded Video Showcase
+[FEATURE] **Watch In-App**: You can now watch official verification proofs and level showcases directly on NDL level pages with an integrated responsive video player.
+[FEATURE] **Dual Proof Switcher**: Seamlessly toggle between official verification runs and showcases with one click.
+
+## 🔍 Global Command Palette (Ctrl+K)
+[NEW] **Instant Search Everywhere**: Press **Ctrl+K** (or Cmd+K) anywhere on the site to instantly search levels, players, rules, and actions with fast keyboard navigation.
+[FEATURE] **Keyboard Navigation**: Use your arrow keys to browse results and press **Enter** to jump directly to any level or player profile.
+
+## 🏆 Top 3 Champion Podium & Player Profiles
+[LEADERBOARD] **Podium Showcase**: The community leaderboard now features an elevated Top 3 Champion Podium with gold 🥇, silver 🥈, and bronze 🥉 crowns.
+[FEATURE] **Hardest Completion Badge**: Player profiles now automatically highlight each runner's hardest beaten demon.
+[FEATURE] **Verified Levels Milestones**: Verifiers are proudly credited with exclusive milestone badges for all levels they have verified.
+
+## 🎛️ Tier Filter Chips & Quick Copy
+[NEW] **Difficulty Filter Chips**: Filter main list levels instantly by tier (**Top 10**, **Top 50**, **Extreme Nerfed**, **Insane Nerfed**, or **Legacy**).
+[QOL] **One-Click GD ID & Link Sharing**: Copy Geometry Dash Level IDs and share profile links instantly with animated confirmation.
+
+## 🔔 On-Page Run Tracking & Instant Notifications
+[NEW] **Personal Run Status Banners**: Level pages now show your submission status (**Pending Review**, **Accepted**, **Needs Changes**, or **Rejected**) along with reviewer feedback.
+[FEATURE] **Automated Email Notifications**: Get an instant email alert when your record is accepted (with points awarded!) or when your suggested level is approved.`,
+};
+
 async function seedRules(version: string) {
   const existingRules = await prisma.rulesDocument.findFirst({
     where: {
@@ -146,7 +174,7 @@ async function seedRules(version: string) {
 }
 
 async function seedLaunchPost() {
-  return prisma.changelogPost.upsert({
+  await prisma.changelogPost.upsert({
     where: {
       slug: launchPost.slug,
     },
@@ -156,7 +184,7 @@ async function seedLaunchPost() {
       summary: launchPost.summary,
       content: launchPost.content,
       isPublished: true,
-      isPinned: true,
+      isPinned: false,
       isDemo: false,
       archivedAt: null,
       publishedAt: new Date("2026-06-01T00:00:00.000Z"),
@@ -164,9 +192,33 @@ async function seedLaunchPost() {
     create: {
       ...launchPost,
       isPublished: true,
-      isPinned: true,
+      isPinned: false,
       isDemo: false,
       publishedAt: new Date("2026-06-01T00:00:00.000Z"),
+    },
+  });
+
+  return prisma.changelogPost.upsert({
+    where: {
+      slug: rcUpdatePost.slug,
+    },
+    update: {
+      title: rcUpdatePost.title,
+      category: rcUpdatePost.category,
+      summary: rcUpdatePost.summary,
+      content: rcUpdatePost.content,
+      isPublished: true,
+      isPinned: true,
+      isDemo: false,
+      archivedAt: null,
+      publishedAt: new Date("2026-06-03T12:00:00.000Z"),
+    },
+    create: {
+      ...rcUpdatePost,
+      isPublished: true,
+      isPinned: true,
+      isDemo: false,
+      publishedAt: new Date("2026-06-03T12:00:00.000Z"),
     },
   });
 }
@@ -386,6 +438,7 @@ async function seedDemo() {
   });
 
   await seedRules(rulesVersion);
+  await seedLaunchPost();
 
   await prisma.changelogPost.create({
     data: {

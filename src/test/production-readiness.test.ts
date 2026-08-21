@@ -585,7 +585,7 @@ describe("production readiness guardrails", () => {
     expect(postPage).toContain("publicChangelogWhere({");
     expect(postPage).toContain("notFound()");
     expect(postPage).toContain("Back to changelog");
-    expect(postPage).toContain("plainTextParagraphs(post.content)");
+    expect(postPage).toContain("ChangelogContent");
     expect(changelogPage).not.toContain("dangerouslySetInnerHTML");
     expect(postPage).not.toContain("dangerouslySetInnerHTML");
 

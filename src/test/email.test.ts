@@ -2,8 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   passwordResetEmailText,
+  sendLevelSuggestionStatusEmail,
   sendPasswordResetEmail,
+  sendRecordStatusEmail,
   sendVerificationEmail,
+  type TransactionalMailMessage,
   type TransportFactory,
   verificationEmailText,
 } from "../lib/email";
@@ -275,3 +278,109 @@ describe("password reset email delivery", () => {
     expect((sent as { html: string }).html).not.toContain("<img");
   });
 });
+
+describe("record status email delivery", () => {
+  it("sends record accepted email with points and level link", async () => {
+    let sentMessage: TransactionalMailMessage | undefined;
+    const createTransport: TransportFactory = () => ({
+      sendMail: async (message) => {
+        sentMessage = message;
+        return { messageId: "123" };
+      },
+    });
+
+    const result = await sendRecordStatusEmail(
+      {
+        to: "victor@example.com",
+        playerName: "GeometryPro",
+        levelName: "Abyssal Mercy",
+        status: "ACCEPTED",
+        progress: 100,
+        pointsAwarded: 320,
+        moderatorNotes: "Clean run, verified with raw footage.",
+        levelUrl: "https://nerfeddemonlist.net/levels/abyssal-mercy",
+      },
+      {
+        SMTP_HOST: "smtp.example.com",
+        SMTP_PORT: "587",
+        SMTP_FROM: "NDL <no-reply@nerfeddemonlist.net>",
+      },
+      { createTransport },
+    );
+
+    expect(result).toBe("smtp");
+    expect(sentMessage?.subject).toBe("Record Accepted: Abyssal Mercy (100%)");
+    expect(sentMessage?.text).toContain("Status: Accepted");
+    expect(sentMessage?.text).toContain("Points Awarded: 320 pts");
+    expect(sentMessage?.text).toContain("Clean run, verified with raw footage.");
+    expect(sentMessage?.html).toContain("https://nerfeddemonlist.net/levels/abyssal-mercy");
+  });
+
+  it("sends record rejected email with moderator feedback", async () => {
+    let sentMessage: TransactionalMailMessage | undefined;
+    const createTransport: TransportFactory = () => ({
+      sendMail: async (message) => {
+        sentMessage = message;
+        return { messageId: "123" };
+      },
+    });
+
+    const result = await sendRecordStatusEmail(
+      {
+        to: "runner@example.com",
+        playerName: "Runner99",
+        levelName: "Sakupen Circles Nerfed",
+        status: "REJECTED",
+        progress: 85,
+        moderatorNotes: "Missing click audio track.",
+        levelUrl: "https://nerfeddemonlist.net/levels/sakupen-circles-nerfed",
+      },
+      {
+        SMTP_HOST: "smtp.example.com",
+        SMTP_PORT: "587",
+        SMTP_FROM: "NDL <no-reply@nerfeddemonlist.net>",
+      },
+      { createTransport },
+    );
+
+    expect(result).toBe("smtp");
+    expect(sentMessage?.subject).toBe("Record Rejected: Sakupen Circles Nerfed");
+    expect(sentMessage?.text).toContain("Status: Rejected");
+    expect(sentMessage?.text).toContain("Missing click audio track.");
+  });
+});
+
+describe("level suggestion status email delivery", () => {
+  it("sends suggestion approved email", async () => {
+    let sentMessage: TransactionalMailMessage | undefined;
+    const createTransport: TransportFactory = () => ({
+      sendMail: async (message) => {
+        sentMessage = message;
+        return { messageId: "123" };
+      },
+    });
+
+    const result = await sendLevelSuggestionStatusEmail(
+      {
+        to: "creator@example.com",
+        submitterName: "LevelBuilder",
+        levelName: "Kenos Nerfed",
+        status: "APPROVED",
+        moderatorNotes: "Looks great, queued for list ranking.",
+        levelUrl: "https://nerfeddemonlist.net/levels/kenos-nerfed",
+      },
+      {
+        SMTP_HOST: "smtp.example.com",
+        SMTP_PORT: "587",
+        SMTP_FROM: "NDL <no-reply@nerfeddemonlist.net>",
+      },
+      { createTransport },
+    );
+
+    expect(result).toBe("smtp");
+    expect(sentMessage?.subject).toBe("Level Suggestion Approved: Kenos Nerfed");
+    expect(sentMessage?.text).toContain("Status: Approved");
+    expect(sentMessage?.html).toContain("Looks great, queued for list ranking.");
+  });
+});
+

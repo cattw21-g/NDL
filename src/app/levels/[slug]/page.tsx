@@ -10,8 +10,11 @@ import {
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { CopyButton } from "@/components/copy-button";
+import { LevelVideoEmbed } from "@/components/level-video-embed";
 import { SafeThumbnail } from "@/components/safe-thumbnail";
 import { StatusBadge } from "@/components/status-badge";
+import { UserLevelSubmissionBanner } from "@/components/user-level-submission-banner";
 import {
   cx,
   EmptyState,
@@ -29,6 +32,7 @@ import {
 } from "@/lib/demo-visibility";
 import { formatDate, formatDateTime, statusLabel } from "@/lib/format";
 import { calculateCurrentLevelPoints } from "@/lib/points";
+import { absoluteSiteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -186,6 +190,11 @@ export default async function LevelPage({
                 <Upload className="h-4 w-4" />
                 Submit record
               </Link>
+              <CopyButton
+                text={absoluteSiteUrl(`/levels/${level.slug}`)}
+                label="Share Level"
+                copiedLabel="Link Copied!"
+              />
               {level.verificationVideoUrl ? (
                 <a
                   href={level.verificationVideoUrl}
@@ -215,8 +224,16 @@ export default async function LevelPage({
         </div>
       </SectionPanel>
 
+      <UserLevelSubmissionBanner levelId={level.id} />
+
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="space-y-6">
+          <LevelVideoEmbed
+            verificationUrl={level.verificationVideoUrl}
+            showcaseUrl={level.showcaseUrl}
+            levelName={level.name}
+          />
+
           <SectionPanel className="p-4 sm:p-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-300 pb-4 dark:border-slate-700">
               <h2 className="text-2xl font-black text-slate-950 dark:text-slate-50">
@@ -266,7 +283,19 @@ export default async function LevelPage({
                   )
                 }
               />
-              <MetaTile label="GD level ID" value={level.gdLevelId} />
+              <MetaTile
+                label="GD level ID"
+                value={
+                  <div className="flex items-center gap-2">
+                    <span>{level.gdLevelId}</span>
+                    <CopyButton
+                      text={level.gdLevelId}
+                      label="Copy ID"
+                      iconOnly
+                    />
+                  </div>
+                }
+              />
               <MetaTile
                 label="Placement date"
                 value={

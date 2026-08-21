@@ -2,12 +2,10 @@ import { ArrowLeft, Newspaper } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ChangelogContent } from "@/components/changelog-content";
 import { StatusBadge } from "@/components/status-badge";
 import { Eyebrow, SectionPanel } from "@/components/ui";
-import {
-  changelogCategoryLabel,
-  plainTextParagraphs,
-} from "@/lib/changelog";
+import { changelogCategoryLabel } from "@/lib/changelog";
 import { prisma } from "@/lib/db";
 import { publicChangelogWhere } from "@/lib/demo-visibility";
 import { formatDate, formatDateTime } from "@/lib/format";
@@ -69,17 +67,8 @@ export default async function ChangelogPostPage({
         </div>
       </section>
 
-      <SectionPanel className="p-5">
-        <div className="space-y-4">
-          {plainTextParagraphs(post.content).map((paragraph, index) => (
-            <p
-              key={`${index}-${paragraph.slice(0, 24)}`}
-              className="whitespace-pre-wrap text-sm leading-7 text-slate-700 dark:text-slate-300 sm:text-base"
-            >
-              {paragraph}
-            </p>
-          ))}
-        </div>
+      <SectionPanel className="p-5 sm:p-6">
+        <ChangelogContent content={post.content} />
       </SectionPanel>
     </article>
   );

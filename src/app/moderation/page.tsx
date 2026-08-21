@@ -758,12 +758,11 @@ function RecordReviewCard({
                 <option value="NEEDS_CHANGES">Needs changes</option>
               </select>
             </FieldLabel>
-            <FieldLabel label="Moderator notes">
+            <FieldLabel label="Moderator notes (optional)">
               <input
                 name="moderatorNotes"
-                required
                 className={inputClass}
-                placeholder="Required decision note"
+                placeholder="Optional notes for submitter"
               />
             </FieldLabel>
           </div>
@@ -854,12 +853,11 @@ function SuggestionReviewCard({
                 <option value="NEEDS_CHANGES">Needs changes</option>
               </select>
             </FieldLabel>
-            <FieldLabel label="Moderator notes">
+            <FieldLabel label="Moderator notes (optional)">
               <input
                 name="moderatorNotes"
-                required
                 className={inputClass}
-                placeholder="Required suggestion note"
+                placeholder="Optional notes for submitter"
               />
             </FieldLabel>
           </div>

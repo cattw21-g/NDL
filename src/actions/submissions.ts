@@ -23,6 +23,9 @@ import {
   type SubmissionFormState,
   validateSubmissionFormSubmission,
 } from "@/lib/submission-form-state";
+import { sendRecordStatusEmail } from "@/lib/email";
+import { calculateLevelPoints, type ScoredLevelStatus } from "@/lib/points";
+import { absoluteSiteUrl } from "@/lib/site-url";
 import type { StructuredSubmissionProof } from "@/lib/submission-proof";
 import {
   cleanupUploads,
@@ -219,6 +222,31 @@ export async function reviewSubmissionAction(formData: FormData) {
   await prisma.$transaction(async (tx) => {
     await applySubmissionReview(tx, submission, moderator, parsed.data);
   });
+
+  if (submission.player.email) {
+    const levelUrl = absoluteSiteUrl(`/levels/${submission.level.slug}`);
+    const progress = submission.progress ?? 100;
+    const pointsAwarded =
+      parsed.data.status === "ACCEPTED" && progress === 100
+        ? calculateLevelPoints(
+            submission.level.rank,
+            submission.level.status as ScoredLevelStatus,
+          )
+        : 0;
+
+    void sendRecordStatusEmail({
+      to: submission.player.email,
+      playerName: submission.player.displayName,
+      levelName: submission.level.name,
+      status: parsed.data.status,
+      progress,
+      pointsAwarded: parsed.data.status === "ACCEPTED" ? pointsAwarded : null,
+      moderatorNotes: parsed.data.moderatorNotes || null,
+      levelUrl,
+    }).catch(() => {
+      // Ignore background email delivery errors
+    });
+  }
 
   revalidatePath("/");
   revalidatePath("/players");
