@@ -6,6 +6,7 @@ export const SUBMISSION_FORM_SUMMARY = "Fix the highlighted fields below.";
 
 export const submissionFormFields = [
   "levelId",
+  "progress",
   "videoUrl",
   "rawFootageUrl",
   "proofImageUrl",
@@ -54,6 +55,7 @@ export type SubmissionFormValidationResult =
 
 export const emptySubmissionFormValues: SubmissionFormValues = {
   levelId: "",
+  progress: "100",
   videoUrl: "",
   rawFootageUrl: "",
   proofImageUrl: "",

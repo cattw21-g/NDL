@@ -223,6 +223,8 @@ const validLevel = {
   publisher: "Demo host",
   nerfCreator: "Demo nerfer",
   verifier: "Demo verifier",
+  verifierUserId: "",
+  verificationVideoUrl: "",
   thumbnailUrl: "https://i.imgur.com/example.png",
   showcaseUrl: "https://example.com/showcase",
   placementDate: "",

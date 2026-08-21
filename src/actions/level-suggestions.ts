@@ -84,6 +84,8 @@ export async function submitLevelSuggestionAction(
         publisher: parsed.data.publisher,
         nerfCreator: parsed.data.nerfCreator,
         verifier: parsed.data.verifier,
+        verifierPlayerName: parsed.data.verifierPlayerName,
+        verificationVideoUrl: parsed.data.verificationVideoUrl,
         showcaseUrl: parsed.data.showcaseUrl,
         thumbnailUrl,
         versionNotes: parsed.data.versionNotes,

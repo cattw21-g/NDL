@@ -1,5 +1,6 @@
 export type StructuredSubmissionProof = {
   levelId: string;
+  progress?: number;
   videoUrl: string;
   rawFootageUrl?: string;
   proofImageUrl?: string;

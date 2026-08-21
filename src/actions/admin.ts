@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import type { Prisma } from "@/generated/prisma/client";
 import { ModerationActionType } from "@/generated/prisma/enums";
 import { writeAuditLog, type AuditLogClient } from "@/lib/audit-log";
 import { requireAdmin } from "@/lib/auth";
@@ -20,6 +21,7 @@ import {
   LevelRankingError,
   updateLevelWithRank,
 } from "@/lib/level-ranking";
+import { calculateLevelPoints, type ScoredLevelStatus } from "@/lib/points";
 import {
   assertCanConvertLevelSuggestion,
   LevelSuggestionConversionError,
@@ -97,6 +99,13 @@ export async function createLevelAction(
         ...upload.data,
         slug,
       });
+
+      await syncVerifierRecord(
+        tx,
+        mutation.level,
+        parsed.data.verifierUserId,
+        sourceSuggestion?.verifierPlayerName,
+      );
 
       if (parsed.data.sourceSuggestionId) {
         await tx.levelSuggestion.update({
@@ -257,6 +266,12 @@ export async function updateLevelAction(
       });
 
       await writeLevelUpdateAudit(tx, admin, beforeLevel, mutation.level);
+
+      await syncVerifierRecord(
+        tx,
+        mutation.level,
+        parsed.data.verifierUserId,
+      );
 
       return mutation;
     }),
@@ -1018,5 +1033,96 @@ async function writeLevelUpdateAudit(
       after: { thumbnailUrl: after.thumbnailUrl },
       note: "Level thumbnail changed.",
     });
+  }
+}
+
+async function syncVerifierRecord(
+  tx: Prisma.TransactionClient,
+  level: {
+    id: string;
+    name: string;
+    rank: number | null;
+    status: ScoredLevelStatus;
+    verifier: string;
+    verifierUserId?: string | null;
+    verificationVideoUrl?: string | null;
+    showcaseUrl: string;
+    isDemo?: boolean;
+  },
+  preferredVerifierUserId?: string | null,
+  fallbackVerifierPlayerName?: string | null,
+) {
+  let verifierUser = preferredVerifierUserId
+    ? await tx.user.findUnique({ where: { id: preferredVerifierUserId } })
+    : null;
+
+  if (!verifierUser && fallbackVerifierPlayerName) {
+    const trimmed = fallbackVerifierPlayerName.trim();
+    verifierUser = await tx.user.findFirst({
+      where: {
+        OR: [
+          { playerName: { equals: trimmed, mode: "insensitive" } },
+          { displayName: { equals: trimmed, mode: "insensitive" } },
+        ],
+      },
+    });
+  }
+
+  if (!verifierUser && level.verifier) {
+    const trimmed = level.verifier.trim();
+    verifierUser = await tx.user.findFirst({
+      where: {
+        OR: [
+          { playerName: { equals: trimmed, mode: "insensitive" } },
+          { displayName: { equals: trimmed, mode: "insensitive" } },
+        ],
+      },
+    });
+  }
+
+  if (verifierUser) {
+    if (level.verifierUserId !== verifierUser.id) {
+      await tx.level.update({
+        where: { id: level.id },
+        data: { verifierUserId: verifierUser.id },
+      });
+    }
+
+    const points = calculateLevelPoints(level.rank, level.status);
+    const existingVerifierRecord = await tx.record.findFirst({
+      where: {
+        levelId: level.id,
+        playerId: verifierUser.id,
+      },
+    });
+
+    const videoUrl = level.verificationVideoUrl || level.showcaseUrl || "";
+
+    if (existingVerifierRecord) {
+      await tx.record.update({
+        where: { id: existingVerifierRecord.id },
+        data: {
+          progress: 100,
+          isVerifier: true,
+          pointsAwarded: points,
+          videoUrl: videoUrl || existingVerifierRecord.videoUrl,
+        },
+      });
+    } else if (videoUrl) {
+      await tx.record.create({
+        data: {
+          playerId: verifierUser.id,
+          levelId: level.id,
+          progress: 100,
+          isVerifier: true,
+          videoUrl,
+          fps: 360,
+          cbfUsed: false,
+          pointsAwarded: points,
+          isDemo: Boolean(level.isDemo),
+          acceptedAt: new Date(),
+        },
+      });
+    }
   }
 }

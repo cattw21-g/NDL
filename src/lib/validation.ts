@@ -97,6 +97,12 @@ export const registerSchema = z
 export const submissionSchema = z
   .object({
     levelId: z.string().min(1),
+    progress: z.coerce
+      .number({ error: "Enter a progress percentage between 1 and 100." })
+      .int("Progress must be a whole percentage.")
+      .min(1, "Progress must be at least 1%.")
+      .max(100, "Progress cannot exceed 100%.")
+      .default(100),
     videoUrl: proofResourceUrl,
     rawFootageUrl: optionalProofResourceUrl,
     proofImageUrl: optionalProofResourceUrl,
@@ -149,6 +155,10 @@ export const levelSuggestionSchema = z.object({
   publisher: requiredText("Publisher/host is required.", 80),
   nerfCreator: requiredText("Nerf creator is required.", 80),
   verifier: requiredText("Verifier is required.", 80),
+  verifierPlayerName: optionalText(80),
+  verificationVideoUrl: requiredHttpUrl(
+    "Verification video must be a valid http/https URL.",
+  ),
   showcaseUrl: requiredHttpUrl("Showcase must be a valid http/https URL."),
   thumbnailUrl: optionalThumbnailUrl,
   versionNotes: optionalText(1000),
@@ -181,6 +191,18 @@ export const levelSchema = z.object({
   publisher: requiredText("Publisher/host is required.", 80),
   nerfCreator: requiredText("Nerf creator is required.", 80),
   verifier: requiredText("Verifier is required.", 80),
+  verifierUserId: z.preprocess(emptyToUndefined, z.string().optional()),
+  verificationVideoUrl: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .trim()
+      .refine(
+        (val) => !val || isHttpUrl(val),
+        "Verification video must be a valid http/https URL.",
+      )
+      .optional(),
+  ),
   thumbnailUrl: z
     .string({ error: thumbnailMessage })
     .trim()

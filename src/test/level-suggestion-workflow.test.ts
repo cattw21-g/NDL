@@ -18,6 +18,8 @@ function suggestionFormData(overrides: Record<string, string> = {}) {
     publisher: "NDL Host",
     nerfCreator: "Nerf Team",
     verifier: "Verifier",
+    verifierPlayerName: "verifier_player",
+    verificationVideoUrl: "https://example.com/verification",
     showcaseUrl: "https://example.com/showcase",
     versionNotes: "Stable public version.",
     compatibilityNotes:

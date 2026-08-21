@@ -15,6 +15,7 @@ export function buildSubmissionCreateData(
   return {
     playerId,
     levelId: input.levelId,
+    progress: input.progress ?? 100,
     videoUrl: input.videoUrl,
     rawFootageUrl: input.rawFootageUrl,
     proofImageUrl: input.proofImageUrl,
@@ -41,6 +42,7 @@ export type ReviewableSubmission = {
   id: string;
   playerId: string;
   levelId: string;
+  progress?: number;
   videoUrl: string;
   rawFootageUrl: string | null;
   fps: number;
@@ -83,6 +85,7 @@ export async function applySubmissionReview(
   reviewedAt = new Date(),
 ) {
   let awardedPoints: number | null = null;
+  const progress = submission.progress ?? 100;
 
   await tx.recordSubmission.update({
     where: {
@@ -101,15 +104,17 @@ export async function applySubmissionReview(
       submission.level.rank,
       submission.level.status,
     );
-    awardedPoints = pointsAwarded;
+    const finalPoints = progress === 100 ? pointsAwarded : 0;
+    awardedPoints = finalPoints;
     const recordData = {
       playerId: submission.playerId,
       levelId: submission.levelId,
+      progress,
       videoUrl: submission.videoUrl,
       rawFootageUrl: submission.rawFootageUrl,
       fps: submission.fps,
       cbfUsed: submission.cbfUsed,
-      pointsAwarded,
+      pointsAwarded: finalPoints,
       isDemo: Boolean(submission.isDemo),
     };
 

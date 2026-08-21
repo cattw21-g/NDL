@@ -180,6 +180,14 @@ export function LevelSuggestionForm({
       ) : null}
 
       <SectionPanel className="grid gap-4 p-4">
+        <div className="rounded-md border border-cyan-300 bg-cyan-50 p-3 text-sm leading-6 text-cyan-950 dark:border-cyan-500/50 dark:bg-cyan-950/30 dark:text-cyan-100">
+          <h2 className="font-black">Level Suggestion Policy</h2>
+          <p className="mt-1">
+            Levels are only eligible for the list if they have been legitimately verified.
+            A valid <strong>verification video</strong> is mandatory. When the level is approved and placed, the verifier will receive full points!
+          </p>
+        </div>
+
         <FormSection
           title="Level identity"
           description="Use the accepted or intended public names and credits. Staff can request changes before approval."
@@ -226,19 +234,38 @@ export function LevelSuggestionForm({
             <TextInput
               name="verifier"
               label="Verifier"
-              help={fieldHelp.verifier}
+              help="The player who verified this nerfed demon."
               placeholder="Verifier handle"
               defaultValue={values.verifier}
               errors={state.fieldErrors.verifier}
+            />
+            <TextInput
+              name="verifierPlayerName"
+              label="Verifier NDL username (optional)"
+              required={false}
+              help="If the verifier has an NDL account, enter their username to link their profile and award points directly."
+              placeholder="verifier_username"
+              defaultValue={values.verifierPlayerName}
+              errors={state.fieldErrors.verifierPlayerName}
             />
           </div>
         </FormSection>
 
         <FormSection
-          title="Media and version"
-          description="Showcase links must be full http/https URLs."
+          title="Verification Proof & Media"
+          description="A verification video link is required to prove the level was beaten legitimately."
         >
           <div className="grid gap-4 md:grid-cols-2">
+            <TextInput
+              name="verificationVideoUrl"
+              label="Verification video link"
+              help="Full video showing the verifier beating the level (YouTube/Twitch/Drive)."
+              type="url"
+              placeholder="https://youtu.be/..."
+              defaultValue={values.verificationVideoUrl}
+              required
+              errors={state.fieldErrors.verificationVideoUrl}
+            />
             <TextInput
               name="showcaseUrl"
               label="Showcase link"
@@ -248,13 +275,15 @@ export function LevelSuggestionForm({
               defaultValue={values.showcaseUrl}
               errors={state.fieldErrors.showcaseUrl}
             />
-            <TextArea
-              name="versionNotes"
-              label="Version notes"
-              help={fieldHelp.versionNotes}
-              defaultValue={values.versionNotes}
-              errors={state.fieldErrors.versionNotes}
-            />
+            <div className="md:col-span-2">
+              <TextArea
+                name="versionNotes"
+                label="Version notes"
+                help={fieldHelp.versionNotes}
+                defaultValue={values.versionNotes}
+                errors={state.fieldErrors.versionNotes}
+              />
+            </div>
           </div>
         </FormSection>
 

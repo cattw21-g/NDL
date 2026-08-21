@@ -21,6 +21,7 @@
 # production
 /build
 /bot/dist
+/.pgdata
 
 # misc
 .DS_Store

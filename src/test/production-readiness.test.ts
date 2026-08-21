@@ -857,7 +857,7 @@ describe("production readiness guardrails", () => {
 
     expect(levelPage).toContain("No description provided.");
     expect(levelPage).toContain("No version notes provided.");
-    expect(levelPage).toContain("No accepted records yet");
+    expect(levelPage).toContain("No 100% victors recorded yet");
     expect(levelPage).toContain("100%");
     expect(levelPage).toContain("Completion video");
     expect(levelPage).toContain("Video linked");

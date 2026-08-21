@@ -88,6 +88,7 @@ model User {
   levelSuggestions        LevelSuggestion[]        @relation("LevelSuggestionSubmitter")
   reviewedLevelSuggestions LevelSuggestion[]       @relation("LevelSuggestionReviewer")
   records                 Record[]                 @relation("RecordPlayer")
+  verifiedLevels          Level[]                  @relation("LevelVerifierUser")
   moderationActions       ModerationAction[]       @relation("ModerationActor")
   adminAuditLogs          AdminAuditLog[]          @relation("AdminAuditActor")
   levelHistory            LevelHistory[]           @relation("LevelHistoryActor")
@@ -144,33 +145,37 @@ model PasswordResetToken {
 }
 
 model Level {
-  id            String             @id @default(cuid())
-  rank          Int?               @unique
-  slug          String             @unique
-  name          String
-  originalName  String
-  gdLevelId     String
-  publisher     String
-  nerfCreator   String
-  verifier      String
-  thumbnailUrl  String
-  showcaseUrl   String
-  placementDate DateTime?
-  status        LevelStatus        @default(PENDING)
-  difficulty    DifficultyCategory
-  points        Int                @default(0)
-  description   String
-  versionNotes  String?
-  isDemo        Boolean            @default(false)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  submissions   RecordSubmission[]
-  records       Record[]
-  history       LevelHistory[]
-  createdFromSuggestion LevelSuggestion? @relation("SuggestionCreatedLevel")
+  id                    String             @id @default(cuid())
+  rank                  Int?               @unique
+  slug                  String             @unique
+  name                  String
+  originalName          String
+  gdLevelId             String
+  publisher             String
+  nerfCreator           String
+  verifier              String
+  verifierUserId        String?
+  verificationVideoUrl  String?
+  thumbnailUrl          String
+  showcaseUrl           String
+  placementDate         DateTime?
+  status                LevelStatus        @default(PENDING)
+  difficulty            DifficultyCategory
+  points                Int                @default(0)
+  description           String
+  versionNotes          String?
+  isDemo                Boolean            @default(false)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  verifierUser          User?              @relation("LevelVerifierUser", fields: [verifierUserId], references: [id], onDelete: SetNull)
+  submissions           RecordSubmission[]
+  records               Record[]
+  history               LevelHistory[]
+  createdFromSuggestion LevelSuggestion?   @relation("SuggestionCreatedLevel")
 
   @@index([status, rank])
   @@index([difficulty])
+  @@index([verifierUserId])
   @@index([isDemo])
 }
 
@@ -178,6 +183,7 @@ model RecordSubmission {
   id                    String       @id @default(cuid())
   playerId              String
   levelId               String
+  progress              Int          @default(100)
   videoUrl              String
   rawFootageUrl         String?
   proofImageUrl         String?
@@ -210,6 +216,7 @@ model RecordSubmission {
   @@index([status, submittedAt])
   @@index([playerId])
   @@index([levelId])
+  @@index([progress])
   @@index([isDemo])
 }
 
@@ -218,6 +225,8 @@ model Record {
   playerId      String
   levelId       String
   submissionId  String?           @unique
+  progress      Int               @default(100)
+  isVerifier    Boolean           @default(false)
   videoUrl      String
   rawFootageUrl String?
   fps           Int
@@ -233,35 +242,39 @@ model Record {
 
   @@index([playerId])
   @@index([levelId])
+  @@index([progress])
+  @@index([isVerifier])
   @@index([acceptedAt])
   @@index([isDemo])
 }
 
 model LevelSuggestion {
-  id                 String                @id @default(cuid())
-  submitterId        String
-  reviewerId         String?
-  createdLevelId     String?               @unique
-  name               String
-  originalName       String
-  gdLevelId          String
-  publisher          String
-  nerfCreator        String
-  verifier           String
-  showcaseUrl        String
-  thumbnailUrl       String?
-  versionNotes       String?
-  compatibilityNotes String
-  status             LevelSuggestionStatus @default(PENDING)
-  moderatorNotes     String?
-  isDemo             Boolean               @default(false)
-  submittedAt        DateTime              @default(now())
-  reviewedAt         DateTime?
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-  submitter          User                  @relation("LevelSuggestionSubmitter", fields: [submitterId], references: [id], onDelete: Cascade)
-  reviewer           User?                 @relation("LevelSuggestionReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
-  createdLevel       Level?                @relation("SuggestionCreatedLevel", fields: [createdLevelId], references: [id], onDelete: SetNull)
+  id                   String                @id @default(cuid())
+  submitterId          String
+  reviewerId           String?
+  createdLevelId       String?               @unique
+  name                 String
+  originalName         String
+  gdLevelId            String
+  publisher            String
+  nerfCreator          String
+  verifier             String
+  verifierPlayerName   String?
+  verificationVideoUrl String
+  showcaseUrl          String
+  thumbnailUrl         String?
+  versionNotes         String?
+  compatibilityNotes   String
+  status               LevelSuggestionStatus @default(PENDING)
+  moderatorNotes       String?
+  isDemo               Boolean               @default(false)
+  submittedAt          DateTime              @default(now())
+  reviewedAt           DateTime?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  submitter            User                  @relation("LevelSuggestionSubmitter", fields: [submitterId], references: [id], onDelete: Cascade)
+  reviewer             User?                 @relation("LevelSuggestionReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  createdLevel         Level?                @relation("SuggestionCreatedLevel", fields: [createdLevelId], references: [id], onDelete: SetNull)
 
   @@index([status, submittedAt])
   @@index([submitterId])

@@ -1495,11 +1495,12 @@ async function submissionCommand(
     [
       embed(
         `Submission ${submission.id}`,
-        `${submission.status} - ${submission.player.displayName} on ${submission.level.name}`,
+        `${submission.status} - ${submission.player.displayName} on ${submission.level.name} (${submission.progress}%)`,
         `${getSiteBaseUrl(env)}/moderation?q=${encodeURIComponent(submission.id)}`,
         [
           { name: "Level", value: `${rankLabel(submission.level)} ${submission.level.name}`, inline: true },
           { name: "Player", value: submission.player.displayName, inline: true },
+          { name: "Progress", value: `${submission.progress}%`, inline: true },
           { name: "Submitted", value: formatDate(submission.submittedAt), inline: true },
           {
             name: "Proof summary",
@@ -1545,6 +1546,7 @@ async function suggestionCommand(
           { name: "GD ID", value: suggestion.gdLevelId, inline: true },
           { name: "Nerf creator", value: suggestion.nerfCreator, inline: true },
           { name: "Verifier", value: suggestion.verifier, inline: true },
+          { name: "Verification video", value: suggestion.verificationVideoUrl || "No verification video." },
           { name: "Showcase", value: suggestion.showcaseUrl || "No showcase link." },
           {
             name: "Review on NDL",
@@ -1688,6 +1690,14 @@ function levelEmbed(
     { name: "Showcase", value: level.showcaseUrl || "No showcase link." },
   ];
 
+  if (level.verificationVideoUrl) {
+    fields.push({
+      name: "Verification proof",
+      value: level.verificationVideoUrl,
+      inline: true,
+    });
+  }
+
   if (otherMatches.length > 0) {
     fields.push({
       name: "Other matches",
@@ -1716,7 +1726,7 @@ function formatRecordList(records: ApiRecord[]) {
   return records
     .map(
       (record) =>
-        `${rankLabel(record.level)} **${clean(record.level.name)}** - ${record.pointsAwarded} pts - 100% - ${formatDate(record.acceptedAt)}\n${record.videoUrl}`,
+        `${rankLabel(record.level)} **${clean(record.level.name)}** - ${record.pointsAwarded} pts - ${record.progress ?? 100}%${record.isVerifier ? " (Verifier)" : ""} - ${formatDate(record.acceptedAt)}\n${record.videoUrl}`,
     )
     .join("\n");
 }

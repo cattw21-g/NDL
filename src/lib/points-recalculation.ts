@@ -47,9 +47,10 @@ export async function recalculateStoredPoints(
       result.levelsUpdated += 1;
     }
 
-    const records = await db.record.updateMany({
+    const fullRecords = await db.record.updateMany({
       where: {
         levelId: level.id,
+        progress: 100,
         pointsAwarded: {
           not: points,
         },
@@ -58,7 +59,23 @@ export async function recalculateStoredPoints(
         pointsAwarded: points,
       },
     });
-    result.recordsUpdated += records.count;
+    result.recordsUpdated += fullRecords.count;
+
+    const progressRecords = await db.record.updateMany({
+      where: {
+        levelId: level.id,
+        progress: {
+          lt: 100,
+        },
+        pointsAwarded: {
+          not: 0,
+        },
+      },
+      data: {
+        pointsAwarded: 0,
+      },
+    });
+    result.recordsUpdated += progressRecords.count;
   }
 
   return result;

@@ -15,6 +15,8 @@ type PublicLevelInput = {
   publisher: string;
   nerfCreator: string;
   verifier: string;
+  verifierUserId?: string | null;
+  verificationVideoUrl?: string | null;
   thumbnailUrl: string;
   showcaseUrl: string;
   placementDate: Date | null;
@@ -37,9 +39,12 @@ type PublicPlayerInput = {
 
 type PublicRecordInput = {
   id: string;
+  progress?: number;
+  isVerifier?: boolean;
   videoUrl: string;
   fps: number;
   cbfUsed: boolean;
+  pointsAwarded?: number;
   acceptedAt: Date;
   player: PublicPlayerInput;
   level: PublicLevelInput;
@@ -47,6 +52,7 @@ type PublicRecordInput = {
 
 type StaffRecordSubmissionInput = {
   id: string;
+  progress?: number;
   videoUrl: string;
   rawFootageUrl: string | null;
   proofImageUrl: string | null;
@@ -80,6 +86,8 @@ type StaffLevelSuggestionInput = {
   publisher: string;
   nerfCreator: string;
   verifier: string;
+  verifierPlayerName?: string | null;
+  verificationVideoUrl: string;
   showcaseUrl: string;
   thumbnailUrl: string | null;
   versionNotes: string | null;
@@ -119,6 +127,8 @@ export function serializePublicLevel(level: PublicLevelInput) {
     publisher: level.publisher,
     nerfCreator: level.nerfCreator,
     verifier: level.verifier,
+    verifierUserId: level.verifierUserId ?? null,
+    verificationVideoUrl: level.verificationVideoUrl ?? null,
     thumbnailUrl: level.thumbnailUrl,
     showcaseUrl: level.showcaseUrl,
     placementDate: isoDate(level.placementDate),
@@ -142,28 +152,38 @@ export function serializePublicPlayer(player: PublicPlayerInput) {
 }
 
 export function serializePublicRecord(record: PublicRecordInput) {
+  const progress = record.progress ?? 100;
+  const is100 = progress === 100;
   return {
     id: record.id,
     player: serializePublicPlayer(record.player),
     level: serializePublicLevel(record.level),
+    progress,
+    isVerifier: Boolean(record.isVerifier),
     videoUrl: record.videoUrl,
     fps: record.fps,
     cbfUsed: record.cbfUsed,
-    pointsAwarded: calculateCurrentLevelPoints(record.level),
+    pointsAwarded: is100 ? calculateCurrentLevelPoints(record.level) : 0,
     acceptedAt: record.acceptedAt.toISOString(),
   };
 }
 
 export function serializePublicLeaderboard(records: PublicRecordInput[]) {
   const rows = calculateLeaderboard(
-    records.map((record) => ({
-      playerId: record.player.id,
-      playerName: record.player.playerName,
-      displayName: record.player.displayName,
-      levelId: record.level.id,
-      pointsAwarded: calculateCurrentLevelPoints(record.level),
-      acceptedAt: record.acceptedAt,
-    })),
+    records.map((record) => {
+      const progress = record.progress ?? 100;
+      return {
+        playerId: record.player.id,
+        playerName: record.player.playerName,
+        displayName: record.player.displayName,
+        levelId: record.level.id,
+        pointsAwarded:
+          progress === 100 ? calculateCurrentLevelPoints(record.level) : 0,
+        acceptedAt: record.acceptedAt,
+        progress,
+        isVerifier: Boolean(record.isVerifier),
+      };
+    }),
   );
 
   return rows.map((row, index) => ({
@@ -202,6 +222,7 @@ export function serializeStaffRecordSubmission(
   return {
     id: submission.id,
     status: submission.status,
+    progress: submission.progress ?? 100,
     player: serializeStaffUser(submission.player),
     level: serializePublicLevel(submission.level),
     videoUrl: submission.videoUrl,
@@ -240,6 +261,8 @@ export function serializeStaffLevelSuggestion(
     publisher: suggestion.publisher,
     nerfCreator: suggestion.nerfCreator,
     verifier: suggestion.verifier,
+    verifierPlayerName: suggestion.verifierPlayerName ?? null,
+    verificationVideoUrl: suggestion.verificationVideoUrl,
     showcaseUrl: suggestion.showcaseUrl,
     thumbnailUrl: suggestion.thumbnailUrl,
     versionNotes: suggestion.versionNotes,

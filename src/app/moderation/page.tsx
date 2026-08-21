@@ -712,6 +712,7 @@ function RecordReviewCard({
           {submission.proofImageUrl ? (
             <ProofLink href={submission.proofImageUrl} label="Proof image" />
           ) : null}
+          <FactPill label="Progress" value={`${submission.progress ?? 100}%`} />
           <FactPill label="FPS" value={submission.fps} />
           <FactPill label="CBF" value={submission.cbfUsed ? "yes" : "no"} />
           <FactPill
@@ -810,12 +811,18 @@ function SuggestionReviewCard({
           <StatusBadge value={suggestion.status} />
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
+          {suggestion.verificationVideoUrl ? (
+            <ProofLink href={suggestion.verificationVideoUrl} label="Verification Proof" />
+          ) : null}
           <ProofLink href={suggestion.showcaseUrl} label="Showcase" />
           <FactPill label="Original" value={suggestion.originalName} />
           <FactPill label="GD ID" value={suggestion.gdLevelId} />
           <FactPill label="Host" value={suggestion.publisher} />
           <FactPill label="Nerf" value={suggestion.nerfCreator} />
           <FactPill label="Verifier" value={suggestion.verifier} />
+          {suggestion.verifierPlayerName ? (
+            <FactPill label="Verifier Handle" value={`@${suggestion.verifierPlayerName}`} />
+          ) : null}
         </div>
       </div>
 

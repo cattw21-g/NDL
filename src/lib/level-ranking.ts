@@ -37,6 +37,8 @@ export type LevelWriteInput = {
   publisher: string;
   nerfCreator: string;
   verifier: string;
+  verifierUserId?: string;
+  verificationVideoUrl?: string;
   thumbnailUrl: string;
   showcaseUrl: string;
   placementDate?: Date;
@@ -325,6 +327,7 @@ async function updateRecordsForLevel(
   await tx.record.updateMany({
     where: {
       levelId,
+      progress: 100,
     },
     data: {
       pointsAwarded: points,

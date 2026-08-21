@@ -129,6 +129,8 @@ function levelFormValues(level: {
   publisher: string;
   nerfCreator: string;
   verifier: string;
+  verifierUserId?: string | null;
+  verificationVideoUrl?: string | null;
   thumbnailUrl: string;
   showcaseUrl: string;
   placementDate: Date | null;
@@ -147,6 +149,8 @@ function levelFormValues(level: {
     publisher: level.publisher,
     nerfCreator: level.nerfCreator,
     verifier: level.verifier,
+    verifierUserId: level.verifierUserId ?? "",
+    verificationVideoUrl: level.verificationVideoUrl ?? "",
     thumbnailFile: "",
     thumbnailUrl: level.thumbnailUrl,
     showcaseUrl: level.showcaseUrl,
@@ -167,6 +171,8 @@ function levelFormValuesFromSuggestion(suggestion: {
   publisher: string;
   nerfCreator: string;
   verifier: string;
+  verifierPlayerName?: string | null;
+  verificationVideoUrl?: string | null;
   thumbnailUrl: string | null;
   showcaseUrl: string;
   versionNotes: string | null;
@@ -187,6 +193,8 @@ function levelFormValuesFromSuggestion(suggestion: {
     publisher: suggestion.publisher,
     nerfCreator: suggestion.nerfCreator,
     verifier: suggestion.verifier,
+    verifierUserId: "",
+    verificationVideoUrl: suggestion.verificationVideoUrl ?? "",
     thumbnailUrl: suggestion.thumbnailUrl ?? FALLBACK_THUMBNAIL_SRC,
     showcaseUrl: suggestion.showcaseUrl,
     placementDate: "",

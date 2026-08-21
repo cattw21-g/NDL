@@ -120,9 +120,9 @@ describe("recalculateStoredPoints", () => {
         },
       },
       record: {
-        updateMany: async (args: unknown) => {
+        updateMany: async (args: { where?: { progress?: number } }) => {
           recordUpdates.push(args);
-          return { count: 1 };
+          return { count: args.where?.progress === 100 ? 1 : 0 };
         },
       },
     } as unknown as PointsRecalculationClient;
@@ -155,6 +155,7 @@ describe("recalculateStoredPoints", () => {
     expect(recordUpdates).toContainEqual({
       where: {
         levelId: "rank-1",
+        progress: 100,
         pointsAwarded: {
           not: 320,
         },

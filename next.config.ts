@@ -13,6 +13,9 @@ function uploadBodySizeLimit() {
 }
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: __dirname,
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: uploadBodySizeLimit(),

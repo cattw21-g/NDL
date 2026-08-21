@@ -84,31 +84,47 @@ export function SubmitRecordForm({
         </div>
 
         <FormSection
-          title="Level"
-          description="Choose the exact accepted NDL version you completed."
+          title="Level & Run Progress"
+          description="Select the completed level and specify your exact completion percentage (1% – 100%)."
         >
-          <SelectField
-            name="levelId"
-            label="Level"
-            defaultValue={values.levelId}
-            onChange={(value) => setSelectedLevelId(value)}
-            errors={state.fieldErrors.levelId}
-          >
-            <option value="">Choose a ranked NDL level</option>
-            {levels.map((level) => (
-              <option key={level.id} value={level.id}>
-                {level.rank ? `#${level.rank} ` : ""}
-                {level.name}
-              </option>
-            ))}
-          </SelectField>
+          <div className="grid gap-4 md:grid-cols-2">
+            <SelectField
+              name="levelId"
+              label="Level"
+              defaultValue={values.levelId}
+              onChange={(value) => setSelectedLevelId(value)}
+              errors={state.fieldErrors.levelId}
+            >
+              <option value="">Choose a ranked NDL level</option>
+              {levels.map((level) => (
+                <option key={level.id} value={level.id}>
+                  {level.rank ? `#${level.rank} ` : ""}
+                  {level.name}
+                </option>
+              ))}
+            </SelectField>
+
+            <TextInput
+              name="progress"
+              label="Run Progress (%)"
+              type="number"
+              min={1}
+              max={100}
+              defaultValue={values.progress || "100"}
+              placeholder="100"
+              help="100% records award ranking points. Progress runs (e.g. 20%, 70%) are tracked on the level page."
+              required
+              errors={state.fieldErrors.progress}
+            />
+          </div>
+
           {selectedLevel ? (
             <div className="grid gap-2 rounded-md border border-slate-300 bg-slate-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-950/60 sm:grid-cols-3">
               <PreviewFact
                 label="Rank"
                 value={selectedLevel.rank ? `#${selectedLevel.rank}` : selectedLevel.status}
               />
-              <PreviewFact label="Points" value={`${selectedLevel.points} pts`} />
+              <PreviewFact label="Max 100% Points" value={`${selectedLevel.points} pts`} />
               <PreviewFact label="Verifier" value={selectedLevel.verifier} />
             </div>
           ) : null}
@@ -307,20 +323,24 @@ export function SubmitRecordForm({
 function TextInput({
   name,
   label,
-  type = "url",
+  type = "text",
   required = false,
-  placeholder,
+  min,
+  max,
   defaultValue,
   errors,
+  placeholder,
   help,
 }: {
   name: SubmissionFormField;
   label: string;
   type?: string;
   required?: boolean;
-  placeholder?: string;
-  defaultValue: string;
+  min?: number;
+  max?: number;
+  defaultValue?: string;
   errors?: string[];
+  placeholder?: string;
   help?: string;
 }) {
   const hasErrors = Boolean(errors?.length);
@@ -330,6 +350,8 @@ function TextInput({
       <input
         name={name}
         type={type}
+        min={min}
+        max={max}
         required={required}
         placeholder={placeholder}
         defaultValue={defaultValue}

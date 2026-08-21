@@ -12,6 +12,8 @@ export type LeaderboardRecord = {
   levelId: string;
   pointsAwarded: number;
   acceptedAt: Date;
+  progress?: number;
+  isVerifier?: boolean;
 };
 
 export type LeaderboardRow = {
@@ -62,6 +64,10 @@ export function calculateLeaderboard(records: LeaderboardRecord[]) {
   >();
 
   for (const record of records) {
+    if (record.pointsAwarded <= 0) {
+      continue;
+    }
+
     const player = byPlayer.get(record.playerId) ?? {
       playerName: record.playerName,
       displayName: record.displayName,

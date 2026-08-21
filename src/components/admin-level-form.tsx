@@ -218,6 +218,23 @@ export function AdminLevelForm({
             defaultValue={values.verifier}
             errors={state.fieldErrors.verifier}
           />
+          <Field
+            formId={formId}
+            name="verificationVideoUrl"
+            label="Verification video link (optional)"
+            type="url"
+            help="Official verification proof video URL. Used to award points to the verifier."
+            defaultValue={values.verificationVideoUrl}
+            errors={state.fieldErrors.verificationVideoUrl}
+          />
+          <Field
+            formId={formId}
+            name="verifierUserId"
+            label="Verifier User ID (optional)"
+            help="NDL account ID of the verifier to ensure points and records are credited directly."
+            defaultValue={values.verifierUserId}
+            errors={state.fieldErrors.verifierUserId}
+          />
         </div>
       </FormSection>
 
