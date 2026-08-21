@@ -1,16 +1,12 @@
 import { Info, Newspaper } from "lucide-react";
-import Link from "next/link";
 
-import { ChangelogContent } from "@/components/changelog-content";
-import { StatusBadge } from "@/components/status-badge";
+import { ChangelogPostCard } from "@/components/changelog-post-card";
 import { EmptyState, Eyebrow, SectionPanel } from "@/components/ui";
 import {
-  changelogCategoryLabel,
   ensureLatestChangelogPost,
 } from "@/lib/changelog";
 import { prisma } from "@/lib/db";
 import { publicChangelogWhere } from "@/lib/demo-visibility";
-import { formatDate, formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -49,42 +45,8 @@ export default async function ChangelogPage() {
         <div className="space-y-4">
           {posts.length > 0 ? (
             posts.map((post) => (
-              <SectionPanel key={post.id} className="p-5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge value={changelogCategoryLabel(post.category)} />
-                    {post.isPinned ? <StatusBadge value="Featured" /> : null}
-                  </div>
-                  <div className="mt-3 text-sm font-bold text-slate-500 dark:text-slate-400">
-                    {formatDate(post.publishedAt)}
-                    {post.updatedAt > (post.publishedAt ?? post.updatedAt)
-                      ? ` - Updated ${formatDateTime(post.updatedAt)}`
-                      : ""}
-                    {post.author ? ` - ${post.author.displayName}` : ""}
-                  </div>
-                  <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-slate-50">
-                    <Link
-                      href={`/changelog/${post.slug}`}
-                      className="rounded-sm transition hover:text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:hover:text-cyan-200"
-                    >
-                      {post.title}
-                    </Link>
-                  </h2>
-                  <p className="mt-3 text-sm font-bold leading-6 text-slate-700 dark:text-slate-200">
-                    {post.summary}
-                  </p>
-                  <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
-                    <ChangelogContent content={post.content} />
-                  </div>
-                  <div className="mt-4">
-                    <Link
-                      href={`/changelog/${post.slug}`}
-                      className="inline-flex min-h-9 items-center rounded-md border border-cyan-300 bg-white px-3 text-xs font-black text-cyan-800 transition hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-cyan-500/50 dark:bg-slate-950/60 dark:text-cyan-100 dark:hover:bg-cyan-950/50"
-                    >
-                      Read full update &rarr;
-                    </Link>
-                  </div>
-                </SectionPanel>
-              ))
+              <ChangelogPostCard key={post.id} post={post} />
+            ))
           ) : (
             <EmptyState
               title="No public updates yet"

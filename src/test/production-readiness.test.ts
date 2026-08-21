@@ -553,6 +553,7 @@ describe("production readiness guardrails", () => {
       "prisma/migrations/20260602133000_expand_changelog_posts/migration.sql",
     );
     const changelogPage = source("app/changelog/page.tsx");
+    const changelogCard = source("components/changelog-post-card.tsx");
     const postPage = source("app/changelog/[slug]/page.tsx");
     const adminPage = source("app/admin/changelog/page.tsx");
     const adminActions = source("actions/admin.ts");
@@ -578,8 +579,9 @@ describe("production readiness guardrails", () => {
     expect(source("lib/demo-visibility.ts")).toContain("archivedAt: null");
     expect(changelogPage).toContain("publicChangelogWhere()");
     expect(changelogPage).toContain("orderBy: [{ isPinned: \"desc\" }, { publishedAt: \"desc\" }]");
-    expect(changelogPage).toContain("Featured");
-    expect(changelogPage).toContain("Read full update");
+    expect(changelogCard).toContain("Featured");
+    expect(changelogCard).toContain("Read full update");
+    expect(changelogCard).toContain("Show full update");
     expect(postPage).toContain("publicChangelogWhere({");
     expect(postPage).toContain("notFound()");
     expect(postPage).toContain("Back to changelog");

@@ -61,6 +61,18 @@ const TAG_CONFIG: Record<
     text: "text-teal-800 dark:text-teal-300",
     border: "border-teal-300 dark:border-teal-700",
   },
+  LIST: {
+    label: "LIST",
+    bg: "bg-blue-100 dark:bg-blue-950/60",
+    text: "text-blue-800 dark:text-blue-300",
+    border: "border-blue-300 dark:border-blue-700",
+  },
+  SEARCH: {
+    label: "SEARCH",
+    bg: "bg-sky-100 dark:bg-sky-950/60",
+    text: "text-sky-800 dark:text-sky-300",
+    border: "border-sky-300 dark:border-sky-700",
+  },
 };
 
 function renderFormattedInline(text: string): React.ReactNode {
