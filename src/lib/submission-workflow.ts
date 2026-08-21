@@ -103,7 +103,7 @@ export async function applySubmissionReview(
     const pointsAwarded = calculateLevelPoints(
       submission.level.rank,
       submission.level.status,
-    );
+    ) || (submission.level.points ?? 0);
     const finalPoints = progress === 100 ? pointsAwarded : 0;
     awardedPoints = finalPoints;
     const recordData = {

@@ -24,7 +24,7 @@ import {
   validateSubmissionFormSubmission,
 } from "@/lib/submission-form-state";
 import { sendRecordStatusEmail } from "@/lib/email";
-import { calculateLevelPoints, type ScoredLevelStatus } from "@/lib/points";
+import { calculateCurrentLevelPoints } from "@/lib/points";
 import { absoluteSiteUrl } from "@/lib/site-url";
 import type { StructuredSubmissionProof } from "@/lib/submission-proof";
 import {
@@ -226,12 +226,12 @@ export async function reviewSubmissionAction(formData: FormData) {
   if (submission.player.email) {
     const levelUrl = absoluteSiteUrl(`/levels/${submission.level.slug}`);
     const progress = submission.progress ?? 100;
+    const computedPoints = calculateCurrentLevelPoints(submission.level);
+    const levelPoints =
+      computedPoints > 0 ? computedPoints : (submission.level.points ?? 0);
     const pointsAwarded =
       parsed.data.status === "ACCEPTED" && progress === 100
-        ? calculateLevelPoints(
-            submission.level.rank,
-            submission.level.status as ScoredLevelStatus,
-          )
+        ? levelPoints
         : 0;
 
     void sendRecordStatusEmail({
