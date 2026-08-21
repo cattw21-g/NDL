@@ -8,6 +8,7 @@ import { Eyebrow, SectionPanel } from "@/components/ui";
 import {
   changelogCategoryLabel,
   ensureLatestChangelogPost,
+  LATEST_RELEASE_POST,
 } from "@/lib/changelog";
 import { prisma } from "@/lib/db";
 import { publicChangelogWhere } from "@/lib/demo-visibility";
@@ -27,7 +28,7 @@ export default async function ChangelogPostPage({
 }) {
   await ensureLatestChangelogPost(prisma);
   const { slug } = await params;
-  const post = await prisma.changelogPost.findFirst({
+  const postFromDb = await prisma.changelogPost.findFirst({
     where: publicChangelogWhere({
       slug,
     }),
@@ -35,6 +36,27 @@ export default async function ChangelogPostPage({
       author: true,
     },
   });
+
+  const post =
+    postFromDb ??
+    (slug === LATEST_RELEASE_POST.slug
+      ? {
+          id: "rc-v1-release",
+          slug: LATEST_RELEASE_POST.slug,
+          title: LATEST_RELEASE_POST.title,
+          category: LATEST_RELEASE_POST.category,
+          summary: LATEST_RELEASE_POST.summary,
+          content: LATEST_RELEASE_POST.content,
+          isPinned: true,
+          isPublished: true,
+          isDemo: false,
+          publishedAt: new Date("2026-08-21T21:20:00.000Z"),
+          updatedAt: new Date("2026-08-21T21:20:00.000Z"),
+          archivedAt: null,
+          authorId: null,
+          author: { displayName: "cattw21" },
+        }
+      : null);
 
   if (!post) {
     notFound();

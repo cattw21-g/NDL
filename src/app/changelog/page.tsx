@@ -4,6 +4,7 @@ import { ChangelogPostCard } from "@/components/changelog-post-card";
 import { EmptyState, Eyebrow, SectionPanel } from "@/components/ui";
 import {
   ensureLatestChangelogPost,
+  LATEST_RELEASE_POST,
 } from "@/lib/changelog";
 import { prisma } from "@/lib/db";
 import { publicChangelogWhere } from "@/lib/demo-visibility";
@@ -18,13 +19,36 @@ export const metadata = {
 export default async function ChangelogPage() {
   await ensureLatestChangelogPost(prisma);
 
-  const posts = await prisma.changelogPost.findMany({
+  const postsFromDb = await prisma.changelogPost.findMany({
     where: publicChangelogWhere(),
     include: {
       author: true,
     },
     orderBy: [{ isPinned: "desc" }, { publishedAt: "desc" }],
   });
+
+  const hasLatest = postsFromDb.some((p) => p.slug === LATEST_RELEASE_POST.slug);
+  const posts = hasLatest
+    ? postsFromDb
+    : [
+        {
+          id: "rc-v1-release",
+          slug: LATEST_RELEASE_POST.slug,
+          title: LATEST_RELEASE_POST.title,
+          category: LATEST_RELEASE_POST.category,
+          summary: LATEST_RELEASE_POST.summary,
+          content: LATEST_RELEASE_POST.content,
+          isPinned: true,
+          isPublished: true,
+          isDemo: false,
+          publishedAt: new Date("2026-08-21T21:20:00.000Z"),
+          updatedAt: new Date("2026-08-21T21:20:00.000Z"),
+          archivedAt: null,
+          authorId: null,
+          author: { displayName: "cattw21" },
+        },
+        ...postsFromDb,
+      ];
 
   return (
     <div className="space-y-5">
