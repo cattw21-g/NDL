@@ -1,11 +1,11 @@
 import { Info, Newspaper } from "lucide-react";
 import Link from "next/link";
 
+import { ChangelogContent } from "@/components/changelog-content";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, Eyebrow, SectionPanel } from "@/components/ui";
 import {
   changelogCategoryLabel,
-  plainTextParagraphs,
 } from "@/lib/changelog";
 import { prisma } from "@/lib/db";
 import { publicChangelogWhere } from "@/lib/demo-visibility";
@@ -45,11 +45,8 @@ export default async function ChangelogPage() {
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="space-y-4">
           {posts.length > 0 ? (
-            posts.map((post) => {
-              const firstParagraph = plainTextParagraphs(post.content)[0] ?? "";
-
-              return (
-                <SectionPanel key={post.id} className="p-5">
+            posts.map((post) => (
+              <SectionPanel key={post.id} className="p-5">
                   <div className="flex flex-wrap items-center gap-2">
                     <StatusBadge value={changelogCategoryLabel(post.category)} />
                     {post.isPinned ? <StatusBadge value="Featured" /> : null}
@@ -72,20 +69,19 @@ export default async function ChangelogPage() {
                   <p className="mt-3 text-sm font-bold leading-6 text-slate-700 dark:text-slate-200">
                     {post.summary}
                   </p>
-                  {firstParagraph ? (
-                    <p className="mt-3 line-clamp-4 whitespace-pre-wrap text-sm leading-7 text-slate-600 dark:text-slate-300">
-                      {firstParagraph}
-                    </p>
-                  ) : null}
-                  <Link
-                    href={`/changelog/${post.slug}`}
-                    className="mt-4 inline-flex min-h-9 items-center rounded-md border border-cyan-300 bg-white px-3 text-sm font-black text-cyan-800 transition hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-cyan-500/50 dark:bg-slate-950/60 dark:text-cyan-100 dark:hover:bg-cyan-950/50"
-                  >
-                    Read full update
-                  </Link>
+                  <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
+                    <ChangelogContent content={post.content} />
+                  </div>
+                  <div className="mt-4">
+                    <Link
+                      href={`/changelog/${post.slug}`}
+                      className="inline-flex min-h-9 items-center rounded-md border border-cyan-300 bg-white px-3 text-xs font-black text-cyan-800 transition hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-cyan-500/50 dark:bg-slate-950/60 dark:text-cyan-100 dark:hover:bg-cyan-950/50"
+                    >
+                      Read full update &rarr;
+                    </Link>
+                  </div>
                 </SectionPanel>
-              );
-            })
+              ))
           ) : (
             <EmptyState
               title="No public updates yet"

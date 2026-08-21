@@ -162,3 +162,7 @@ html.dark .text-red-700,
 html.dark .text-red-600 {
   color: #fca5a5;
 }
+
+html.splash-dismissed #ndl-splash-screen {
+  display: none !important;
+}

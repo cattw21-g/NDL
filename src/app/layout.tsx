@@ -20,6 +20,9 @@ const siteDescription =
 const themeScript = `
 (function () {
   try {
+    if (sessionStorage.getItem("ndl_splash_seen")) {
+      document.documentElement.classList.add("splash-dismissed");
+    }
     var key = "ndl-theme";
     var theme = localStorage.getItem(key) || "light";
     var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
