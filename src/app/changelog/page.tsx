@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, Eyebrow, SectionPanel } from "@/components/ui";
 import {
   changelogCategoryLabel,
+  ensureLatestChangelogPost,
 } from "@/lib/changelog";
 import { prisma } from "@/lib/db";
 import { publicChangelogWhere } from "@/lib/demo-visibility";
@@ -19,6 +20,8 @@ export const metadata = {
 };
 
 export default async function ChangelogPage() {
+  await ensureLatestChangelogPost(prisma);
+
   const posts = await prisma.changelogPost.findMany({
     where: publicChangelogWhere(),
     include: {

@@ -5,7 +5,10 @@ import { notFound } from "next/navigation";
 import { ChangelogContent } from "@/components/changelog-content";
 import { StatusBadge } from "@/components/status-badge";
 import { Eyebrow, SectionPanel } from "@/components/ui";
-import { changelogCategoryLabel } from "@/lib/changelog";
+import {
+  changelogCategoryLabel,
+  ensureLatestChangelogPost,
+} from "@/lib/changelog";
 import { prisma } from "@/lib/db";
 import { publicChangelogWhere } from "@/lib/demo-visibility";
 import { formatDate, formatDateTime } from "@/lib/format";
@@ -22,6 +25,7 @@ export default async function ChangelogPostPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  await ensureLatestChangelogPost(prisma);
   const { slug } = await params;
   const post = await prisma.changelogPost.findFirst({
     where: publicChangelogWhere({
