@@ -81,11 +81,19 @@ export function SiteFooter({
 
           <p className="max-w-2xl leading-6">
             NDL is a community-ranked list for approved nerfed Geometry Dash
-            demon versions.
+            demon versions. Created by{" "}
+            <a
+              href="https://www.tiktok.com/@cattw_gd"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-black text-cyan-700 underline hover:text-cyan-800 dark:text-cyan-400"
+            >
+              @cattw_gd
+            </a>
+            .
           </p>
           <p className="max-w-3xl text-xs leading-5 text-slate-600 dark:text-slate-400">
-            Nerfed Demonlist is not affiliated with RobTopGames, Geometry Dash,
-            Pointercrate, or the official Demonlist. All level names, creators,
+            Nerfed Demonlist is not affiliated with RobTopGames or Geometry Dash. All level names, creators,
             and related Geometry Dash content belong to their respective owners.
           </p>
           <p className="max-w-3xl text-xs font-bold leading-5 text-slate-600 dark:text-slate-400">

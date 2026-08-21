@@ -43,6 +43,24 @@ const TAG_CONFIG: Record<
     text: "text-slate-800 dark:text-slate-200",
     border: "border-slate-300 dark:border-slate-700",
   },
+  VIDEO: {
+    label: "VIDEO",
+    bg: "bg-rose-100 dark:bg-rose-950/60",
+    text: "text-rose-800 dark:text-rose-300",
+    border: "border-rose-300 dark:border-rose-700",
+  },
+  PROFILE: {
+    label: "PROFILES",
+    bg: "bg-purple-100 dark:bg-purple-950/60",
+    text: "text-purple-800 dark:text-purple-300",
+    border: "border-purple-300 dark:border-purple-700",
+  },
+  SPEED: {
+    label: "SPEED",
+    bg: "bg-teal-100 dark:bg-teal-950/60",
+    text: "text-teal-800 dark:text-teal-300",
+    border: "border-teal-300 dark:border-teal-700",
+  },
 };
 
 function renderFormattedInline(text: string): React.ReactNode {

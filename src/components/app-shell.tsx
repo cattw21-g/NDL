@@ -5,6 +5,7 @@ import { logoutAction } from "@/actions/auth";
 import { CommandPalette, CommandPaletteTrigger } from "@/components/command-palette";
 import { NavLink } from "@/components/nav-link";
 import { SiteFooter } from "@/components/site-footer";
+import { SplashScreen } from "@/components/splash-screen";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getCurrentUser } from "@/lib/auth";
 import { demoModeEnabled } from "@/lib/demo-visibility";
@@ -29,6 +30,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       id="top"
       className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#f6f8fb] text-slate-950 dark:bg-[#080c13] dark:text-slate-100"
     >
+      <SplashScreen />
       <div className="pointer-events-none fixed inset-x-0 top-0 h-56 bg-[linear-gradient(180deg,#eaf6fb_0%,rgba(246,248,251,0)_100%)] dark:bg-[linear-gradient(180deg,rgba(14,116,144,0.22)_0%,rgba(8,12,19,0)_100%)]" />
       <DecorativeRail side="left" />
       <DecorativeRail side="right" />
@@ -112,6 +114,18 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                 Login
               </Link>
             )}
+            <a
+              href="https://www.tiktok.com/@cattw_gd"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Follow @cattw_gd on TikTok"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950 dark:hover:text-cyan-100"
+              aria-label="TikTok @cattw_gd"
+            >
+              <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
+                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3 15.28a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.71a8.18 8.18 0 0 0 4.91 1.63V6.89a4.85 4.85 0 0 1-1-.2z" />
+              </svg>
+            </a>
             <ThemeToggle />
           </div>
         </div>

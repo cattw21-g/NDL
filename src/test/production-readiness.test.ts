@@ -427,11 +427,9 @@ describe("production readiness guardrails", () => {
       "NDL is a community-ranked list for approved nerfed Geometry Dash",
     );
     expect(footer).toContain(
-      "Nerfed Demonlist is not affiliated with RobTopGames, Geometry Dash,",
+      "Nerfed Demonlist is not affiliated with RobTopGames or Geometry Dash.",
     );
-    expect(footer).toContain(
-      "Pointercrate, or the official Demonlist",
-    );
+    expect(footer).not.toContain("Pointercrate");
     expect(footer).toContain(
       "Rules, rankings, records, and points are maintained by NDL staff",
     );
