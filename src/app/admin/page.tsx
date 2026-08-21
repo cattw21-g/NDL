@@ -3,6 +3,7 @@ import {
   BookOpen,
   ClipboardCheck,
   FileText,
+  Hourglass,
   ListPlus,
   ScrollText,
   ShieldCheck,
@@ -28,6 +29,13 @@ const adminLinks = [
     description: "Add, rank, edit, retire, reject, or remove levels.",
     icon: ListPlus,
     tone: "cyan",
+  },
+  {
+    href: "/admin/upcoming",
+    label: "Upcoming Queue",
+    description: "Manage levels in verification, assign verifiers, and promote to list.",
+    icon: Hourglass,
+    tone: "amber",
   },
   {
     href: "/admin/records",
