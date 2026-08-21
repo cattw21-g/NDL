@@ -119,6 +119,14 @@ export async function ensureLatestChangelogPost(prismaClient: PrismaClient) {
         publishedAt: new Date("2026-08-21T21:20:00.000Z"),
       },
     });
+
+    await prismaClient.changelogPost.deleteMany({
+      where: {
+        slug: {
+          not: LATEST_RELEASE_POST.slug,
+        },
+      },
+    });
   } catch {
     // Fail-safe
   }

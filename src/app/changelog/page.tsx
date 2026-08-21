@@ -29,7 +29,7 @@ export default async function ChangelogPage() {
 
   const hasLatest = postsFromDb.some((p) => p.slug === LATEST_RELEASE_POST.slug);
   const posts = hasLatest
-    ? postsFromDb
+    ? postsFromDb.filter((p) => p.slug === LATEST_RELEASE_POST.slug)
     : [
         {
           id: "rc-v1-release",
@@ -47,7 +47,6 @@ export default async function ChangelogPage() {
           authorId: null,
           author: { displayName: "cattw21" },
         },
-        ...postsFromDb,
       ];
 
   return (
