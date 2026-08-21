@@ -4,7 +4,7 @@ import Link from "next/link";
 import { LeaderboardView } from "@/components/leaderboard-view";
 import { Eyebrow, MetricTile, SectionPanel } from "@/components/ui";
 import { prisma } from "@/lib/db";
-import { publicRecordWhere } from "@/lib/demo-visibility";
+import { demoModeEnabled, publicRecordWhere } from "@/lib/demo-visibility";
 import {
   calculateCurrentLevelPoints,
   calculateLeaderboard,
@@ -18,19 +18,31 @@ export const metadata = {
 };
 
 export default async function PlayersPage() {
-  const records = await prisma.record.findMany({
-    where: publicRecordWhere({
-      level: {
-        status: {
-          in: ["RANKED", "LEGACY"],
+  const isDemoMode = demoModeEnabled();
+  const [records, allUsers] = await Promise.all([
+    prisma.record.findMany({
+      where: publicRecordWhere({
+        level: {
+          status: {
+            in: ["RANKED", "LEGACY"],
+          },
         },
+      }),
+      include: {
+        player: true,
+        level: true,
       },
     }),
-    include: {
-      player: true,
-      level: true,
-    },
-  });
+    prisma.user.findMany({
+      where: isDemoMode ? {} : { isDemo: false },
+      select: {
+        id: true,
+        playerName: true,
+        displayName: true,
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
 
   const leaderboard = calculateLeaderboard(
     records.map((record) => ({
@@ -43,13 +55,38 @@ export default async function PlayersPage() {
     })),
   );
 
-  const leaderboardRows = leaderboard.map((row) => ({
+  const leaderboardMap = new Map(
+    leaderboard.map((row, index) => [
+      row.playerId,
+      {
+        rank: index + 1,
+        points: row.points,
+        recordsCount: row.records,
+      },
+    ]),
+  );
+
+  const rankedRows = leaderboard.map((row, index) => ({
     playerId: row.playerId,
     playerName: row.playerName,
     displayName: row.displayName,
+    rank: index + 1,
     points: row.points,
     recordsCount: row.records,
   }));
+
+  const unrankedUsers = allUsers
+    .filter((u) => !leaderboardMap.has(u.id))
+    .map((u) => ({
+      playerId: u.id,
+      playerName: u.playerName,
+      displayName: u.displayName,
+      rank: null,
+      points: 0,
+      recordsCount: 0,
+    }));
+
+  const leaderboardRows = [...rankedRows, ...unrankedUsers];
 
   return (
     <div className="space-y-5">

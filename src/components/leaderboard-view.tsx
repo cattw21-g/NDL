@@ -10,6 +10,7 @@ export type LeaderboardRow = {
   playerId: string;
   playerName: string;
   displayName: string;
+  rank: number | null;
   points: number;
   recordsCount: number;
 };
@@ -17,23 +18,27 @@ export type LeaderboardRow = {
 export function LeaderboardView({ rows }: { rows: LeaderboardRow[] }) {
   const [query, setQuery] = useState("");
 
-  const filtered = useMemo(() => {
+  const rankedOnly = useMemo(() => rows.filter((r) => r.rank !== null), [rows]);
+
+  const displayedRows = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) {
-      return rows;
+      // Default view: Top 50 ranked players only
+      return rankedOnly.slice(0, 50);
     }
+    // Search view: Search across ALL registered users and ranked players
     return rows.filter(
       (r) =>
         r.displayName.toLowerCase().includes(q) ||
         r.playerName.toLowerCase().includes(q),
     );
-  }, [rows, query]);
+  }, [rows, rankedOnly, query]);
 
-  const top3 = rows.slice(0, 3);
+  const top3 = rankedOnly.slice(0, 3);
 
   return (
     <div className="space-y-6">
-      {/* Top 3 Champion Podium */}
+      {/* Top 3 Champion Podium (only on default view) */}
       {top3.length > 0 && !query ? (
         <div className="grid gap-3 sm:grid-cols-3">
           {/* 2nd Place */}
@@ -149,7 +154,7 @@ export function LeaderboardView({ rows }: { rows: LeaderboardRow[] }) {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search players by name or handle..."
+              placeholder="Search any player or registered user (e.g. SpaceUK, @username)..."
               className={`${inputClass} w-full pl-9`}
             />
           </label>
@@ -165,30 +170,40 @@ export function LeaderboardView({ rows }: { rows: LeaderboardRow[] }) {
         </div>
 
         {/* Table Rows */}
-        {filtered.length > 0 ? (
-          filtered.map((row) => {
-            const actualRank = rows.findIndex((r) => r.playerId === row.playerId) + 1;
-            return (
+        {displayedRows.length > 0 ? (
+          <>
+            {displayedRows.map((row) => (
               <Link
                 key={row.playerId}
                 href={`/players/${row.playerName}`}
                 className="grid gap-3 border-b border-slate-300 p-3.5 transition last:border-b-0 hover:bg-cyan-50/60 dark:border-slate-700 dark:hover:bg-cyan-950/30 md:grid-cols-[5rem_minmax(0,1fr)_7rem_8rem_auto] md:items-center"
               >
-                <span className="inline-flex items-center gap-2 text-xl font-black text-slate-800 dark:text-slate-200 tabular-nums">
-                  <Medal
-                    className={cx(
-                      "h-5 w-5",
-                      actualRank === 1
-                        ? "text-amber-500"
-                        : actualRank === 2
-                          ? "text-slate-400"
-                          : actualRank === 3
-                            ? "text-amber-700 dark:text-amber-500"
-                            : "text-slate-300 dark:text-slate-600",
-                    )}
-                  />
-                  #{actualRank}
+                {/* Rank / Badge */}
+                <span className="inline-flex items-center gap-2 text-base font-black text-slate-800 dark:text-slate-200 tabular-nums">
+                  {row.rank !== null ? (
+                    <>
+                      <Medal
+                        className={cx(
+                          "h-5 w-5",
+                          row.rank === 1
+                            ? "text-amber-500"
+                            : row.rank === 2
+                              ? "text-slate-400"
+                              : row.rank === 3
+                                ? "text-amber-700 dark:text-amber-500"
+                                : "text-slate-300 dark:text-slate-600",
+                        )}
+                      />
+                      #{row.rank}
+                    </>
+                  ) : (
+                    <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                      Unranked
+                    </span>
+                  )}
                 </span>
+
+                {/* Player Name */}
                 <span className="min-w-0">
                   <span className="block truncate text-lg font-black text-slate-950 dark:text-slate-50">
                     {row.displayName}
@@ -197,23 +212,42 @@ export function LeaderboardView({ rows }: { rows: LeaderboardRow[] }) {
                     @{row.playerName}
                   </span>
                 </span>
+
+                {/* Completions */}
                 <span className="text-sm font-bold text-slate-700 dark:text-slate-300 md:text-right">
-                  {row.recordsCount}
+                  {row.recordsCount > 0 ? row.recordsCount : "0"}
                 </span>
-                <span className="text-xl font-black text-cyan-800 dark:text-cyan-300 md:text-right">
+
+                {/* Total Points */}
+                <span
+                  className={cx(
+                    "text-xl font-black md:text-right",
+                    row.points > 0
+                      ? "text-cyan-800 dark:text-cyan-300"
+                      : "text-slate-400 dark:text-slate-600",
+                  )}
+                >
                   {row.points} pts
                 </span>
+
+                {/* View Profile CTA */}
                 <span className="text-xs font-bold text-cyan-700 underline md:text-right dark:text-cyan-400">
                   View Profile →
                 </span>
               </Link>
-            );
-          })
+            ))}
+
+            {!query && rankedOnly.length > 50 ? (
+              <div className="border-t border-slate-200 bg-slate-50 p-4 text-center text-xs font-bold text-slate-500 dark:border-slate-800 dark:bg-slate-950/40">
+                Showing Top 50 players ({rankedOnly.length} total ranked). Search above to find players beyond #50 or unranked members.
+              </div>
+            ) : null}
+          </>
         ) : (
           <div className="p-6">
             <EmptyState
               title="No players found"
-              description={query ? `No players match "${query}".` : "No public player scores yet."}
+              description={query ? `No player or user matches "${query}".` : "No public player scores yet."}
             />
           </div>
         )}
