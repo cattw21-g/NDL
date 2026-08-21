@@ -22,7 +22,8 @@
     "bot:build": "npm.cmd --prefix bot run build",
     "bot:register": "npm.cmd --prefix bot run register-commands",
     "discord:register": "tsx scripts/register-discord-commands.ts",
-    "prebuild": "prisma generate && prisma migrate deploy"
+    "postinstall": "prisma generate",
+    "prebuild": "prisma generate"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
