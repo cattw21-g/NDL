@@ -12,6 +12,7 @@ import { isAdminRole, isModeratorRole } from "@/lib/permissions";
 
 const navItems = [
   { href: "/", label: "List", icon: "list" },
+  { href: "/verifying", label: "In Verification", icon: "hourglass" },
   { href: "/players", label: "Players", icon: "trophy" },
   { href: "/submit", label: "Submit", icon: "upload" },
   { href: "/suggest-level", label: "Suggest", icon: "suggest" },

@@ -3,6 +3,7 @@
 import {
   BookOpen,
   ClipboardCheck,
+  Hourglass,
   ListOrdered,
   Newspaper,
   ShieldCheck,
@@ -17,6 +18,7 @@ import { cx } from "@/components/ui";
 
 const icons = {
   book: BookOpen,
+  hourglass: Hourglass,
   list: ListOrdered,
   news: Newspaper,
   review: ClipboardCheck,

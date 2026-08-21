@@ -32,6 +32,13 @@ const DEFAULT_ACTIONS: SearchableItem[] = [
     href: "/",
   },
   {
+    id: "nav-verifying",
+    title: "In Verification",
+    subtitle: "Browse upcoming nerfed demons undergoing verification",
+    category: "Navigation",
+    href: "/verifying",
+  },
+  {
     id: "nav-players",
     title: "Player Leaderboard",
     subtitle: "View community player rankings and scores",
