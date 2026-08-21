@@ -56,14 +56,13 @@ export default async function PlayersPage() {
       <section className="grid gap-4 rounded-md border border-slate-300 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_14px_30px_rgba(0,0,0,0.28)] lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
         <div>
           <div className="mb-3">
-            <Eyebrow icon={Trophy}>Community points</Eyebrow>
+            <Eyebrow icon={Trophy}>Global Rankings</Eyebrow>
           </div>
           <h1 className="text-4xl font-black leading-tight text-slate-950 dark:text-slate-50">
-            Player leaderboard
+            Player Leaderboard
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base">
-            Only accepted records count. If a player has multiple accepted
-            records on one level, only their best score for that level counts.
+            Top players ranked by verified completions and points.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2">

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { AdminLevelForm } from "@/components/admin-level-form";
 import { PageMessage } from "@/components/message";
 import { StatusBadge } from "@/components/status-badge";
@@ -101,6 +103,12 @@ export default async function AdminLevelsPage({
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    href={`/admin/records?levelId=${level.id}`}
+                    className="inline-flex min-h-8 items-center gap-1 rounded border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-700 hover:border-cyan-400 hover:bg-cyan-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  >
+                    Manage Records
+                  </Link>
                   <PointsPill points={calculateCurrentLevelPoints(level)} />
                   <StatusBadge value={level.status} />
                 </div>

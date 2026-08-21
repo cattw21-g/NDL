@@ -90,23 +90,18 @@ export default async function Home() {
         <div className="grid gap-4 border-b border-slate-300 bg-[linear-gradient(120deg,#ffffff_0%,#f1f7fa_100%)] p-4 dark:border-slate-700 dark:bg-[linear-gradient(120deg,#101722_0%,#0f2634_100%)] lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
           <div className="min-w-0">
             <div className="mb-3 flex flex-wrap items-center gap-2">
-              <Eyebrow icon={Trophy}>Public NDL list</Eyebrow>
+              <Eyebrow icon={Trophy}>Official Rankings</Eyebrow>
               {isDemoMode ? (
                 <Eyebrow icon={ShieldCheck} tone="amber">
-                  Demo mode enabled
+                  Demo mode
                 </Eyebrow>
-              ) : (
-                <Eyebrow icon={ShieldCheck} tone="emerald">
-                  Staff-reviewed standings
-                </Eyebrow>
-              )}
+              ) : null}
             </div>
             <h1 className="text-balance text-4xl font-black leading-tight text-slate-950 sm:text-5xl">
               Nerfed Demonlist
             </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
-              A community-ranked list for approved nerfed demon versions, with
-              reviewed proof links and points awarded only after moderation.
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base dark:text-slate-300">
+              The official ranking for legitimately beaten nerfed demons.
             </p>
           </div>
           <div className="grid grid-cols-3 gap-2">
@@ -128,12 +123,11 @@ export default async function Home() {
         <div className="grid gap-2 bg-slate-100 p-3 text-sm leading-6 text-slate-700 dark:bg-slate-950/60 dark:text-slate-300 md:grid-cols-[1fr_auto] md:items-center">
           <p>
             {isDemoMode
-              ? "Demo mode is enabled, so clearly marked demo levels and records may appear."
-              : "Public entries appear after staff review, with points computed from the current ranked list."}
+              ? "Demo mode is enabled."
+              : "Rankings and points are computed live from accepted community completions."}
           </p>
-          <span className="font-bold text-cyan-800">
-            {pendingCount} submission{pendingCount === 1 ? "" : "s"} awaiting
-            review
+          <span className="font-bold text-cyan-800 dark:text-cyan-300">
+            {pendingCount} submission{pendingCount === 1 ? "" : "s"} in review queue
           </span>
         </div>
       </section>

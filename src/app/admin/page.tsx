@@ -30,6 +30,13 @@ const adminLinks = [
     tone: "cyan",
   },
   {
+    href: "/admin/records",
+    label: "Records",
+    description: "Add records, edit percentages (1%–100%), or delete records.",
+    icon: ClipboardCheck,
+    tone: "emerald",
+  },
+  {
     href: "/admin/users",
     label: "Users",
     description: "Assign player, moderator, and admin roles.",

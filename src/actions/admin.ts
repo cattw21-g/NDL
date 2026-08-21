@@ -1145,3 +1145,221 @@ async function syncVerifierRecord(
     }
   }
 }
+
+export async function createAdminRecordAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const levelId = String(formData.get("levelId") || "").trim();
+  const playerName = String(formData.get("playerName") || "").trim();
+  const progress = Math.min(
+    100,
+    Math.max(1, parseInt(String(formData.get("progress") || "100"), 10)),
+  );
+  const videoUrl = String(formData.get("videoUrl") || "").trim();
+  const rawFootageUrl =
+    String(formData.get("rawFootageUrl") || "").trim() || null;
+  const fps = parseInt(String(formData.get("fps") || "360"), 10) || 360;
+  const isVerifier =
+    formData.get("isVerifier") === "true" ||
+    formData.get("isVerifier") === "on";
+
+  if (!levelId || !playerName || !videoUrl) {
+    throw new Error("Level, player name, and video URL are required.");
+  }
+
+  const level = await prisma.level.findUnique({ where: { id: levelId } });
+  if (!level) {
+    throw new Error("Level not found.");
+  }
+
+  let player = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { playerName: { equals: playerName, mode: "insensitive" } },
+        { displayName: { equals: playerName, mode: "insensitive" } },
+      ],
+    },
+  });
+
+  if (!player) {
+    const slugName = slugify(playerName) || `runner-${Date.now().toString(36)}`;
+    player = await prisma.user.create({
+      data: {
+        email: `${slugName}@ndl.local`,
+        playerName: slugName,
+        displayName: playerName,
+        passwordHash: "external-record",
+        role: "PLAYER",
+      },
+    });
+  }
+
+  const points =
+    progress === 100
+      ? calculateLevelPoints(level.rank, level.status)
+      : 0;
+
+  const record = await prisma.record.create({
+    data: {
+      levelId: level.id,
+      playerId: player.id,
+      progress,
+      videoUrl,
+      rawFootageUrl,
+      fps,
+      cbfUsed: false,
+      isVerifier,
+      pointsAwarded: points,
+      isDemo: Boolean(level.isDemo),
+      acceptedAt: new Date(),
+    },
+  });
+
+  if (isVerifier) {
+    await prisma.level.update({
+      where: { id: level.id },
+      data: {
+        verifier: player.displayName,
+        verifierUserId: player.id,
+      },
+    });
+  }
+
+  await writeAuditLog(prisma, {
+    actor: {
+      id: admin.id,
+      playerName: admin.playerName,
+      displayName: admin.displayName,
+      role: admin.role,
+    },
+    action: "RECORD_CREATED",
+    entityType: "Record",
+    entityId: record.id,
+    entityLabel: `${player.displayName} on ${level.name} (${progress}%)`,
+    note: `Admin added record for ${player.displayName}`,
+  });
+
+  revalidatePath("/");
+  revalidatePath(`/levels/${level.slug}`);
+  revalidatePath("/players");
+  revalidatePath(`/players/${player.playerName}`);
+  revalidatePath("/admin/records");
+}
+
+export async function updateAdminRecordAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const recordId = String(formData.get("recordId") || "").trim();
+  const progress = Math.min(
+    100,
+    Math.max(1, parseInt(String(formData.get("progress") || "100"), 10)),
+  );
+  const videoUrl = String(formData.get("videoUrl") || "").trim();
+  const rawFootageUrl =
+    String(formData.get("rawFootageUrl") || "").trim() || null;
+  const fps = parseInt(String(formData.get("fps") || "360"), 10) || 360;
+  const isVerifier =
+    formData.get("isVerifier") === "true" ||
+    formData.get("isVerifier") === "on";
+
+  if (!recordId) {
+    throw new Error("Record ID is required.");
+  }
+
+  const existing = await prisma.record.findUnique({
+    where: { id: recordId },
+    include: { level: true, player: true },
+  });
+
+  if (!existing) {
+    throw new Error("Record not found.");
+  }
+
+  const points =
+    progress === 100
+      ? calculateLevelPoints(existing.level.rank, existing.level.status)
+      : 0;
+
+  await prisma.record.update({
+    where: { id: recordId },
+    data: {
+      progress,
+      videoUrl: videoUrl || existing.videoUrl,
+      rawFootageUrl,
+      fps,
+      isVerifier,
+      pointsAwarded: points,
+    },
+  });
+
+  if (isVerifier && existing.level.verifierUserId !== existing.playerId) {
+    await prisma.level.update({
+      where: { id: existing.level.id },
+      data: {
+        verifier: existing.player.displayName,
+        verifierUserId: existing.player.id,
+      },
+    });
+  }
+
+  await writeAuditLog(prisma, {
+    actor: {
+      id: admin.id,
+      playerName: admin.playerName,
+      displayName: admin.displayName,
+      role: admin.role,
+    },
+    action: "RECORD_UPDATED",
+    entityType: "Record",
+    entityId: recordId,
+    entityLabel: `${existing.player.displayName} on ${existing.level.name} (${progress}%)`,
+    note: `Admin updated record to ${progress}% (Verifier: ${isVerifier})`,
+  });
+
+  revalidatePath("/");
+  revalidatePath(`/levels/${existing.level.slug}`);
+  revalidatePath("/players");
+  revalidatePath(`/players/${existing.player.playerName}`);
+  revalidatePath("/admin/records");
+}
+
+export async function deleteAdminRecordAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const recordId = String(formData.get("recordId") || "").trim();
+
+  if (!recordId) {
+    throw new Error("Record ID is required.");
+  }
+
+  const record = await prisma.record.findUnique({
+    where: { id: recordId },
+    include: { level: true, player: true },
+  });
+
+  if (!record) {
+    return;
+  }
+
+  await prisma.record.delete({
+    where: { id: recordId },
+  });
+
+  await writeAuditLog(prisma, {
+    actor: {
+      id: admin.id,
+      playerName: admin.playerName,
+      displayName: admin.displayName,
+      role: admin.role,
+    },
+    action: "RECORD_DELETED",
+    entityType: "Record",
+    entityId: recordId,
+    entityLabel: `${record.player.displayName} on ${record.level.name}`,
+    note: `Admin deleted record`,
+  });
+
+  revalidatePath("/");
+  revalidatePath(`/levels/${record.level.slug}`);
+  revalidatePath("/players");
+  revalidatePath(`/players/${record.player.playerName}`);
+  revalidatePath("/admin/records");
+  revalidatePath("/admin/records");
+}

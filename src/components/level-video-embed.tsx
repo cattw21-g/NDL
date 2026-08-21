@@ -75,7 +75,33 @@ export function parseVideoEmbedUrl(url: string | null | undefined): {
     };
   }
 
-  // 4. Direct video files (.mp4, .webm, .ogg, .mov)
+  // 4. Medal.tv: medal.tv/games/geometry-dash/clips/ID or medal.tv/clips/ID
+  const medalMatch = trimmed.match(
+    /medal\.tv\/(?:games\/[^/]+\/)?clips?\/([a-zA-Z0-9_-]+)/i,
+  );
+  if (medalMatch) {
+    return {
+      type: "iframe",
+      embedUrl: `https://medal.tv/clip/${medalMatch[1]}?autoplay=1&muted=0&loop=1`,
+      originalUrl: trimmed,
+      providerName: "Medal.tv",
+    };
+  }
+
+  // 5. TikTok: tiktok.com/@username/video/ID or tiktok.com/v/ID
+  const tikTokMatch =
+    trimmed.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/i) ||
+    trimmed.match(/tiktok\.com\/v\/(\d+)/i);
+  if (tikTokMatch) {
+    return {
+      type: "iframe",
+      embedUrl: `https://www.tiktok.com/embed/v2/${tikTokMatch[1]}`,
+      originalUrl: trimmed,
+      providerName: "TikTok",
+    };
+  }
+
+  // 6. Direct video files (.mp4, .webm, .ogg, .mov)
   if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(trimmed)) {
     return {
       type: "video",
@@ -85,7 +111,7 @@ export function parseVideoEmbedUrl(url: string | null | undefined): {
     };
   }
 
-  // 5. External site fallback
+  // 7. External site fallback
   return {
     type: "external",
     originalUrl: trimmed,

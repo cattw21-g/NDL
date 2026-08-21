@@ -50,6 +50,20 @@ describe("parseVideoEmbedUrl", () => {
     expect(result?.embedUrl).toBe("https://cdn.example.com/runs/completion.mp4");
   });
 
+  it("parses Medal.tv clip URLs", () => {
+    const result = parseVideoEmbedUrl("https://medal.tv/games/geometry-dash/clips/iBv42abc123/d1337xyz");
+    expect(result?.type).toBe("iframe");
+    expect(result?.embedUrl).toBe("https://medal.tv/clip/iBv42abc123?autoplay=1&muted=0&loop=1");
+    expect(result?.providerName).toBe("Medal.tv");
+  });
+
+  it("parses TikTok video URLs", () => {
+    const result = parseVideoEmbedUrl("https://www.tiktok.com/@runner/video/7123456789012345678");
+    expect(result?.type).toBe("iframe");
+    expect(result?.embedUrl).toBe("https://www.tiktok.com/embed/v2/7123456789012345678");
+    expect(result?.providerName).toBe("TikTok");
+  });
+
   it("gracefully falls back to external for non-embeddable links", () => {
     const result = parseVideoEmbedUrl("https://example.com/demo-run");
     expect(result?.type).toBe("external");

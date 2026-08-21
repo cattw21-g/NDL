@@ -174,7 +174,7 @@ export default async function LevelPage({
               {level.name}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-700 dark:text-slate-300 sm:text-base">
-              Official NDL entry for the approved nerfed version of{" "}
+              Nerfed version of{" "}
               <span className="font-bold">{level.originalName}</span>.
             </p>
             <div className="mt-5 grid gap-2 sm:grid-cols-3">
