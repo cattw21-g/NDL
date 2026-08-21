@@ -143,6 +143,21 @@ const rcUpdatePost = {
 [NEW] **NDL Startup Intro Screen**: A sleek cyberpunk intro screen welcoming you to the platform.`,
 };
 
+const recordsSuggestionsPost = {
+  title: "Records & Suggestions Update",
+  slug: "records-suggestions-update",
+  category: ChangelogCategory.MODERATION_NOTE,
+  summary:
+    "Records and suggestions will not be reviewed until 17/08/26 as we work on an upcoming update and our new Discord server.",
+  content: `Hey everyone!
+
+Just a quick update: Records and Suggestions will not be reviewed until 17/08/26 while we focus on preparing our upcoming update and getting the new Discord server ready.
+
+We appreciate your patience and understanding while we work on everything behind the scenes. In the meantime, keep playing, have fun, and good luck trying to beat the levels on NDL!
+
+More updates will be shared soon, so stay tuned!`,
+};
+
 async function seedRules(version: string) {
   const existingRules = await prisma.rulesDocument.findFirst({
     where: {
@@ -208,6 +223,30 @@ async function seedLaunchPost() {
       isPinned: false,
       isDemo: false,
       publishedAt: new Date("2026-06-01T00:00:00.000Z"),
+    },
+  });
+
+  await prisma.changelogPost.upsert({
+    where: {
+      slug: recordsSuggestionsPost.slug,
+    },
+    update: {
+      title: recordsSuggestionsPost.title,
+      category: recordsSuggestionsPost.category,
+      summary: recordsSuggestionsPost.summary,
+      content: recordsSuggestionsPost.content,
+      isPublished: true,
+      isPinned: false,
+      isDemo: false,
+      archivedAt: null,
+      publishedAt: new Date("2026-08-13T19:52:00.000Z"),
+    },
+    create: {
+      ...recordsSuggestionsPost,
+      isPublished: true,
+      isPinned: false,
+      isDemo: false,
+      publishedAt: new Date("2026-08-13T19:52:00.000Z"),
     },
   });
 

@@ -93,37 +93,97 @@ export const LATEST_RELEASE_POST = {
 [NEW] **NDL Startup Intro Screen**: A sleek cyberpunk intro screen welcoming you to the platform.`,
 };
 
+export const DEFAULT_POSTS = [
+  {
+    id: "rc-v1-release",
+    title: "Nerfed Demonlist v1.0 Release Candidate is Live!",
+    slug: "ndl-v1-0-rc-release",
+    category: "SITE_UPDATE" as const,
+    summary:
+      "Welcome to the official Release Candidate of Nerfed Demonlist (v1.0-RC)! We’ve completely overhauled the platform with the new Upcoming Levels tab (Currently Verifying & Waiting Levels), universal video playback for Medal.tv & TikTok, player profile champion banners, global member search, Top 50 leaderboards, and instant navigation.",
+    content: LATEST_RELEASE_POST.content,
+    isPinned: true,
+    isPublished: true,
+    isDemo: false,
+    publishedAt: new Date("2026-08-21T21:20:00.000Z"),
+    updatedAt: new Date("2026-08-21T21:20:00.000Z"),
+    archivedAt: null,
+    author: { displayName: "cattw21" },
+  },
+  {
+    id: "records-suggestions-update",
+    title: "Records & Suggestions Update",
+    slug: "records-suggestions-update",
+    category: "MODERATION_NOTE" as const,
+    summary:
+      "Records and suggestions will not be reviewed until 17/08/26 as we work on an upcoming update and our new Discord server.",
+    content: `Hey everyone!
+
+Just a quick update: Records and Suggestions will not be reviewed until 17/08/26 while we focus on preparing our upcoming update and getting the new Discord server ready.
+
+We appreciate your patience and understanding while we work on everything behind the scenes. In the meantime, keep playing, have fun, and good luck trying to beat the levels on NDL!
+
+More updates will be shared soon, so stay tuned!`,
+    isPinned: false,
+    isPublished: true,
+    isDemo: false,
+    publishedAt: new Date("2026-08-13T19:52:00.000Z"),
+    updatedAt: new Date("2026-08-13T19:52:00.000Z"),
+    archivedAt: null,
+    author: { displayName: "cattw21" },
+  },
+  {
+    id: "ndl-public-beta-is-live",
+    title: "NDL public beta is live",
+    slug: "ndl-public-beta-is-live",
+    category: "ANNOUNCEMENT" as const,
+    summary:
+      "Nerfed Demonlist is open for public beta with ranked levels, record submissions, level suggestions, rules, and staff review.",
+    content: `NDL is now ready for public beta. Players can view ranked nerfed demon versions, submit records for review, suggest new level candidates, and read the official v1.0 rules. Staff will continue to review submissions, tune rankings, and publish updates as the list grows.`,
+    isPinned: false,
+    isPublished: true,
+    isDemo: false,
+    publishedAt: new Date("2026-06-01T00:00:00.000Z"),
+    updatedAt: new Date("2026-06-03T16:15:00.000Z"),
+    archivedAt: null,
+    author: { displayName: "NDL Staff" },
+  },
+];
+
 export async function ensureLatestChangelogPost(prismaClient: PrismaClient) {
   try {
-    await prismaClient.changelogPost.upsert({
-      where: { slug: LATEST_RELEASE_POST.slug },
-      update: {
-        title: LATEST_RELEASE_POST.title,
-        category: LATEST_RELEASE_POST.category,
-        summary: LATEST_RELEASE_POST.summary,
-        content: LATEST_RELEASE_POST.content,
-        isPublished: true,
-        isPinned: true,
-        isDemo: false,
-        archivedAt: null,
-      },
-      create: {
-        title: LATEST_RELEASE_POST.title,
-        slug: LATEST_RELEASE_POST.slug,
-        category: LATEST_RELEASE_POST.category,
-        summary: LATEST_RELEASE_POST.summary,
-        content: LATEST_RELEASE_POST.content,
-        isPublished: true,
-        isPinned: true,
-        isDemo: false,
-        publishedAt: new Date("2026-08-21T21:20:00.000Z"),
-      },
-    });
+    for (const post of DEFAULT_POSTS) {
+      await prismaClient.changelogPost.upsert({
+        where: { slug: post.slug },
+        update: {
+          title: post.title,
+          category: post.category,
+          summary: post.summary,
+          content: post.content,
+          isPublished: true,
+          isPinned: post.isPinned,
+          isDemo: false,
+          archivedAt: null,
+        },
+        create: {
+          title: post.title,
+          slug: post.slug,
+          category: post.category,
+          summary: post.summary,
+          content: post.content,
+          isPublished: true,
+          isPinned: post.isPinned,
+          isDemo: false,
+          publishedAt: post.publishedAt,
+        },
+      });
+    }
 
+    const validSlugs = DEFAULT_POSTS.map((p) => p.slug);
     await prismaClient.changelogPost.deleteMany({
       where: {
         slug: {
-          not: LATEST_RELEASE_POST.slug,
+          notIn: validSlugs,
         },
       },
     });
@@ -131,4 +191,3 @@ export async function ensureLatestChangelogPost(prismaClient: PrismaClient) {
     // Fail-safe
   }
 }
-

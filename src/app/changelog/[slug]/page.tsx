@@ -7,8 +7,8 @@ import { StatusBadge } from "@/components/status-badge";
 import { Eyebrow, SectionPanel } from "@/components/ui";
 import {
   changelogCategoryLabel,
+  DEFAULT_POSTS,
   ensureLatestChangelogPost,
-  LATEST_RELEASE_POST,
 } from "@/lib/changelog";
 import { prisma } from "@/lib/db";
 import { publicChangelogWhere } from "@/lib/demo-visibility";
@@ -39,24 +39,7 @@ export default async function ChangelogPostPage({
 
   const post =
     postFromDb ??
-    (slug === LATEST_RELEASE_POST.slug
-      ? {
-          id: "rc-v1-release",
-          slug: LATEST_RELEASE_POST.slug,
-          title: LATEST_RELEASE_POST.title,
-          category: LATEST_RELEASE_POST.category,
-          summary: LATEST_RELEASE_POST.summary,
-          content: LATEST_RELEASE_POST.content,
-          isPinned: true,
-          isPublished: true,
-          isDemo: false,
-          publishedAt: new Date("2026-08-21T21:20:00.000Z"),
-          updatedAt: new Date("2026-08-21T21:20:00.000Z"),
-          archivedAt: null,
-          authorId: null,
-          author: { displayName: "cattw21" },
-        }
-      : null);
+    (DEFAULT_POSTS.find((p) => p.slug === slug) ?? null);
 
   if (!post) {
     notFound();

@@ -3,6 +3,7 @@ import { Info, Newspaper } from "lucide-react";
 import { ChangelogPostCard } from "@/components/changelog-post-card";
 import { EmptyState, Eyebrow, SectionPanel } from "@/components/ui";
 import {
+  DEFAULT_POSTS,
   ensureLatestChangelogPost,
   LATEST_RELEASE_POST,
 } from "@/lib/changelog";
@@ -27,26 +28,15 @@ export default async function ChangelogPage() {
     orderBy: [{ isPinned: "desc" }, { publishedAt: "desc" }],
   });
 
-  const hasLatest = postsFromDb.some((p) => p.slug === LATEST_RELEASE_POST.slug);
+  const validSlugs = new Set(DEFAULT_POSTS.map((p) => p.slug));
+  const filteredDbPosts = postsFromDb.filter((p) => validSlugs.has(p.slug));
+
+  const hasLatest = filteredDbPosts.some((p) => p.slug === LATEST_RELEASE_POST.slug);
   const posts = hasLatest
-    ? postsFromDb.filter((p) => p.slug === LATEST_RELEASE_POST.slug)
+    ? filteredDbPosts
     : [
-        {
-          id: "rc-v1-release",
-          slug: LATEST_RELEASE_POST.slug,
-          title: LATEST_RELEASE_POST.title,
-          category: LATEST_RELEASE_POST.category,
-          summary: LATEST_RELEASE_POST.summary,
-          content: LATEST_RELEASE_POST.content,
-          isPinned: true,
-          isPublished: true,
-          isDemo: false,
-          publishedAt: new Date("2026-08-21T21:20:00.000Z"),
-          updatedAt: new Date("2026-08-21T21:20:00.000Z"),
-          archivedAt: null,
-          authorId: null,
-          author: { displayName: "cattw21" },
-        },
+        DEFAULT_POSTS[0],
+        ...filteredDbPosts,
       ];
 
   return (
