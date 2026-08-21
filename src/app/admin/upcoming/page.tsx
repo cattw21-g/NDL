@@ -14,6 +14,8 @@ import {
   assignVerifierAction,
   deleteUpcomingLevelAction,
   deleteUpcomingSuggestionAction,
+  moveSuggestionToVerifyingAction,
+  moveSuggestionToWaitingAction,
   promoteUpcomingLevelAction,
 } from "@/actions/upcoming";
 import { Eyebrow, MetricTile, SectionPanel, inputClass } from "@/components/ui";
@@ -394,13 +396,46 @@ export default async function AdminUpcomingPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
+                  {/* 1. Move to Waiting Levels */}
+                  <form action={moveSuggestionToWaitingAction}>
+                    <input type="hidden" name="suggestionId" value={sug.id} />
+                    <button
+                      type="submit"
+                      className="inline-flex min-h-9 items-center gap-1 rounded-md border border-cyan-600 bg-cyan-50 px-3 text-xs font-black text-cyan-900 transition hover:bg-cyan-100 dark:border-cyan-500 dark:bg-cyan-950 dark:text-cyan-200"
+                    >
+                      <Hourglass className="h-3.5 w-3.5" />
+                      Move to Waiting Levels
+                    </button>
+                  </form>
+
+                  {/* 2. Assign Verifier (Move to Currently Verifying) */}
+                  <form action={moveSuggestionToVerifyingAction} className="flex items-center gap-1">
+                    <input type="hidden" name="suggestionId" value={sug.id} />
+                    <input
+                      name="verifier"
+                      defaultValue={sug.verifier || ""}
+                      placeholder="Verifier name..."
+                      required
+                      className={`${inputClass} w-36 text-xs`}
+                    />
+                    <button
+                      type="submit"
+                      className="inline-flex min-h-9 items-center gap-1 rounded-md bg-amber-600 px-3 text-xs font-black text-white transition hover:bg-amber-700 dark:bg-amber-500 dark:text-slate-950"
+                    >
+                      <Flame className="h-3.5 w-3.5" />
+                      Start Verifying
+                    </button>
+                  </form>
+
+                  {/* 3. Direct Rank / Convert Link */}
                   <Link
                     href="/admin/levels"
-                    className="inline-flex min-h-9 items-center gap-1 rounded-md bg-teal-700 px-3 text-xs font-black text-white hover:bg-teal-800 dark:bg-teal-500 dark:text-slate-950"
+                    className="inline-flex min-h-9 items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                   >
-                    Convert to Official Level
+                    Rank Directly
                   </Link>
 
+                  {/* 4. Delete */}
                   <form action={deleteUpcomingSuggestionAction}>
                     <input type="hidden" name="suggestionId" value={sug.id} />
                     <button

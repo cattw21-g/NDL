@@ -327,3 +327,156 @@ export async function deleteUpcomingSuggestionAction(formData: FormData) {
   revalidatePath("/admin/upcoming");
   revalidatePath("/level-suggestions");
 }
+
+export async function moveSuggestionToWaitingAction(formData: FormData) {
+  const admin = await requireAdmin();
+
+  const suggestionId = String(formData.get("suggestionId") || "").trim();
+  if (!suggestionId) {
+    throw new Error("Suggestion ID is required.");
+  }
+
+  const suggestion = await prisma.levelSuggestion.findUnique({
+    where: { id: suggestionId },
+  });
+
+  if (!suggestion) {
+    throw new Error("Suggestion not found.");
+  }
+
+  const baseSlug = slugify(suggestion.name);
+  const slug = `${baseSlug}-${Date.now().toString(36)}`;
+
+  const level = await prisma.level.create({
+    data: {
+      name: suggestion.name,
+      originalName: suggestion.originalName,
+      slug,
+      gdLevelId: suggestion.gdLevelId,
+      publisher: suggestion.publisher,
+      nerfCreator: suggestion.nerfCreator,
+      verifier: "",
+      verifierUserId: null,
+      showcaseUrl: suggestion.showcaseUrl,
+      verificationVideoUrl: suggestion.verificationVideoUrl || null,
+      thumbnailUrl: suggestion.thumbnailUrl || FALLBACK_THUMBNAIL_SRC,
+      difficulty: DifficultyCategory.EXTREME,
+      description:
+        suggestion.versionNotes ||
+        `Approved nerfed version of ${suggestion.originalName}.`,
+      status: LevelStatus.PENDING,
+      rank: null,
+      isDemo: Boolean(suggestion.isDemo),
+    },
+  });
+
+  await prisma.levelSuggestion.update({
+    where: { id: suggestionId },
+    data: {
+      status: "CONVERTED",
+      createdLevelId: level.id,
+    },
+  });
+
+  await writeAuditLog(prisma, {
+    actor: {
+      id: admin.id,
+      playerName: admin.playerName,
+      displayName: admin.displayName,
+      role: admin.role,
+    },
+    action: "SUGGESTION_MOVED_TO_WAITING",
+    entityType: "Level",
+    entityId: level.id,
+    entityLabel: `${level.name} (Waiting Levels)`,
+    note: `Approved suggestion moved to Waiting Levels queue`,
+  });
+
+  revalidatePath("/upcoming");
+  revalidatePath("/admin/upcoming");
+  revalidatePath("/level-suggestions");
+}
+
+export async function moveSuggestionToVerifyingAction(formData: FormData) {
+  const admin = await requireAdmin();
+
+  const suggestionId = String(formData.get("suggestionId") || "").trim();
+  const verifier = String(formData.get("verifier") || "").trim();
+
+  if (!suggestionId || !verifier) {
+    throw new Error("Suggestion ID and Verifier name are required.");
+  }
+
+  const suggestion = await prisma.levelSuggestion.findUnique({
+    where: { id: suggestionId },
+  });
+
+  if (!suggestion) {
+    throw new Error("Suggestion not found.");
+  }
+
+  let verifierUserId: string | null = null;
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { playerName: { equals: verifier, mode: "insensitive" } },
+        { displayName: { equals: verifier, mode: "insensitive" } },
+      ],
+    },
+  });
+  if (existingUser) {
+    verifierUserId = existingUser.id;
+  }
+
+  const baseSlug = slugify(suggestion.name);
+  const slug = `${baseSlug}-${Date.now().toString(36)}`;
+
+  const level = await prisma.level.create({
+    data: {
+      name: suggestion.name,
+      originalName: suggestion.originalName,
+      slug,
+      gdLevelId: suggestion.gdLevelId,
+      publisher: suggestion.publisher,
+      nerfCreator: suggestion.nerfCreator,
+      verifier,
+      verifierUserId,
+      showcaseUrl: suggestion.showcaseUrl,
+      verificationVideoUrl: suggestion.verificationVideoUrl || null,
+      thumbnailUrl: suggestion.thumbnailUrl || FALLBACK_THUMBNAIL_SRC,
+      difficulty: DifficultyCategory.EXTREME,
+      description:
+        suggestion.versionNotes ||
+        `Approved nerfed version of ${suggestion.originalName}.`,
+      status: LevelStatus.PENDING,
+      rank: null,
+      isDemo: Boolean(suggestion.isDemo),
+    },
+  });
+
+  await prisma.levelSuggestion.update({
+    where: { id: suggestionId },
+    data: {
+      status: "CONVERTED",
+      createdLevelId: level.id,
+    },
+  });
+
+  await writeAuditLog(prisma, {
+    actor: {
+      id: admin.id,
+      playerName: admin.playerName,
+      displayName: admin.displayName,
+      role: admin.role,
+    },
+    action: "SUGGESTION_MOVED_TO_VERIFYING",
+    entityType: "Level",
+    entityId: level.id,
+    entityLabel: `${level.name} (Verifier: ${verifier})`,
+    note: `Approved suggestion assigned to verifier ${verifier} in Currently Verifying queue`,
+  });
+
+  revalidatePath("/upcoming");
+  revalidatePath("/admin/upcoming");
+  revalidatePath("/level-suggestions");
+}

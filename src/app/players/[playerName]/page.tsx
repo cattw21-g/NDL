@@ -1,12 +1,23 @@
-import { notFound } from "next/navigation";
+import {
+  Award,
+  Calendar,
+  CheckCircle2,
+  Crown,
+  Flame,
+  Gamepad2,
+  Medal,
+  Play,
+  Shield,
+  Trophy,
+  User,
+  Video,
+} from "lucide-react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { CopyButton } from "@/components/copy-button";
 import { StatusBadge } from "@/components/status-badge";
 import {
-  cx,
-  EmptyState,
-  FactPill,
   MetricTile,
   SectionPanel,
 } from "@/components/ui";
@@ -27,9 +38,9 @@ import { absoluteSiteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
-  title: "Player Profile - NDL",
+  title: "Player Profile - Nerfed Demonlist",
   description:
-    "View a Nerfed Demonlist player's accepted records and public scoring profile.",
+    "View player standings, 100% completions, progress runs, and verified demons.",
 };
 
 export default async function PlayerProfilePage({
@@ -38,7 +49,7 @@ export default async function PlayerProfilePage({
   params: Promise<{ playerName: string }>;
 }) {
   const { playerName } = await params;
-  const [viewer, player] = await Promise.all([
+  const [viewer, player, allRecords] = await Promise.all([
     getCurrentUser(),
     prisma.user.findFirst({
       where: publicUserWhere({
@@ -51,10 +62,15 @@ export default async function PlayerProfilePage({
             id: true,
             slug: true,
             name: true,
+            originalName: true,
             rank: true,
             status: true,
             points: true,
+            thumbnailUrl: true,
+            verificationVideoUrl: true,
+            showcaseUrl: true,
           },
+          orderBy: { rank: "asc" },
         },
         records: {
           where: publicRecordWhere(),
@@ -78,11 +94,41 @@ export default async function PlayerProfilePage({
         },
       },
     }),
+    prisma.record.findMany({
+      where: publicRecordWhere({
+        level: {
+          status: {
+            in: ["RANKED", "LEGACY"],
+          },
+        },
+      }),
+      include: {
+        player: true,
+        level: true,
+      },
+    }),
   ]);
 
   if (!player) {
     notFound();
   }
+
+  // Calculate Global Leaderboard Rank
+  const globalLeaderboard = calculateLeaderboard(
+    allRecords.map((record) => ({
+      playerId: record.playerId,
+      playerName: record.player.playerName,
+      displayName: record.player.displayName,
+      levelId: record.levelId,
+      pointsAwarded: calculateCurrentLevelPoints(record.level),
+      acceptedAt: record.acceptedAt,
+    })),
+  );
+
+  const globalRankIndex = globalLeaderboard.findIndex(
+    (row) => row.playerId === player.id,
+  );
+  const globalRank = globalRankIndex !== -1 ? globalRankIndex + 1 : null;
 
   const acceptedRecords = player.records.map((record) => ({
     ...record,
@@ -96,26 +142,12 @@ export default async function PlayerProfilePage({
     (record) => (record.progress ?? 100) < 100,
   );
 
-  const summary = calculateLeaderboard(
-    fullCompletions
-      .filter(
-        (record) =>
-          record.level.status === "RANKED" || record.level.status === "LEGACY",
-      )
-      .map((record) => ({
-        playerId: player.id,
-        playerName: player.playerName,
-        displayName: player.displayName,
-        levelId: record.levelId,
-        pointsAwarded: record.currentPoints,
-        acceptedAt: record.acceptedAt,
-        progress: 100,
-        isVerifier: record.isVerifier,
-      })),
-  )[0];
+  const summary = globalRankIndex !== -1 ? globalLeaderboard[globalRankIndex] : null;
+  const totalPoints = summary?.points ?? 0;
 
+  // Hardest beaten demon
   const hardestCompletion = fullCompletions
-    .filter((r) => r.level.rank !== null)
+    .filter((r) => r.level.rank !== null && r.level.status === "RANKED")
     .sort((a, b) => (a.level.rank ?? 999) - (b.level.rank ?? 999))[0];
 
   const canViewPrivate =
@@ -124,271 +156,459 @@ export default async function PlayerProfilePage({
   const profileUrl = absoluteSiteUrl(`/players/${player.playerName}`);
 
   return (
-    <div className="space-y-5">
-      <section className="grid gap-4 rounded-md border border-slate-300 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_14px_30px_rgba(0,0,0,0.28)] md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-        <div className="min-w-0">
-          {isOwnProfile ? (
-            <p className="mb-2 text-xs font-black uppercase tracking-[0.08em] text-cyan-800 dark:text-cyan-300">
-              Your public profile
-            </p>
-          ) : null}
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <StatusBadge value={player.role} />
-            <FactPill label="Handle" value={`@${player.playerName}`} />
-            {player.verifiedLevels.length > 0 ? (
-              <span className="rounded border border-amber-400 bg-amber-50 px-2 py-0.5 text-xs font-black text-amber-900 dark:border-amber-500/50 dark:bg-amber-950/40 dark:text-amber-200">
-                {player.verifiedLevels.length} Verified {player.verifiedLevels.length === 1 ? "Level" : "Levels"}
-              </span>
-            ) : null}
-            {hardestCompletion ? (
-              <span className="rounded border border-purple-300 bg-purple-50 px-2 py-0.5 text-xs font-black text-purple-900 dark:border-purple-500/50 dark:bg-purple-950/40 dark:text-purple-200">
-                Hardest: {hardestCompletion.level.name} (#{hardestCompletion.level.rank})
-              </span>
-            ) : null}
+    <div className="space-y-6">
+      {/* 1. HERO BANNER */}
+      <section className="relative overflow-hidden rounded-xl border border-slate-300 bg-white p-6 shadow-md dark:border-slate-700 dark:bg-slate-900">
+        <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+          {/* Avatar & Player Details */}
+          <div className="flex flex-wrap items-center gap-5">
+            {/* Avatar Badge */}
+            <div className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-2 border-slate-300 bg-gradient-to-br from-slate-100 to-slate-200 text-3xl font-black text-slate-800 shadow-inner dark:border-slate-700 dark:from-slate-800 dark:to-slate-950 dark:text-slate-100">
+              {globalRank === 1 ? (
+                <div className="absolute -top-3 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-slate-950 shadow-md">
+                  <Crown className="h-5 w-5" />
+                </div>
+              ) : null}
+              {player.displayName.charAt(0).toUpperCase()}
+            </div>
+
+            <div className="min-w-0">
+              {isOwnProfile ? (
+                <p className="mb-2 text-xs font-black uppercase tracking-[0.08em] text-cyan-800 dark:text-cyan-300">
+                  Your public profile
+                </p>
+              ) : null}
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate text-3xl font-black text-slate-950 sm:text-4xl dark:text-slate-50">
+                  {player.displayName}
+                </h1>
+                <span className="text-sm font-bold text-slate-500">
+                  @{player.playerName}
+                </span>
+
+                {/* Role / Rank Pill */}
+                {globalRank === 1 ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-400 bg-amber-100 px-3 py-0.5 text-xs font-black text-amber-950 dark:border-amber-500/60 dark:bg-amber-950/80 dark:text-amber-300">
+                    <Crown className="h-3.5 w-3.5 text-amber-600" />
+                    NDL Champion #1
+                  </span>
+                ) : globalRank === 2 || globalRank === 3 ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-100 px-3 py-0.5 text-xs font-black text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                    <Medal className="h-3.5 w-3.5 text-amber-500" />
+                    Top 3 Victor (#{globalRank})
+                  </span>
+                ) : globalRank !== null ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-cyan-300 bg-cyan-50 px-3 py-0.5 text-xs font-black text-cyan-900 dark:border-cyan-800 dark:bg-cyan-950 dark:text-cyan-300">
+                    <Trophy className="h-3.5 w-3.5 text-cyan-600" />
+                    Rank #{globalRank}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                    <User className="h-3.5 w-3.5" />
+                    Registered Member
+                  </span>
+                )}
+
+                <StatusBadge value={player.role} />
+              </div>
+
+              <div className="mt-2 flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-500">
+                <span className="inline-flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" /> Member since {formatDate(player.createdAt)}
+                </span>
+                {player.verifiedLevels.length > 0 ? (
+                  <span className="inline-flex items-center gap-1 text-amber-600 font-bold dark:text-amber-400">
+                    <Flame className="h-3.5 w-3.5" /> {player.verifiedLevels.length} Verified {player.verifiedLevels.length === 1 ? "Demon" : "Demons"}
+                  </span>
+                ) : null}
+              </div>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="truncate text-4xl font-black leading-tight text-slate-950 dark:text-slate-50">
-              {player.displayName}
-            </h1>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2">
             <CopyButton
               text={profileUrl}
-              label="Share Profile"
+              label="Share profile"
               copiedLabel="Link Copied!"
             />
+            {isOwnProfile ? (
+              <Link
+                href="/submit"
+                className="inline-flex min-h-9 items-center justify-center gap-1 rounded-md bg-cyan-700 px-4 text-xs font-black text-white hover:bg-cyan-800 dark:bg-cyan-500 dark:text-slate-950"
+              >
+                Submit Run
+              </Link>
+            ) : null}
           </div>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            Member since {formatDate(player.createdAt)}
-          </p>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          <MetricTile label="Total Points" value={summary?.points ?? 0} tone="emerald" />
-          <MetricTile label="100% Victories" value={fullCompletions.length} />
-          <MetricTile label="Progress Runs" value={progressRecords.length} />
+
+        {/* 2. STATS TILES BAR */}
+        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-200 pt-5 dark:border-slate-800 sm:grid-cols-4">
+          <MetricTile
+            label="Total Points"
+            value={`${totalPoints} pts`}
+            tone="cyan"
+          />
+          <MetricTile
+            label="Global Rank"
+            value={globalRank ? `#${globalRank}` : "Unranked"}
+            tone={globalRank === 1 ? "amber" : undefined}
+          />
+          <MetricTile
+            label="100% Victories"
+            value={fullCompletions.length}
+            tone="emerald"
+          />
+          <MetricTile
+            label="Progress Runs"
+            value={progressRecords.length}
+          />
         </div>
       </section>
 
-      <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="space-y-6">
-          {/* SECTION 1: 100% COMPLETIONS & VERIFICATIONS */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
+      {/* 3. HARDEST DEMON SPOTLIGHT */}
+      {hardestCompletion ? (
+        <section className="overflow-hidden rounded-xl border border-amber-300 bg-gradient-to-r from-amber-50 via-white to-amber-50/40 p-5 shadow-md dark:border-amber-500/40 dark:from-amber-950/30 dark:via-slate-900 dark:to-amber-950/20">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-black text-slate-950 dark:text-slate-50">
-                  100% Completions & Verifications
-                </h2>
-                <span className="rounded-md border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs font-black text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-300">
-                  {fullCompletions.length}
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-xs font-black text-slate-950">
+                  👑
+                </span>
+                <span className="text-xs font-black uppercase tracking-wider text-amber-900 dark:text-amber-300">
+                  Hardest Demon Beaten
                 </span>
               </div>
+              <h2 className="text-2xl font-black text-slate-950 dark:text-slate-50">
+                <Link
+                  href={`/levels/${hardestCompletion.level.slug}`}
+                  className="hover:text-cyan-700 hover:underline dark:hover:text-cyan-400"
+                >
+                  {hardestCompletion.level.name}
+                </Link>{" "}
+                <span className="text-lg text-amber-700 dark:text-amber-400">
+                  (Rank #{hardestCompletion.level.rank})
+                </span>
+              </h2>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Earned <span className="font-black text-amber-900 dark:text-amber-300">{hardestCompletion.currentPoints} pts</span> • Beaten at {hardestCompletion.fps} FPS {hardestCompletion.cbfUsed ? "• CBF Enabled" : ""}
+              </p>
             </div>
 
-            <SectionPanel className="overflow-hidden">
-              {fullCompletions.length > 0 ? (
-                fullCompletions.map((record, index) => (
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/levels/${hardestCompletion.level.slug}`}
+                className="inline-flex min-h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3.5 text-xs font-black text-slate-800 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              >
+                View Demon Page &rarr;
+              </Link>
+              {hardestCompletion.videoUrl ? (
+                <a
+                  href={hardestCompletion.videoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-md bg-amber-500 px-3.5 text-xs font-black text-slate-950 transition hover:bg-amber-400"
+                >
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                  Watch Proof
+                </a>
+              ) : null}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* 4. MAIN CONTENT TABS & CARDS */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <main className="space-y-6">
+          {/* 100% COMPLETIONS LIST */}
+          <section className="space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2 dark:border-slate-800">
+              <h2 className="flex items-center gap-2 text-xl font-black text-slate-950 dark:text-slate-50">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                100% Completions ({fullCompletions.length})
+              </h2>
+              <span className="text-xs font-bold text-slate-500">
+                {fullCompletions.reduce((sum, r) => sum + r.currentPoints, 0)} Total Points
+              </span>
+            </div>
+
+            {fullCompletions.length > 0 ? (
+              <div className="divide-y divide-slate-200 rounded-lg border border-slate-300 bg-white shadow-sm dark:divide-slate-800 dark:border-slate-700 dark:bg-slate-900">
+                {fullCompletions.map((record, index) => (
                   <div
                     key={record.id}
-                    className={cx(
-                      "grid gap-3 border-b border-slate-300 p-3.5 transition last:border-b-0 sm:grid-cols-[3rem_minmax(0,1fr)_6rem_6rem_auto] sm:items-center",
-                      record.isVerifier
-                        ? "bg-amber-50/40 hover:bg-amber-50/70 dark:bg-amber-950/15 dark:hover:bg-amber-950/30"
-                        : "hover:bg-cyan-50/60 dark:border-slate-700 dark:hover:bg-cyan-950/30",
-                    )}
+                    className="grid gap-3 p-4 transition hover:bg-slate-50 sm:grid-cols-[3rem_minmax(0,1fr)_6rem_6rem_auto] sm:items-center dark:hover:bg-slate-850"
                   >
-                    <span className="text-xl font-black text-slate-500 tabular-nums dark:text-slate-400">
+                    <span className="text-base font-black text-slate-400 tabular-nums">
                       #{index + 1}
                     </span>
-                    <span className="min-w-0">
+
+                    <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <Link
                           href={`/levels/${record.level.slug}`}
-                          className="truncate font-black text-slate-950 hover:underline dark:text-slate-50"
+                          className="text-base font-black text-slate-950 hover:underline dark:text-slate-50"
                         >
                           {record.level.name}
                         </Link>
+                        {record.level.rank ? (
+                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            #{record.level.rank}
+                          </span>
+                        ) : null}
                         {record.isVerifier ? (
                           <span className="rounded border border-amber-400 bg-amber-100 px-1.5 py-0.5 text-[10px] font-black uppercase text-amber-900 dark:border-amber-500/60 dark:bg-amber-900/50 dark:text-amber-200">
                             Verifier
                           </span>
                         ) : null}
                       </div>
-                      <span className="text-sm text-slate-500 dark:text-slate-400">
-                        {record.isVerifier ? "Official Verification" : `Accepted ${formatDate(record.acceptedAt)}`} at {record.fps} FPS
-                      </span>
-                    </span>
-                    <span className="font-black text-emerald-700 tabular-nums dark:text-emerald-300 sm:text-right">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {record.fps} FPS {record.cbfUsed ? "• CBF" : ""} • Accepted {formatDate(record.acceptedAt)}
+                      </p>
+                    </div>
+
+                    <span className="font-black text-emerald-700 tabular-nums sm:text-right dark:text-emerald-400">
                       100%
                     </span>
-                    <span className="text-right text-xl font-black text-emerald-700 tabular-nums dark:text-emerald-300">
+
+                    <span className="text-right text-lg font-black text-cyan-800 tabular-nums dark:text-cyan-300">
                       {record.currentPoints} pts
                     </span>
-                    <a
-                      href={record.videoUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex min-h-8 items-center justify-center rounded-md border border-slate-300 bg-white px-2.5 text-xs font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 sm:justify-self-end"
-                    >
-                      Video
-                    </a>
-                  </div>
-                ))
-              ) : (
-                <div className="p-4">
-                  <EmptyState
-                    title="No 100% completions recorded yet"
-                    description="100% completions will appear here and award leaderboard points once accepted by staff."
-                  />
-                  <div className="mt-4">
-                    <Link
-                      href="/submit"
-                      className="inline-flex min-h-10 items-center justify-center rounded-md bg-cyan-700 px-4 text-sm font-black text-white transition hover:bg-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
-                    >
-                      Submit a record
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </SectionPanel>
-          </div>
 
-          {/* SECTION 2: PROGRESS RECORDS */}
-          {progressRecords.length > 0 ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-black text-slate-950 dark:text-slate-50">
-                    Progress Records
-                  </h2>
-                  <span className="rounded-md border border-cyan-300 bg-cyan-50 px-2 py-0.5 text-xs font-black text-cyan-800 dark:border-cyan-500/40 dark:bg-cyan-950/40 dark:text-cyan-300">
-                    {progressRecords.length}
-                  </span>
+                    {record.videoUrl ? (
+                      <a
+                        href={record.videoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex min-h-8 items-center justify-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 sm:justify-self-end"
+                      >
+                        <Video className="h-3.5 w-3.5 text-slate-500" />
+                        Proof
+                      </a>
+                    ) : (
+                      <span />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <SectionPanel className="p-8 text-center">
+                <Gamepad2 className="mx-auto h-10 w-10 text-slate-400" />
+                <h3 className="mt-3 text-base font-black text-slate-950 dark:text-slate-50">
+                  No 100% completions recorded yet
+                </h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Once a completion run is submitted and approved by staff, it will appear here with points!
+                </p>
+                <div className="mt-4">
+                  <Link
+                    href="/submit"
+                    className="inline-flex min-h-9 items-center justify-center rounded-md bg-cyan-700 px-4 text-xs font-black text-white hover:bg-cyan-800 dark:bg-cyan-500 dark:text-slate-950"
+                  >
+                    Submit a Run
+                  </Link>
                 </div>
+              </SectionPanel>
+            )}
+          </section>
+
+          {/* PROGRESS RUNS (<100%) */}
+          {progressRecords.length > 0 ? (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-2 dark:border-slate-800">
+                <h2 className="flex items-center gap-2 text-xl font-black text-slate-950 dark:text-slate-50">
+                  <Award className="h-5 w-5 text-cyan-600" />
+                  Progress Records ({progressRecords.length})
+                </h2>
               </div>
 
-              <SectionPanel className="overflow-hidden">
+              <div className="divide-y divide-slate-200 rounded-lg border border-slate-300 bg-white shadow-sm dark:divide-slate-800 dark:border-slate-700 dark:bg-slate-900">
                 {progressRecords.map((record, index) => (
                   <div
                     key={record.id}
-                    className="grid gap-3 border-b border-slate-300 p-3.5 transition last:border-b-0 hover:bg-cyan-50/60 dark:border-slate-700 dark:hover:bg-cyan-950/30 sm:grid-cols-[3rem_minmax(0,1fr)_6rem_6rem_auto] sm:items-center"
+                    className="grid gap-3 p-4 transition hover:bg-slate-50 sm:grid-cols-[3rem_minmax(0,1fr)_6rem_6rem_auto] sm:items-center dark:hover:bg-slate-850"
                   >
-                    <span className="text-xl font-black text-slate-500 tabular-nums dark:text-slate-400">
+                    <span className="text-base font-black text-slate-400 tabular-nums">
                       #{index + 1}
                     </span>
-                    <span className="min-w-0">
-                      <Link
-                        href={`/levels/${record.level.slug}`}
-                        className="truncate font-black text-slate-950 hover:underline dark:text-slate-50"
-                      >
-                        {record.level.name}
-                      </Link>
-                      <span className="block text-sm text-slate-500 dark:text-slate-400">
-                        Accepted {formatDate(record.acceptedAt)} at {record.fps} FPS
-                      </span>
-                    </span>
-                    <span className="font-black text-cyan-700 tabular-nums dark:text-cyan-300 sm:text-right">
-                      {record.progress}%
-                    </span>
-                    <span className="text-right text-sm font-semibold text-slate-400 dark:text-slate-500">
-                      0 pts
-                    </span>
-                    <a
-                      href={record.videoUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex min-h-8 items-center justify-center rounded-md border border-slate-300 bg-white px-2.5 text-xs font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 sm:justify-self-end"
-                    >
-                      Video
-                    </a>
-                  </div>
-                ))}
-              </SectionPanel>
-            </div>
-          ) : null}
-        </div>
 
-        {canViewPrivate ? (
-          <aside className="space-y-3">
-            <h2 className="text-2xl font-black text-slate-950 dark:text-slate-50">Submissions</h2>
-            <SectionPanel className="p-4">
-              <h3 className="border-b border-slate-300 pb-3 font-black text-slate-950 dark:border-slate-700 dark:text-slate-50">
-                Private view
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                Pending, rejected, and needs-changes submissions are visible to
-                the player and staff only.
-              </p>
-              {isOwnProfile ? (
-                <div className="mt-4 grid gap-2">
-                  <Link
-                    href="/submit"
-                    className="inline-flex min-h-9 items-center justify-center rounded-md bg-cyan-700 px-3 text-sm font-black text-white transition hover:bg-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
-                  >
-                    Submit a record
-                  </Link>
-                  <FieldCopy value={profileUrl} />
-                </div>
-              ) : null}
-            </SectionPanel>
-            {player.submissions.length > 0 ? (
-              player.submissions.map((submission) => (
-                <SectionPanel key={submission.id} className="p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="truncate font-black text-slate-950 dark:text-slate-50">
-                        {submission.level.name}
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/levels/${record.level.slug}`}
+                          className="text-base font-black text-slate-950 hover:underline dark:text-slate-50"
+                        >
+                          {record.level.name}
+                        </Link>
+                        {record.level.rank ? (
+                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            #{record.level.rank}
+                          </span>
+                        ) : null}
                       </div>
-                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        Submitted {formatDateTime(submission.submittedAt)} - {submission.progress ?? 100}%
+                      <p className="text-xs text-slate-500">
+                        {record.fps} FPS • Accepted {formatDate(record.acceptedAt)}
                       </p>
                     </div>
-                    <StatusBadge value={submission.status} />
-                  </div>
-                  {submission.moderatorNotes ? (
-                    <p className="mt-3 rounded-md border border-slate-300 bg-slate-50 p-3 text-sm leading-6 text-slate-700 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
-                      {submission.moderatorNotes}
-                    </p>
-                  ) : null}
-                </SectionPanel>
-              ))
-            ) : (
-              <EmptyState
-                title="No submissions yet"
-                description="New submissions from this player will show up here."
-              />
-            )}
-          </aside>
-        ) : (
-          <aside className="space-y-3">
-            <SectionPanel className="p-4">
-              <h2 className="border-b border-slate-300 pb-3 font-black text-slate-950 dark:border-slate-700 dark:text-slate-50">
-                Public profile
-              </h2>
-              <p className="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                This page shows accepted public records only. Private
-                submissions are hidden unless you are the player or staff.
-              </p>
-              <Link
-                href="/submit"
-                className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
-              >
-                Submit a record
-              </Link>
-            </SectionPanel>
-          </aside>
-        )}
-      </section>
-    </div>
-  );
-}
 
-function FieldCopy({ value }: { value: string }) {
-  return (
-    <label className="grid gap-1 text-xs font-bold text-slate-600 dark:text-slate-400">
-      Share profile
-      <input
-        readOnly
-        value={value}
-        className="min-w-0 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300"
-      />
-    </label>
+                    <span className="font-black text-cyan-700 tabular-nums sm:text-right dark:text-cyan-400">
+                      {record.progress}%
+                    </span>
+
+                    <span className="text-right text-xs font-bold text-slate-400">
+                      0 pts
+                    </span>
+
+                    {record.videoUrl ? (
+                      <a
+                        href={record.videoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex min-h-8 items-center justify-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 sm:justify-self-end"
+                      >
+                        <Video className="h-3.5 w-3.5 text-slate-500" />
+                        Proof
+                      </a>
+                    ) : (
+                      <span />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {/* VERIFIED DEMONS */}
+          {player.verifiedLevels.length > 0 ? (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-2 dark:border-slate-800">
+                <h2 className="flex items-center gap-2 text-xl font-black text-slate-950 dark:text-slate-50">
+                  <Flame className="h-5 w-5 text-amber-500" />
+                  Officially Verified Demons ({player.verifiedLevels.length})
+                </h2>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {player.verifiedLevels.map((lvl) => (
+                  <SectionPanel key={lvl.id} className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-900 dark:bg-amber-950/60 dark:text-amber-300">
+                          {lvl.status === "RANKED" ? `Rank #${lvl.rank}` : "Upcoming / Pending"}
+                        </span>
+                        <h3 className="mt-1 text-lg font-black text-slate-950 dark:text-slate-50">
+                          <Link href={`/levels/${lvl.slug}`} className="hover:underline">
+                            {lvl.name}
+                          </Link>
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Original: {lvl.originalName}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-2 text-xs dark:border-slate-800">
+                      <Link
+                        href={`/levels/${lvl.slug}`}
+                        className="font-bold text-cyan-700 underline hover:text-cyan-800 dark:text-cyan-400"
+                      >
+                        View Level &rarr;
+                      </Link>
+                      {lvl.verificationVideoUrl ? (
+                        <a
+                          href={lvl.verificationVideoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-bold text-amber-700 underline hover:text-amber-800 dark:text-amber-400"
+                        >
+                          Verification Video &rarr;
+                        </a>
+                      ) : null}
+                    </div>
+                  </SectionPanel>
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </main>
+
+        {/* ASIDE / SIDEBAR */}
+        <aside className="space-y-4">
+          <SectionPanel className="p-5">
+            <h3 className="flex items-center gap-2 border-b border-slate-200 pb-3 text-sm font-black text-slate-950 dark:border-slate-800 dark:text-slate-50">
+              <Trophy className="h-4 w-4 text-amber-500" />
+              Player Summary
+            </h3>
+            <div className="mt-3 space-y-2 text-xs">
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500">Total Points:</span>
+                <span className="font-black text-cyan-800 dark:text-cyan-300">{totalPoints} pts</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500">Global Rank:</span>
+                <span className="font-black text-slate-900 dark:text-slate-100">
+                  {globalRank ? `#${globalRank}` : "Unranked"}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-slate-500">100% Victories:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{fullCompletions.length}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-slate-500">Verified Demons:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">{player.verifiedLevels.length}</span>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <Link
+                href="/players"
+                className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-slate-300 bg-white text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+              >
+                &larr; View Global Leaderboard
+              </Link>
+            </div>
+          </SectionPanel>
+
+          {/* Submissions (Only visible to player or staff) */}
+          {canViewPrivate ? (
+            <SectionPanel className="p-5">
+              <h3 className="flex items-center gap-2 border-b border-slate-200 pb-3 text-sm font-black text-slate-950 dark:border-slate-800 dark:text-slate-50">
+                <Shield className="h-4 w-4 text-cyan-600" />
+                Submissions ({player.submissions.length})
+              </h3>
+              <p className="mt-2 text-xs text-slate-500">
+                Private submissions history (visible to you & staff only).
+              </p>
+
+              <div className="mt-3 space-y-2">
+                {player.submissions.length > 0 ? (
+                  player.submissions.slice(0, 5).map((sub) => (
+                    <div
+                      key={sub.id}
+                      className="rounded border border-slate-200 bg-slate-50 p-2.5 text-xs dark:border-slate-800 dark:bg-slate-950/60"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-black text-slate-900 dark:text-slate-100">
+                          {sub.level.name}
+                        </span>
+                        <StatusBadge value={sub.status} />
+                      </div>
+                      <p className="mt-1 text-[10px] text-slate-500">
+                        {formatDateTime(sub.submittedAt)} • {sub.progress ?? 100}%
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-slate-400">No submissions yet.</p>
+                )}
+              </div>
+            </SectionPanel>
+          ) : null}
+        </aside>
+      </div>
+    </div>
   );
 }
