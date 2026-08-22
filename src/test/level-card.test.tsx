@@ -75,7 +75,7 @@ describe("LevelCard", () => {
     }
   });
 
-  it("renders hovering PENDING status badge and glowing amber theme when run is in review", () => {
+  it("renders single PENDING status badge and glowing amber theme when run is in review", () => {
     const markup = renderToStaticMarkup(
       <LevelCard
         level={level}
@@ -89,13 +89,12 @@ describe("LevelCard", () => {
       />,
     );
 
-    expect(markup).toContain("PENDING");
     expect(markup).toContain("Your Run: 100% Pending Review");
     expect(markup).toContain("border-amber-400");
     expect(markup).toContain("bg-amber-400");
   });
 
-  it("renders hovering ACCEPTED status badge and glowing emerald theme with dismiss button", () => {
+  it("renders single ACCEPTED status badge and glowing emerald theme with dismiss button", () => {
     const markup = renderToStaticMarkup(
       <LevelCard
         level={level}
@@ -109,13 +108,12 @@ describe("LevelCard", () => {
       />,
     );
 
-    expect(markup).toContain("ACCEPTED");
     expect(markup).toContain("Your Run: 100% Accepted");
     expect(markup).toContain("border-emerald-500");
     expect(markup).toContain("Remove accepted banner from this level");
   });
 
-  it("renders hovering REJECTED status badge and glowing rose theme with dismiss button", () => {
+  it("renders single REJECTED status badge and glowing rose theme with dismiss button", () => {
     const markup = renderToStaticMarkup(
       <LevelCard
         level={level}
@@ -129,7 +127,6 @@ describe("LevelCard", () => {
       />,
     );
 
-    expect(markup).toContain("REJECTED");
     expect(markup).toContain("Your Run: Rejected");
     expect(markup).toContain("border-rose-500");
     expect(markup).toContain("Remove rejected banner from this level");

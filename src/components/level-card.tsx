@@ -104,24 +104,7 @@ export function LevelCard({
             />
             <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.05),rgba(15,23,42,0.08))]" />
 
-            {/* Thumbnail Status Chips */}
-            {isPending ? (
-              <span className="absolute left-1.5 top-1.5 z-10 flex items-center gap-1 rounded border border-amber-400 bg-black/85 px-1.5 py-0.5 text-[10px] font-black tracking-wide text-amber-300 shadow backdrop-blur-sm">
-                ⏳ {activeSubmission.progress}% PENDING
-              </span>
-            ) : isAccepted ? (
-              <span className="absolute left-1.5 top-1.5 z-10 flex items-center gap-1 rounded border border-emerald-400 bg-black/85 px-1.5 py-0.5 text-[10px] font-black tracking-wide text-emerald-300 shadow backdrop-blur-sm">
-                ✅ {activeSubmission.progress}% ACCEPTED
-              </span>
-            ) : isRejected ? (
-              <span className="absolute left-1.5 top-1.5 z-10 flex items-center gap-1 rounded border border-rose-400 bg-black/85 px-1.5 py-0.5 text-[10px] font-black tracking-wide text-rose-300 shadow backdrop-blur-sm">
-                ❌ REJECTED
-              </span>
-            ) : isNeedsChanges ? (
-              <span className="absolute left-1.5 top-1.5 z-10 flex items-center gap-1 rounded border border-amber-400 bg-black/85 px-1.5 py-0.5 text-[10px] font-black tracking-wide text-amber-300 shadow backdrop-blur-sm">
-                ⚠️ CHANGES
-              </span>
-            ) : isDemo ? (
+            {isDemo ? (
               <span className="absolute left-1.5 top-1.5 rounded border border-amber-300 bg-white/92 px-1.5 py-0.5 text-[10px] font-black text-amber-800 dark:border-amber-400/60 dark:bg-slate-950/85 dark:text-amber-200">
                 DEMO
               </span>
