@@ -163,6 +163,45 @@ export default async function AdminPage() {
         </div>
       </section>
 
+      {pendingRecords + pendingSuggestions > 0 ? (
+        <SectionPanel className="border-amber-400 bg-amber-50/80 p-4 dark:border-amber-500/50 dark:bg-amber-950/40">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                <ClipboardCheck className="h-6 w-6" />
+              </span>
+              <div>
+                <h2 className="font-black text-amber-950 dark:text-amber-100">
+                  Pending Staff Reviews ({pendingRecords + pendingSuggestions})
+                </h2>
+                <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
+                  {pendingRecords} record submission(s) and {pendingSuggestions} level suggestion(s) are awaiting review.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {pendingRecords > 0 ? (
+                <Link
+                  href="/moderation"
+                  className="inline-flex min-h-8 items-center gap-1.5 rounded-md bg-cyan-700 px-3 text-xs font-black text-white hover:bg-cyan-800 dark:bg-cyan-600 dark:hover:bg-cyan-500"
+                >
+                  Review Records ({pendingRecords}) &rarr;
+                </Link>
+              ) : null}
+              {pendingSuggestions > 0 ? (
+                <Link
+                  href="/level-suggestions"
+                  className="inline-flex min-h-8 items-center gap-1.5 rounded-md bg-amber-600 px-3 text-xs font-black text-white hover:bg-amber-700 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400"
+                >
+                  Review Suggestions ({pendingSuggestions}) &rarr;
+                </Link>
+              ) : null}
+            </div>
+          </div>
+        </SectionPanel>
+      ) : null}
+
       {!isDemoMode && hiddenDemoLevels + hiddenDemoUsers > 0 ? (
         <SectionPanel className="border-amber-300 bg-amber-50 p-4 dark:border-amber-500/50 dark:bg-amber-950/30">
           <div className="flex items-start gap-3">

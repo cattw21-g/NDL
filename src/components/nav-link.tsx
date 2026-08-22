@@ -33,11 +33,13 @@ export function NavLink({
   label,
   icon,
   tone = "default",
+  badgeCount,
 }: {
   href: string;
   label: string;
   icon: keyof typeof icons;
   tone?: "default" | "cyan" | "amber";
+  badgeCount?: number;
 }) {
   const pathname = usePathname();
   const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -63,7 +65,19 @@ export function NavLink({
       )}
     >
       <Icon className="h-4 w-4" />
-      {label}
+      <span>{label}</span>
+      {badgeCount && badgeCount > 0 ? (
+        <span
+          className={cx(
+            "rounded-full px-1.5 py-0.2 text-[10px] font-black tabular-nums shadow-sm",
+            active
+              ? "bg-white text-cyan-950 dark:bg-slate-950 dark:text-cyan-300"
+              : "bg-red-500 text-white dark:bg-red-500",
+          )}
+        >
+          {badgeCount > 99 ? "99+" : badgeCount}
+        </span>
+      ) : null}
     </Link>
   );
 }

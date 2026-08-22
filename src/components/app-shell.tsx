@@ -6,8 +6,13 @@ import { CommandPalette, CommandPaletteTrigger } from "@/components/command-pale
 import { NavLink } from "@/components/nav-link";
 import { SiteFooter } from "@/components/site-footer";
 import { SplashScreen } from "@/components/splash-screen";
+import {
+  StaffNotificationCenter,
+  type StaffNotificationData,
+} from "@/components/staff-notification-center";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import { demoModeEnabled } from "@/lib/demo-visibility";
 import { isAdminRole, isModeratorRole } from "@/lib/permissions";
 
@@ -24,6 +29,92 @@ const navItems = [
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   const isDemoMode = demoModeEnabled();
+
+  let notificationData: StaffNotificationData | undefined;
+  let pendingTotalCount = 0;
+
+  if (user && isModeratorRole(user.role)) {
+    const [
+      pendingRecordsCount,
+      pendingSuggestionsCount,
+      recentPendingRecords,
+      recentPendingSuggestions,
+    ] = await Promise.all([
+      prisma.recordSubmission.count({
+        where: {
+          status: "PENDING",
+        },
+      }),
+      prisma.levelSuggestion.count({
+        where: {
+          status: "PENDING",
+        },
+      }),
+      prisma.recordSubmission.findMany({
+        where: {
+          status: "PENDING",
+        },
+        take: 4,
+        orderBy: {
+          submittedAt: "desc",
+        },
+        include: {
+          player: {
+            select: {
+              playerName: true,
+              displayName: true,
+            },
+          },
+          level: {
+            select: {
+              name: true,
+              slug: true,
+            },
+          },
+        },
+      }),
+      prisma.levelSuggestion.findMany({
+        where: {
+          status: "PENDING",
+        },
+        take: 4,
+        orderBy: {
+          submittedAt: "desc",
+        },
+        include: {
+          submitter: {
+            select: {
+              playerName: true,
+              displayName: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    pendingTotalCount = pendingRecordsCount + pendingSuggestionsCount;
+    notificationData = {
+      pendingRecordsCount,
+      pendingSuggestionsCount,
+      totalPendingCount: pendingTotalCount,
+      recentPendingRecords: recentPendingRecords.map((rec) => ({
+        id: rec.id,
+        playerName: rec.player.displayName || rec.player.playerName,
+        levelName: rec.level.name,
+        levelSlug: rec.level.slug,
+        progress: rec.progress,
+        submittedAt: rec.submittedAt.toISOString(),
+      })),
+      recentPendingSuggestions: recentPendingSuggestions.map((sug) => ({
+        id: sug.id,
+        name: sug.name,
+        originalName: sug.originalName,
+        submitterName: sug.submitter.displayName || sug.submitter.playerName,
+        submittedAt: sug.submittedAt.toISOString(),
+      })),
+      timestamp: new Date().toISOString(),
+    };
+  }
 
   return (
     <div
@@ -72,6 +163,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                 label="Review"
                 icon="review"
                 tone="cyan"
+                badgeCount={pendingTotalCount}
               />
             ) : null}
             {user && isAdminRole(user.role) ? (
@@ -85,6 +177,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="flex min-w-fit items-center gap-2 sm:ml-auto">
+            {user && isModeratorRole(user.role) ? (
+              <StaffNotificationCenter initialData={notificationData} />
+            ) : null}
             <CommandPaletteTrigger />
             {user ? (
               <>
