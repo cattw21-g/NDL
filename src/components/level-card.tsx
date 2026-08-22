@@ -51,13 +51,13 @@ export function LevelCard({
       className={cx(
         "group relative overflow-hidden rounded-md border transition duration-200 hover:-translate-y-0.5",
         isPending
-          ? "border-amber-400 bg-[linear-gradient(135deg,rgba(254,243,199,0.2)_0%,rgba(255,255,255,1)_100%)] shadow-[0_0_18px_rgba(245,158,11,0.24)] ring-2 ring-amber-400/40 dark:border-amber-400 dark:bg-[linear-gradient(135deg,rgba(120,53,15,0.22)_0%,rgba(15,23,42,1)_100%)] dark:shadow-[0_0_22px_rgba(245,158,11,0.32)]"
+          ? "border-amber-400 bg-[linear-gradient(135deg,rgba(254,243,199,0.25)_0%,rgba(255,255,255,1)_100%)] shadow-[0_0_18px_rgba(245,158,11,0.25)] ring-2 ring-amber-400/50 dark:border-amber-400 dark:bg-[linear-gradient(135deg,rgba(120,53,15,0.25)_0%,rgba(15,23,42,1)_100%)] dark:shadow-[0_0_22px_rgba(245,158,11,0.32)]"
           : isAccepted
-            ? "border-emerald-500 bg-[linear-gradient(135deg,rgba(209,250,229,0.2)_0%,rgba(255,255,255,1)_100%)] shadow-[0_0_18px_rgba(16,185,129,0.24)] ring-2 ring-emerald-400/40 dark:border-emerald-400 dark:bg-[linear-gradient(135deg,rgba(6,78,59,0.22)_0%,rgba(15,23,42,1)_100%)] dark:shadow-[0_0_22px_rgba(16,185,129,0.32)]"
+            ? "border-emerald-500 bg-[linear-gradient(135deg,rgba(209,250,229,0.25)_0%,rgba(255,255,255,1)_100%)] shadow-[0_0_18px_rgba(16,185,129,0.25)] ring-2 ring-emerald-400/50 dark:border-emerald-400 dark:bg-[linear-gradient(135deg,rgba(6,78,59,0.25)_0%,rgba(15,23,42,1)_100%)] dark:shadow-[0_0_22px_rgba(16,185,129,0.32)]"
             : isRejected
-              ? "border-rose-500 bg-[linear-gradient(135deg,rgba(255,228,230,0.2)_0%,rgba(255,255,255,1)_100%)] shadow-[0_0_18px_rgba(244,63,94,0.24)] ring-2 ring-rose-400/40 dark:border-rose-400 dark:bg-[linear-gradient(135deg,rgba(136,19,55,0.22)_0%,rgba(15,23,42,1)_100%)] dark:shadow-[0_0_22px_rgba(244,63,94,0.32)]"
+              ? "border-rose-500 bg-[linear-gradient(135deg,rgba(255,228,230,0.25)_0%,rgba(255,255,255,1)_100%)] shadow-[0_0_18px_rgba(244,63,94,0.25)] ring-2 ring-rose-400/50 dark:border-rose-400 dark:bg-[linear-gradient(135deg,rgba(136,19,55,0.25)_0%,rgba(15,23,42,1)_100%)] dark:shadow-[0_0_22px_rgba(244,63,94,0.32)]"
               : isNeedsChanges
-                ? "border-amber-500 bg-amber-50/20 shadow-[0_0_18px_rgba(245,158,11,0.24)] ring-2 ring-amber-400/40 dark:border-amber-400 dark:bg-amber-950/20"
+                ? "border-amber-500 bg-amber-50/20 shadow-[0_0_18px_rgba(245,158,11,0.25)] ring-2 ring-amber-400/50 dark:border-amber-400 dark:bg-amber-950/20"
                 : isTopThree
                   ? "border-cyan-400 bg-white shadow-[0_7px_18px_rgba(15,23,42,0.07)] hover:border-cyan-500 hover:shadow-[0_12px_24px_rgba(15,23,42,0.12)] dark:border-cyan-500/70 dark:bg-slate-900 dark:shadow-[0_12px_24px_rgba(0,0,0,0.28)] dark:hover:border-cyan-400"
                   : "border-slate-300 bg-white shadow-[0_7px_18px_rgba(15,23,42,0.07)] hover:border-cyan-500 hover:shadow-[0_12px_24px_rgba(15,23,42,0.12)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_12px_24px_rgba(0,0,0,0.28)] dark:hover:border-cyan-400",
@@ -85,78 +85,13 @@ export function LevelCard({
         )}
       />
 
-      {/* Floating Hovering Status Badge */}
-      {activeSubmission ? (
-        <div className="absolute right-3 top-2.5 z-20 pointer-events-auto">
-          {isPending ? (
-            <div className="flex items-center gap-1.5 rounded-full border border-amber-400 bg-amber-500/20 px-2.5 py-0.5 text-xs font-black text-amber-950 shadow-md backdrop-blur-md dark:border-amber-400 dark:bg-amber-950/90 dark:text-amber-200">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500"></span>
-              </span>
-              <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-              <span>PENDING ({activeSubmission.progress}%)</span>
-            </div>
-          ) : isAccepted ? (
-            <div className="flex items-center gap-1.5 rounded-full border border-emerald-500 bg-emerald-500/20 px-2.5 py-0.5 text-xs font-black text-emerald-950 shadow-md backdrop-blur-md dark:border-emerald-400 dark:bg-emerald-950/90 dark:text-emerald-200">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>ACCEPTED ({activeSubmission.progress}%)</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onDismiss?.(activeSubmission.id);
-                }}
-                title="Remove accepted banner from this level"
-                className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600/20 text-emerald-900 transition hover:bg-emerald-600/40 dark:bg-emerald-400/20 dark:text-emerald-200 dark:hover:bg-emerald-400/40"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ) : isRejected ? (
-            <div className="flex items-center gap-1.5 rounded-full border border-rose-500 bg-rose-500/20 px-2.5 py-0.5 text-xs font-black text-rose-950 shadow-md backdrop-blur-md dark:border-rose-400 dark:bg-rose-950/90 dark:text-rose-200">
-              <XCircle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-              <span>REJECTED</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onDismiss?.(activeSubmission.id);
-                }}
-                title="Remove rejected banner from this level"
-                className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600/20 text-rose-900 transition hover:bg-rose-600/40 dark:bg-rose-400/20 dark:text-rose-200 dark:hover:bg-rose-400/40"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ) : isNeedsChanges ? (
-            <div className="flex items-center gap-1.5 rounded-full border border-amber-500 bg-amber-500/20 px-2.5 py-0.5 text-xs font-black text-amber-950 shadow-md backdrop-blur-md dark:border-amber-400 dark:bg-amber-950/90 dark:text-amber-200">
-              <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-              <span>NEEDS CHANGES</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onDismiss?.(activeSubmission.id);
-                }}
-                title="Dismiss banner"
-                className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-600/20 text-amber-900 transition hover:bg-amber-600/40 dark:bg-amber-400/20 dark:text-amber-200 dark:hover:bg-amber-400/40"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
       <div className="grid grid-cols-[4.75rem_minmax(0,1fr)] gap-0 md:grid-cols-[4.75rem_15rem_minmax(0,1fr)_10rem] md:items-center">
+        {/* Col 1: Rank Badge */}
         <div className="flex items-center justify-center bg-slate-50 p-2 dark:bg-slate-950/60 md:self-stretch">
           <RankBadge rank={level.rank} />
         </div>
 
+        {/* Col 2: Thumbnail with status ribbon */}
         <div className="min-w-0 p-2 md:w-60">
           <Link
             href={`/levels/${level.slug}`}
@@ -168,7 +103,25 @@ export function LevelCard({
               className="block h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
             />
             <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.05),rgba(15,23,42,0.08))]" />
-            {isDemo ? (
+
+            {/* Thumbnail Status Chips */}
+            {isPending ? (
+              <span className="absolute left-1.5 top-1.5 z-10 flex items-center gap-1 rounded border border-amber-400 bg-black/85 px-1.5 py-0.5 text-[10px] font-black tracking-wide text-amber-300 shadow backdrop-blur-sm">
+                ⏳ {activeSubmission.progress}% PENDING
+              </span>
+            ) : isAccepted ? (
+              <span className="absolute left-1.5 top-1.5 z-10 flex items-center gap-1 rounded border border-emerald-400 bg-black/85 px-1.5 py-0.5 text-[10px] font-black tracking-wide text-emerald-300 shadow backdrop-blur-sm">
+                ✅ {activeSubmission.progress}% ACCEPTED
+              </span>
+            ) : isRejected ? (
+              <span className="absolute left-1.5 top-1.5 z-10 flex items-center gap-1 rounded border border-rose-400 bg-black/85 px-1.5 py-0.5 text-[10px] font-black tracking-wide text-rose-300 shadow backdrop-blur-sm">
+                ❌ REJECTED
+              </span>
+            ) : isNeedsChanges ? (
+              <span className="absolute left-1.5 top-1.5 z-10 flex items-center gap-1 rounded border border-amber-400 bg-black/85 px-1.5 py-0.5 text-[10px] font-black tracking-wide text-amber-300 shadow backdrop-blur-sm">
+                ⚠️ CHANGES
+              </span>
+            ) : isDemo ? (
               <span className="absolute left-1.5 top-1.5 rounded border border-amber-300 bg-white/92 px-1.5 py-0.5 text-[10px] font-black text-amber-800 dark:border-amber-400/60 dark:bg-slate-950/85 dark:text-amber-200">
                 DEMO
               </span>
@@ -176,18 +129,85 @@ export function LevelCard({
           </Link>
         </div>
 
+        {/* Col 3: Metadata and Title */}
         <div className="col-span-2 min-w-0 border-t border-slate-300 p-3 dark:border-slate-700 md:col-auto md:border-t-0 md:px-3 md:py-2.5">
           <div className="min-w-0">
-            {level.status !== "RANKED" ? (
+            {/* Status Strip above title */}
+            {activeSubmission ? (
+              <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                {isPending ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400 bg-amber-500/15 px-2.5 py-0.5 text-xs font-black text-amber-900 shadow-sm dark:border-amber-400/80 dark:bg-amber-950/80 dark:text-amber-200">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500"></span>
+                    </span>
+                    <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>Your Run: {activeSubmission.progress}% Pending Review</span>
+                  </span>
+                ) : isAccepted ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500 bg-emerald-500/15 px-2.5 py-0.5 text-xs font-black text-emerald-900 shadow-sm dark:border-emerald-400/80 dark:bg-emerald-950/80 dark:text-emerald-200">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>Your Run: {activeSubmission.progress}% Accepted</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onDismiss?.(activeSubmission.id);
+                      }}
+                      title="Remove accepted banner from this level"
+                      className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600/20 text-emerald-900 transition hover:bg-emerald-600/40 dark:bg-emerald-400/20 dark:text-emerald-200 dark:hover:bg-emerald-400/40"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ) : isRejected ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-500 bg-rose-500/15 px-2.5 py-0.5 text-xs font-black text-rose-900 shadow-sm dark:border-rose-400/80 dark:bg-rose-950/80 dark:text-rose-200">
+                    <XCircle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                    <span>Your Run: Rejected</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onDismiss?.(activeSubmission.id);
+                      }}
+                      title="Remove rejected banner from this level"
+                      className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600/20 text-rose-900 transition hover:bg-rose-600/40 dark:bg-rose-400/20 dark:text-rose-200 dark:hover:bg-rose-400/40"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ) : isNeedsChanges ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500 bg-amber-500/15 px-2.5 py-0.5 text-xs font-black text-amber-900 shadow-sm dark:border-amber-400/80 dark:bg-amber-950/80 dark:text-amber-200">
+                    <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>Your Run: Needs Changes</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onDismiss?.(activeSubmission.id);
+                      }}
+                      title="Dismiss banner"
+                      className="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-600/20 text-amber-900 transition hover:bg-amber-600/40 dark:bg-amber-400/20 dark:text-amber-200 dark:hover:bg-amber-400/40"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ) : null}
+              </div>
+            ) : level.status !== "RANKED" ? (
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge value={level.status} />
               </div>
             ) : null}
+
             <Link
               href={`/levels/${level.slug}`}
               className={cx(
                 "block truncate text-lg font-black leading-tight text-slate-950 transition hover:text-cyan-800 dark:text-slate-50 dark:hover:text-cyan-200",
-                level.status !== "RANKED" && "mt-1.5",
+                level.status !== "RANKED" && !activeSubmission && "mt-1.5",
               )}
             >
               {level.name}
@@ -201,6 +221,7 @@ export function LevelCard({
           </div>
         </div>
 
+        {/* Col 4: Points, Records, Details Button - COMPLETELY UNOBSTRUCTED */}
         <div className="col-span-2 grid grid-cols-3 gap-2 border-t border-slate-300 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950/60 md:col-auto md:grid-cols-1 md:border-l md:border-t-0 md:self-stretch">
           <PointsPill points={level.points} />
           <span className="inline-flex min-h-8 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-800 tabular-nums dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">

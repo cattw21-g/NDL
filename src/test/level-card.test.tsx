@@ -89,7 +89,8 @@ describe("LevelCard", () => {
       />,
     );
 
-    expect(markup).toContain("PENDING (100%)");
+    expect(markup).toContain("PENDING");
+    expect(markup).toContain("Your Run: 100% Pending Review");
     expect(markup).toContain("border-amber-400");
     expect(markup).toContain("bg-amber-400");
   });
@@ -108,7 +109,8 @@ describe("LevelCard", () => {
       />,
     );
 
-    expect(markup).toContain("ACCEPTED (100%)");
+    expect(markup).toContain("ACCEPTED");
+    expect(markup).toContain("Your Run: 100% Accepted");
     expect(markup).toContain("border-emerald-500");
     expect(markup).toContain("Remove accepted banner from this level");
   });
@@ -128,6 +130,7 @@ describe("LevelCard", () => {
     );
 
     expect(markup).toContain("REJECTED");
+    expect(markup).toContain("Your Run: Rejected");
     expect(markup).toContain("border-rose-500");
     expect(markup).toContain("Remove rejected banner from this level");
   });
@@ -147,7 +150,7 @@ describe("LevelCard", () => {
       />,
     );
 
-    expect(markup).not.toContain("ACCEPTED (100%)");
+    expect(markup).not.toContain("Your Run: 100% Accepted");
     expect(markup).not.toContain("ring-emerald-400");
     expect(markup).not.toContain("Remove accepted banner from this level");
   });
