@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import { LevelCard, type LevelCardLevel } from "@/components/level-card";
 import { cx, EmptyState, inputClass, SectionPanel } from "@/components/ui";
+import { useUserSubmissions } from "@/lib/use-user-submissions";
 
 type SortMode = "rank" | "points" | "records" | "name";
 type TabMode = "RANKED" | "LEGACY" | "ALL";
@@ -29,6 +30,8 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
   const [tab, setTab] = useState<TabMode>("RANKED");
   const [tier, setTier] = useState<TierFilter>("ALL");
   const [sort, setSort] = useState<SortMode>("rank");
+
+  const { submissionsBySlug, dismissedIds, dismissBadge } = useUserSubmissions();
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -154,7 +157,20 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
       {/* Level Cards List */}
       <div className="space-y-2 bg-white p-2.5 dark:bg-slate-950/30 sm:p-3">
         {filtered.length > 0 ? (
-          filtered.map((level) => <LevelCard key={level.slug} level={level} />)
+          filtered.map((level) => {
+            const userSub = submissionsBySlug[level.slug];
+            const isDismissed = userSub ? dismissedIds.has(userSub.id) : false;
+
+            return (
+              <LevelCard
+                key={level.slug}
+                level={level}
+                userSubmission={userSub}
+                isDismissed={isDismissed}
+                onDismiss={dismissBadge}
+              />
+            );
+          })
         ) : (
           <EmptyState
             title="No levels match"

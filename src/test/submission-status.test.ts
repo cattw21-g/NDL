@@ -27,15 +27,16 @@ describe("submission review transitions and user level status banner", () => {
 
   it("renders rich submission status on the level page via UserLevelSubmissionBanner", () => {
     const bannerSource = source("components/user-level-submission-banner.tsx");
+    const clientBannerSource = source("components/user-submission-banner-client.tsx");
     const levelPageSource = source("app/levels/[slug]/page.tsx");
 
     expect(bannerSource).toContain("UserLevelSubmissionBanner");
-    expect(bannerSource).toContain("Your Submission Status");
-    expect(bannerSource).toContain("latestSubmission.status === \"PENDING\"");
-    expect(bannerSource).toContain("latestSubmission.status === \"ACCEPTED\"");
-    expect(bannerSource).toContain("latestSubmission.status === \"NEEDS_CHANGES\"");
-    expect(bannerSource).toContain("latestSubmission.status === \"REJECTED\"");
-    expect(bannerSource).toContain("My Submissions Hub");
+    expect(clientBannerSource).toContain("Your Submission Status");
+    expect(clientBannerSource).toContain("submission.status === \"PENDING\"");
+    expect(clientBannerSource).toContain("submission.status === \"ACCEPTED\"");
+    expect(clientBannerSource).toContain("submission.status === \"NEEDS_CHANGES\"");
+    expect(clientBannerSource).toContain("submission.status === \"REJECTED\"");
+    expect(clientBannerSource).toContain("My Submissions Hub");
 
     expect(levelPageSource).toContain("<UserLevelSubmissionBanner levelId={level.id} />");
   });

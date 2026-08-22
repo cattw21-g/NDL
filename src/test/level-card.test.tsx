@@ -74,4 +74,81 @@ describe("LevelCard", () => {
       );
     }
   });
+
+  it("renders hovering PENDING status badge and glowing amber theme when run is in review", () => {
+    const markup = renderToStaticMarkup(
+      <LevelCard
+        level={level}
+        userSubmission={{
+          id: "sub-1",
+          status: "PENDING",
+          progress: 100,
+          submittedAt: new Date().toISOString(),
+          moderatorNotes: null,
+        }}
+      />,
+    );
+
+    expect(markup).toContain("PENDING (100%)");
+    expect(markup).toContain("border-amber-400");
+    expect(markup).toContain("bg-amber-400");
+  });
+
+  it("renders hovering ACCEPTED status badge and glowing emerald theme with dismiss button", () => {
+    const markup = renderToStaticMarkup(
+      <LevelCard
+        level={level}
+        userSubmission={{
+          id: "sub-2",
+          status: "ACCEPTED",
+          progress: 100,
+          submittedAt: new Date().toISOString(),
+          moderatorNotes: null,
+        }}
+      />,
+    );
+
+    expect(markup).toContain("ACCEPTED (100%)");
+    expect(markup).toContain("border-emerald-500");
+    expect(markup).toContain("Remove accepted banner from this level");
+  });
+
+  it("renders hovering REJECTED status badge and glowing rose theme with dismiss button", () => {
+    const markup = renderToStaticMarkup(
+      <LevelCard
+        level={level}
+        userSubmission={{
+          id: "sub-3",
+          status: "REJECTED",
+          progress: 98,
+          submittedAt: new Date().toISOString(),
+          moderatorNotes: "Audio desynced",
+        }}
+      />,
+    );
+
+    expect(markup).toContain("REJECTED");
+    expect(markup).toContain("border-rose-500");
+    expect(markup).toContain("Remove rejected banner from this level");
+  });
+
+  it("does not render hovering badge if submission was dismissed by user", () => {
+    const markup = renderToStaticMarkup(
+      <LevelCard
+        level={level}
+        userSubmission={{
+          id: "sub-4",
+          status: "ACCEPTED",
+          progress: 100,
+          submittedAt: new Date().toISOString(),
+          moderatorNotes: null,
+        }}
+        isDismissed={true}
+      />,
+    );
+
+    expect(markup).not.toContain("ACCEPTED (100%)");
+    expect(markup).not.toContain("ring-emerald-400");
+    expect(markup).not.toContain("Remove accepted banner from this level");
+  });
 });
