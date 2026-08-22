@@ -108,6 +108,11 @@ export async function submitRecordAction(
     });
   }
 
+  revalidatePath(`/levels/${level.slug}`);
+  revalidatePath("/");
+  revalidatePath("/players");
+  revalidatePath(`/players/${user.playerName}`);
+  revalidatePath("/submissions");
   revalidatePath("/moderation");
   revalidatePath("/admin");
   redirect("/submissions?created=1");
