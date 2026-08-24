@@ -78,7 +78,7 @@ export function publicChangelogWhere(
       where,
       publicPostWhere,
       { isDemo: false },
-      { title: { not: { contains: "Demo" } } },
+      { title: { not: { startsWith: "[DEMO]" } } },
     ],
   } satisfies Prisma.ChangelogPostWhereInput;
 }

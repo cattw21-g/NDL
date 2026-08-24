@@ -13,7 +13,7 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { demoModeEnabled } from "@/lib/demo-visibility";
+import { demoModeEnabled, publicChangelogWhere } from "@/lib/demo-visibility";
 import { isAdminRole, isModeratorRole } from "@/lib/permissions";
 
 const navItems = [
@@ -30,16 +30,15 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   const isDemoMode = demoModeEnabled();
 
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const fortyEightHoursAgo = new Date();
+  fortyEightHoursAgo.setHours(fortyEightHoursAgo.getHours() - 48);
 
   const recentNewsCount = await prisma.changelogPost.count({
-    where: {
-      isPublished: true,
+    where: publicChangelogWhere({
       publishedAt: {
-        gte: sevenDaysAgo,
+        gte: fortyEightHoursAgo,
       },
-    },
+    }),
   });
 
   let notificationData: StaffNotificationData | undefined;
