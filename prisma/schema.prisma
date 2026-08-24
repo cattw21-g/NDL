@@ -383,3 +383,15 @@ model RulesDocument {
 
   @@index([isActive])
 }
+
+model DiscordLinkToken {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  discordUserId   String
+  discordUsername String?
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([code])
+  @@index([discordUserId])
+}

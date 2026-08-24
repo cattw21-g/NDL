@@ -10,7 +10,7 @@ export type LinkDiscordState = {
   message?: string;
 };
 
-export async function linkDiscordAccountAction(
+export async function linkDiscordWithCodeAction(
   _prevState: LinkDiscordState,
   formData: FormData,
 ): Promise<LinkDiscordState> {
@@ -19,39 +19,46 @@ export async function linkDiscordAccountAction(
     return { status: "error", message: "You must be logged in to link your Discord account." };
   }
 
-  const discordUserId = formData.get("discordUserId")?.toString().trim();
-  const discordUsername = formData.get("discordUsername")?.toString().trim() || null;
+  const codeInput = formData.get("verificationCode")?.toString().trim().toUpperCase();
 
-  if (!discordUserId) {
-    return { status: "error", message: "Please provide your Discord User ID." };
+  if (!codeInput) {
+    return { status: "error", message: "Please provide a verification code." };
   }
 
-  if (!/^\d{17,20}$/.test(discordUserId)) {
+  // 1. Find active token
+  const token = await prisma.discordLinkToken.findUnique({
+    where: { code: codeInput },
+  });
+
+  if (!token || token.expiresAt < new Date()) {
     return {
       status: "error",
-      message: "Invalid Discord User ID. A Discord ID is a 17-20 digit number (Right-click your profile in Discord ➔ Copy User ID).",
+      message: "❌ Invalid or expired verification code. Click '🔗 Link NDL Account' in Discord to generate a new code.",
     };
   }
 
-  // Check if ID is already linked to another account
-  const existing = await prisma.user.findUnique({
-    where: { discordUserId },
+  // 2. Clear any other account with this discordUserId
+  await prisma.user.updateMany({
+    where: { discordUserId: token.discordUserId },
+    data: { discordUserId: null, discordUsername: null, discordLinkedAt: null },
   });
 
-  if (existing && existing.id !== user.id) {
-    return { status: "error", message: "This Discord account is already linked to another NDL profile." };
-  }
-
+  // 3. Link account to current user
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      discordUserId,
-      discordUsername,
+      discordUserId: token.discordUserId,
+      discordUsername: token.discordUsername,
       discordLinkedAt: new Date(),
     },
   });
 
-  // Automatically sync Discord roles immediately
+  // 4. Delete used token
+  await prisma.discordLinkToken.delete({
+    where: { id: token.id },
+  }).catch(() => {});
+
+  // 5. Automatically sync Discord roles immediately
   const syncRes = await syncDiscordRolesForUser(user.id);
 
   revalidatePath(`/players/${user.playerName}`);
@@ -63,7 +70,7 @@ export async function linkDiscordAccountAction(
 
   return {
     status: "success",
-    message: `✅ Discord account successfully linked!${roleNote}`,
+    message: `🎉 Discord account successfully verified & linked!${roleNote}`,
   };
 }
 

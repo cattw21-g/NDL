@@ -527,6 +527,40 @@ async function handleMessageComponentInteraction(
     return messageResponse("Could not process role button.", true);
   }
 
+  if (customId === "link_ndl_account") {
+    const db = await getPrisma();
+    const discordUsername = interaction.member?.user?.username || interaction.user?.username || null;
+    
+    // Generate secure 6-character code
+    const randomDigits = Math.floor(1000 + Math.random() * 9000).toString();
+    const code = `NDL-${randomDigits}`;
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Delete any old expired tokens for this user
+    await db.discordLinkToken.deleteMany({
+      where: { discordUserId: userId },
+    }).catch(() => {});
+
+    // Save token
+    await db.discordLinkToken.create({
+      data: {
+        code,
+        discordUserId: userId,
+        discordUsername,
+        expiresAt,
+      },
+    });
+
+    return messageResponse(
+      `🔐 **Link Your Nerfed Demonlist Profile**\n\n1. Open your player profile on the website: **https://www.nerfeddemonlist.net/players**\n2. In the **Discord Integration** box, enter your 1-time verification code: **\`${code}\`**\n3. Click **"Verify & Link"**!\n\n*(This code expires in 15 minutes. Once linked, your Top 10/50/100, Victor, and Player roles will update automatically!)*`,
+      true,
+    );
+  }
+
+  if (customId === "sync_ndl_roles") {
+    return await syncCommand(interaction, env);
+  }
+
   let roleKeyword = "";
   let roleLabel = "";
   if (customId === "toggle_role_announcements") {

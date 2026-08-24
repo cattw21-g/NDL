@@ -210,9 +210,9 @@ export function createHowToSubmitEmbed(
 
 export function createRolesSelectorEmbed(): EmbedBuilder {
   return new EmbedBuilder()
-    .setTitle("🎭 Nerfed Demonlist — Notification & Ping Roles")
+    .setTitle("🎭 Nerfed Demonlist — Interactive Roles & Account Linking")
     .setDescription(
-      "Click the buttons below to toggle your notification roles! You can click them at any time to add or remove a role.",
+      "Click the buttons below to manage your notification roles and link your NDL website account for automated rank roles!",
     )
     .setColor(NDL_COLORS.CYAN)
     .addFields(
@@ -226,9 +226,15 @@ export function createRolesSelectorEmbed(): EmbedBuilder {
         value: "Get notified whenever new nerfed demons are placed, verified, or adjusted on the list.",
         inline: false,
       },
+      {
+        name: "🔗 Automated Player & Rank Roles",
+        value:
+          "Click **`🔗 Link NDL Account`** below to connect your Discord. You will automatically receive **`🥇 Top 10 Player`**, **`🥈 Top 50 Player`**, **`🥉 Top 100 Player`**, **`🏆 List Victor`**, **`⚡ List Player`**, and **`📜 Verified Member`** based on your live list achievements!",
+        inline: false,
+      },
     )
     .setFooter({
-      text: "Nerfed Demonlist • Interactive Role System",
+      text: "Nerfed Demonlist • Interactive Role & Account Linking System",
     });
 }
 
@@ -242,5 +248,13 @@ export function createRolesActionRow(): ActionRowBuilder<ButtonBuilder> {
       .setCustomId("toggle_role_updates")
       .setLabel("📰 List Updates Ping")
       .setStyle(ButtonStyle.Success),
+    new ButtonBuilder()
+      .setCustomId("link_ndl_account")
+      .setLabel("🔗 Link NDL Account")
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId("sync_ndl_roles")
+      .setLabel("🔄 Sync My Roles")
+      .setStyle(ButtonStyle.Secondary),
   );
 }
