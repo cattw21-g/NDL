@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 import { ChangelogContent } from "@/components/changelog-content";
@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { SectionPanel } from "@/components/ui";
 import { changelogCategoryLabel } from "@/lib/changelog";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { markNewsPostAsRead, useReadNewsSlugs } from "@/lib/news-read-store";
 
 export interface ChangelogPostData {
   id: string;
@@ -25,14 +26,36 @@ export interface ChangelogPostData {
 
 export function ChangelogPostCard({ post }: { post: ChangelogPostData }) {
   const [expanded, setExpanded] = useState(false);
+  const readSlugs = useReadNewsSlugs();
+
+  const isUnread = !readSlugs.includes(post.slug);
 
   const publishedDate = post.publishedAt ? new Date(post.publishedAt) : null;
   const updatedDate = new Date(post.updatedAt);
   const showUpdated = publishedDate && updatedDate > publishedDate;
 
+  function handleToggleExpand() {
+    if (!expanded && isUnread) {
+      markNewsPostAsRead(post.slug);
+    }
+    setExpanded(!expanded);
+  }
+
+  function handleMarkRead() {
+    if (isUnread) {
+      markNewsPostAsRead(post.slug);
+    }
+  }
+
   return (
-    <SectionPanel className="p-5 transition-all duration-200">
+    <SectionPanel className="relative p-5 transition-all duration-200">
       <div className="flex flex-wrap items-center gap-2">
+        {isUnread ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-red-500 px-2.5 py-0.5 text-xs font-black text-white shadow-sm">
+            <span className="h-2 w-2 rounded-full bg-white animate-ping" />
+            NEW NOTIFICATION
+          </span>
+        ) : null}
         <StatusBadge value={changelogCategoryLabel(post.category)} />
         {post.isPinned ? <StatusBadge value="Featured" /> : null}
       </div>
@@ -46,6 +69,7 @@ export function ChangelogPostCard({ post }: { post: ChangelogPostData }) {
       <h2 className="mt-2 text-2xl font-black text-slate-950 dark:text-slate-50">
         <Link
           href={`/changelog/${post.slug}`}
+          onClick={handleMarkRead}
           className="rounded-sm transition hover:text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:hover:text-cyan-200"
         >
           {post.title}
@@ -65,7 +89,7 @@ export function ChangelogPostCard({ post }: { post: ChangelogPostData }) {
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={() => setExpanded(!expanded)}
+          onClick={handleToggleExpand}
           className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-cyan-400/80 bg-cyan-50 px-3.5 text-xs font-black text-cyan-900 transition hover:bg-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-cyan-500/50 dark:bg-cyan-950/60 dark:text-cyan-100 dark:hover:bg-cyan-950"
         >
           {expanded ? (
@@ -77,12 +101,14 @@ export function ChangelogPostCard({ post }: { post: ChangelogPostData }) {
             <>
               <ChevronDown className="h-3.5 w-3.5" />
               Show full update
+              {isUnread ? <Sparkles className="h-3 w-3 text-cyan-700 dark:text-cyan-300 animate-bounce" /> : null}
             </>
           )}
         </button>
 
         <Link
           href={`/changelog/${post.slug}`}
+          onClick={handleMarkRead}
           className="inline-flex min-h-9 items-center rounded-md border border-slate-300 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950 dark:hover:text-cyan-100"
         >
           Read full update &rarr;

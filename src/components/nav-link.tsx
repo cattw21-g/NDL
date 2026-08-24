@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
 import {
   BookOpen,
   ClipboardCheck,
@@ -16,6 +15,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { cx } from "@/components/ui";
+import { useReadNewsSlugs } from "@/lib/news-read-store";
 
 const icons = {
   book: BookOpen,
@@ -29,66 +29,33 @@ const icons = {
   upload: Upload,
 };
 
-function subscribeNewsStorage(callback: () => void) {
-  window.addEventListener("storage", callback);
-  window.addEventListener("ndl_news_read", callback);
-  return () => {
-    window.removeEventListener("storage", callback);
-    window.removeEventListener("ndl_news_read", callback);
-  };
-}
-
-function getNewsSnapshot() {
-  try {
-    return localStorage.getItem("ndl_last_read_news_ts") || "";
-  } catch {
-    return "";
-  }
-}
-
-function getServerNewsSnapshot() {
-  return "";
-}
-
 export function NavLink({
   href,
   label,
   icon,
   tone = "default",
   badgeCount,
-  latestItemTimestamp,
+  recentNewsSlugs,
 }: {
   href: string;
   label: string;
   icon: keyof typeof icons;
   tone?: "default" | "cyan" | "amber";
   badgeCount?: number;
-  latestItemTimestamp?: string;
+  recentNewsSlugs?: string[];
 }) {
   const pathname = usePathname();
   const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
   const Icon = icons[icon];
 
-  const isNewsPage = pathname.startsWith("/changelog") || pathname.startsWith("/news");
-  const lastReadIso = useSyncExternalStore(subscribeNewsStorage, getNewsSnapshot, getServerNewsSnapshot);
-
-  useEffect(() => {
-    if ((href === "/changelog" || href === "/news") && isNewsPage) {
-      try {
-        localStorage.setItem("ndl_last_read_news_ts", new Date().toISOString());
-        window.dispatchEvent(new Event("ndl_news_read"));
-      } catch {
-        // Ignore localStorage errors
-      }
-    }
-  }, [href, isNewsPage]);
+  const readSlugs = useReadNewsSlugs();
 
   const isNewsLink = href === "/changelog" || href === "/news";
-  const isNewsRead = isNewsLink
-    ? isNewsPage || Boolean(lastReadIso && (!latestItemTimestamp || new Date(lastReadIso).getTime() >= new Date(latestItemTimestamp).getTime()))
-    : false;
+  const unreadNewsCount = recentNewsSlugs
+    ? recentNewsSlugs.filter((slug) => !readSlugs.includes(slug)).length
+    : (badgeCount || 0);
 
-  const effectiveBadgeCount = isNewsLink && isNewsRead ? 0 : (badgeCount || 0);
+  const effectiveBadgeCount = isNewsLink ? unreadNewsCount : (badgeCount || 0);
 
   const toneClass =
     tone === "cyan"

@@ -33,22 +33,16 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   const fortyEightHoursAgo = new Date();
   fortyEightHoursAgo.setHours(fortyEightHoursAgo.getHours() - 48);
 
-  const [recentNewsCount, latestChangelogPost] = await Promise.all([
-    prisma.changelogPost.count({
-      where: publicChangelogWhere({
-        publishedAt: {
-          gte: fortyEightHoursAgo,
-        },
-      }),
+  const recentNewsPosts = await prisma.changelogPost.findMany({
+    where: publicChangelogWhere({
+      publishedAt: {
+        gte: fortyEightHoursAgo,
+      },
     }),
-    prisma.changelogPost.findFirst({
-      where: publicChangelogWhere(),
-      orderBy: { publishedAt: "desc" },
-      select: { publishedAt: true },
-    }),
-  ]);
+    select: { slug: true },
+  });
 
-  const latestNewsIso = latestChangelogPost?.publishedAt?.toISOString();
+  const recentNewsSlugs = recentNewsPosts.map((p) => p.slug);
 
   let notificationData: StaffNotificationData | undefined;
   let pendingTotalCount = 0;
@@ -175,8 +169,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 label={item.label}
                 icon={item.icon}
-                badgeCount={item.href === "/changelog" ? recentNewsCount : undefined}
-                latestItemTimestamp={item.href === "/changelog" ? latestNewsIso : undefined}
+                recentNewsSlugs={item.href === "/changelog" ? recentNewsSlugs : undefined}
               />
             ))}
             {user && isModeratorRole(user.role) ? (

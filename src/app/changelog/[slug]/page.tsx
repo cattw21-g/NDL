@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ChangelogContent } from "@/components/changelog-content";
+import { MarkNewsReadOnMount } from "@/components/mark-news-read-on-mount";
 import { StatusBadge } from "@/components/status-badge";
 import { Eyebrow, SectionPanel } from "@/components/ui";
 import {
@@ -47,6 +48,7 @@ export default async function ChangelogPostPage({
 
   return (
     <article className="mx-auto w-full max-w-4xl space-y-5">
+      <MarkNewsReadOnMount slug={post.slug} />
       <Link
         href="/changelog"
         className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950 dark:hover:text-cyan-100"
