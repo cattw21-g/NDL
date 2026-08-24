@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: ndl-discord-bot
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npx prisma generate
+    startCommand: npx tsx bot/src/index.ts
+    envVars:
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: DISCORD_APPLICATION_ID
+        sync: false
+      - key: DISCORD_GUILD_ID
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://www.nerfeddemonlist.net

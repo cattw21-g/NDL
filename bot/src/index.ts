@@ -176,4 +176,34 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
   }
 });
 
+// Global error handlers to ensure 24/7 continuous uptime
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+});
+
+// Lightweight HTTP keep-alive server for 24/7 cloud hosting (Render / Railway / Koyeb / Fly.io)
+import http from "node:http";
+
+const port = process.env.PORT || process.env.BOT_PORT || 8080;
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(
+    JSON.stringify({
+      status: "online",
+      bot: client.user?.tag || "initializing",
+      ping: `${client.ws.ping}ms`,
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    }),
+  );
+});
+
+server.listen(port, () => {
+  console.log(`📡 Bot 24/7 health check server listening on port ${port}`);
+});
+
 await client.login(config.discordToken);
