@@ -9,6 +9,7 @@ import { prisma } from "@/lib/db";
 import { FALLBACK_THUMBNAIL_SRC } from "@/lib/media";
 import { updateLevelWithRank } from "@/lib/level-ranking";
 import { calculateLevelPoints } from "@/lib/points";
+import { notifyUpcomingDemonAdded } from "@/lib/discord-notify";
 import { slugify } from "@/lib/slug";
 
 export async function addUpcomingLevelAction(formData: FormData) {
@@ -87,6 +88,15 @@ export async function addUpcomingLevelAction(formData: FormData) {
     entityLabel: `${level.name} (Upcoming)`,
     note: verifier ? `Currently Verifying by ${verifier}` : "Waiting for Verifier",
   });
+
+  void notifyUpcomingDemonAdded({
+    levelName: level.name,
+    originalName: level.originalName,
+    verifier: level.verifier,
+    nerfCreator: level.nerfCreator,
+    showcaseUrl: level.showcaseUrl,
+    difficulty: level.difficulty,
+  }).catch(() => {});
 
   revalidatePath("/upcoming");
   revalidatePath("/admin/upcoming");

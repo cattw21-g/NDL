@@ -293,3 +293,149 @@ export async function notifyLevelRanked(data: {
 
   await sendDiscordEmbed("list-updates", embed);
 }
+
+/**
+ * Automatically broadcast when an upcoming demon is added/updated to #upcoming-demons
+ */
+export async function notifyUpcomingDemonAdded(data: {
+  levelName: string;
+  originalName: string;
+  verifier: string;
+  nerfCreator: string;
+  showcaseUrl?: string | null;
+  difficulty?: string;
+}) {
+  const upcomingUrl = absoluteSiteUrl("/upcoming");
+
+  const embed = {
+    title: `🔥 New Upcoming Demon — ${data.levelName}`,
+    description: `A new nerfed demon is currently in verification and coming soon to Nerfed Demonlist!`,
+    url: upcomingUrl,
+    color: 0xf97316, // Orange / Fire
+    fields: [
+      {
+        name: "Demon",
+        value: data.levelName,
+        inline: true,
+      },
+      {
+        name: "Original Level",
+        value: data.originalName,
+        inline: true,
+      },
+      {
+        name: "Verifier",
+        value: data.verifier || "Open / Unassigned",
+        inline: true,
+      },
+      {
+        name: "Nerf Creator",
+        value: data.nerfCreator,
+        inline: true,
+      },
+      ...(data.showcaseUrl
+        ? [
+            {
+              name: "Showcase Preview",
+              value: `[Watch Verification Showcase](${data.showcaseUrl})`,
+              inline: false,
+            },
+          ]
+        : []),
+      {
+        name: "Upcoming Hub",
+        value: `[View All Upcoming Demons](${upcomingUrl})`,
+        inline: false,
+      },
+    ],
+    footer: {
+      text: "Nerfed Demonlist Upcoming Hub",
+    },
+    timestamp: new Date().toISOString(),
+  };
+
+  await sendDiscordEmbed("upcoming-demons", embed);
+}
+
+/**
+ * Automatically broadcast news & changelog posts to #list-updates
+ */
+export async function notifyChangelogPosted(data: {
+  title: string;
+  slug: string;
+  category: string;
+  summary: string;
+}) {
+  const changelogUrl = absoluteSiteUrl(`/changelog/${data.slug}`);
+
+  const embed = {
+    title: `📢 New List Update — ${data.title}`,
+    description: data.summary,
+    url: changelogUrl,
+    color: 0x06b6d4, // Cyan
+    fields: [
+      {
+        name: "Category",
+        value: data.category,
+        inline: true,
+      },
+      {
+        name: "Read Full Article",
+        value: `[Open on Website](${changelogUrl})`,
+        inline: true,
+      },
+    ],
+    footer: {
+      text: "Nerfed Demonlist News & Changelog",
+    },
+    timestamp: new Date().toISOString(),
+  };
+
+  await sendDiscordEmbed("list-updates", embed);
+}
+
+/**
+ * Automatically broadcast when a level's rank or status updates
+ */
+export async function notifyLevelUpdated(data: {
+  levelName: string;
+  levelSlug: string;
+  oldRank: number | null;
+  newRank: number | null;
+  status: string;
+  points: number;
+}) {
+  const levelUrl = absoluteSiteUrl(`/levels/${data.levelSlug}`);
+  const oldRankStr = data.oldRank ? `#${data.oldRank}` : "Unranked";
+  const newRankStr = data.newRank ? `#${data.newRank}` : "Unranked";
+
+  const embed = {
+    title: `🔄 Level Update — ${data.levelName}`,
+    description: `**${data.levelName}** placement has been updated on the list: **${oldRankStr} ➡️ ${newRankStr}** (${data.points} pts).`,
+    url: levelUrl,
+    color: 0x38bdf8, // Sky Blue
+    fields: [
+      {
+        name: "Placement",
+        value: `${oldRankStr} ➡️ ${newRankStr}`,
+        inline: true,
+      },
+      {
+        name: "Points",
+        value: `${data.points} pts`,
+        inline: true,
+      },
+      {
+        name: "Status",
+        value: data.status,
+        inline: true,
+      },
+    ],
+    footer: {
+      text: "Nerfed Demonlist Placements & Leaderboards",
+    },
+    timestamp: new Date().toISOString(),
+  };
+
+  await sendDiscordEmbed("list-updates", embed);
+}

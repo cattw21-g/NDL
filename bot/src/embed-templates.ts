@@ -10,7 +10,26 @@ export const NDL_COLORS = {
   DARK_BG: 0x0f172a,
 };
 
-export function createWelcomeEmbed(siteUrl = "https://www.nerfeddemonlist.net"): EmbedBuilder {
+export type ChannelMentions = Record<string, string>;
+
+function formatChan(mentions: ChannelMentions | undefined, key: string, fallback: string): string {
+  if (mentions && mentions[key]) {
+    return `<#${mentions[key]}>`;
+  }
+  return `**#${fallback}**`;
+}
+
+export function createWelcomeEmbed(
+  siteUrl = "https://www.nerfeddemonlist.net",
+  mentions?: ChannelMentions,
+): EmbedBuilder {
+  const rulesChan = formatChan(mentions, "rules", "📜・rules");
+  const linksChan = formatChan(mentions, "official-links", "🔗・official-links");
+  const submitChan = formatChan(mentions, "how-to-submit", "📥・how-to-submit");
+  const chatChan = formatChan(mentions, "general-chat", "💬・general-chat");
+  const demonChan = formatChan(mentions, "demon-discussion", "🎮・demon-discussion");
+  const botChan = formatChan(mentions, "bot-commands", "🤖・bot-commands");
+
   return new EmbedBuilder()
     .setTitle("✨ Welcome to the Nerfed Demonlist Community! ✨")
     .setDescription(
@@ -27,12 +46,12 @@ export function createWelcomeEmbed(siteUrl = "https://www.nerfeddemonlist.net"):
       {
         name: "🧭 Server Navigation",
         value:
-          `• <#${"rules"}> — List & community guidelines\n` +
-          `• <#${"official-links"}> — Directory of verified NDL links\n` +
-          `• <#${"how-to-submit"}> — Step-by-step submission guide\n` +
-          `• <#${"general-chat"}> — Main community discussion\n` +
-          `• <#${"demon-discussion"}> — Nerfed demon completions & runs\n` +
-          `• <#${"bot-commands"}> — Slash commands (\`/top\`, \`/level\`, \`/player\`)`,
+          `• ${rulesChan} — Official list & community guidelines\n` +
+          `• ${linksChan} — Directory of verified NDL links\n` +
+          `• ${submitChan} — Step-by-step submission guide\n` +
+          `• ${chatChan} — Main community discussion\n` +
+          `• ${demonChan} — Nerfed demon completions & runs\n` +
+          `• ${botChan} — Slash commands (\`/top\`, \`/level\`, \`/player\`)`,
         inline: false,
       },
       {
@@ -100,17 +119,17 @@ export function createRulesEmbed(siteUrl = "https://www.nerfeddemonlist.net"): E
 export function createOfficialLinksEmbed(siteUrl = "https://www.nerfeddemonlist.net"): EmbedBuilder {
   return new EmbedBuilder()
     .setTitle("🔗 Nerfed Demonlist — Official Links & Directory")
-    .setDescription("Bookmark all the official links for the Nerfed Demonlist project:")
+    .setDescription("Bookmark all official links for the Nerfed Demonlist platform:")
     .setColor(NDL_COLORS.EMERALD)
     .addFields(
       {
-        name: "🌐 Main Website",
-        value: `[https://www.nerfeddemonlist.net](${siteUrl})`,
+        name: "🌐 Official Home",
+        value: `[nerfeddemonlist.net](${siteUrl})`,
         inline: true,
       },
       {
-        name: "🏆 Ranked Demons List",
-        value: `[Demons Leaderboard](${siteUrl}/)`,
+        name: "🏆 Ranked Demons",
+        value: `[Demon Leaderboard](${siteUrl}/)`,
         inline: true,
       },
       {
@@ -119,27 +138,27 @@ export function createOfficialLinksEmbed(siteUrl = "https://www.nerfeddemonlist.
         inline: true,
       },
       {
-        name: "📥 Submit a Record",
-        value: `[Submit Run Proof](${siteUrl}/submit)`,
+        name: "📥 Submit a Run",
+        value: `[Submit Record](${siteUrl}/submit)`,
         inline: true,
       },
       {
-        name: "💡 Suggest a Level",
-        value: `[Level Suggestions](${siteUrl}/suggest-level)`,
+        name: "💡 Suggest a Demon",
+        value: `[Suggest Level](${siteUrl}/suggest-level)`,
         inline: true,
       },
       {
-        name: "⏳ Upcoming Demons",
-        value: `[Upcoming Hub](${siteUrl}/upcoming)`,
+        name: "⏳ Upcoming Hub",
+        value: `[Upcoming Demons](${siteUrl}/upcoming)`,
         inline: true,
       },
       {
         name: "📱 TikTok Channel",
-        value: `[@cattw_gd on TikTok](https://www.tiktok.com/@cattw_gd)`,
+        value: `[@cattw_gd](https://www.tiktok.com/@cattw_gd)`,
         inline: true,
       },
       {
-        name: "📰 Changelog & News",
+        name: "📰 News & Updates",
         value: `[List Changelog](${siteUrl}/changelog)`,
         inline: true,
       },
@@ -149,7 +168,12 @@ export function createOfficialLinksEmbed(siteUrl = "https://www.nerfeddemonlist.
     });
 }
 
-export function createHowToSubmitEmbed(siteUrl = "https://www.nerfeddemonlist.net"): EmbedBuilder {
+export function createHowToSubmitEmbed(
+  siteUrl = "https://www.nerfeddemonlist.net",
+  mentions?: ChannelMentions,
+): EmbedBuilder {
+  const rulesChan = formatChan(mentions, "rules", "📜・rules");
+
   return new EmbedBuilder()
     .setTitle("📥 How to Submit Runs to Nerfed Demonlist")
     .setDescription(
@@ -159,19 +183,17 @@ export function createHowToSubmitEmbed(siteUrl = "https://www.nerfeddemonlist.ne
     .addFields(
       {
         name: "Step 1: Beat or Progress on a Ranked Level",
-        value:
-          "Check the [Ranked Demons List](https://www.nerfeddemonlist.net/) to verify the level and required percentage.",
+        value: `Check the [Ranked Demons List](${siteUrl}) to verify the level and required percentage.`,
         inline: false,
       },
       {
         name: "Step 2: Ensure Proof Guidelines Are Met",
-        value:
-          "• Clear video with gameplay and endscreen\n• Audible clicks/taps & game audio\n• State FPS and CBF usage in submission form",
+        value: `• Clear video with gameplay and endscreen\n• Audible clicks/taps & game audio\n• State FPS and CBF usage in submission form\n• Review full details in ${rulesChan}`,
         inline: false,
       },
       {
         name: "Step 3: Submit via Website",
-        value: `Go to [**nerfeddemonlist.net/submit**](${siteUrl}/submit) while logged in, pick the level, and paste your video link.`,
+        value: `Go to [**nerfeddemonlist.net/submit**](${siteUrl}/submit) while logged in, select the level, and submit your video link.`,
         inline: false,
       },
       {

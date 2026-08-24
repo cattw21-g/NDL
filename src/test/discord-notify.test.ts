@@ -3,10 +3,13 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  notifyChangelogPosted,
   notifyLevelRanked,
+  notifyLevelUpdated,
   notifyNewSubmission,
   notifyNewSuggestion,
   notifyRecordAccepted,
+  notifyUpcomingDemonAdded,
 } from "../lib/discord-notify";
 
 function source(relativePath: string) {
@@ -63,6 +66,36 @@ describe("Discord notification system and website actions integration", () => {
         showcaseUrl: "https://youtu.be/acheron",
       }),
     ).resolves.not.toThrow();
+
+    await expect(
+      notifyUpcomingDemonAdded({
+        levelName: "Sakupen Circles Nerfed",
+        originalName: "Sakupen Circles",
+        verifier: "Cattw",
+        nerfCreator: "Cattw",
+        showcaseUrl: "https://youtu.be/sakupen",
+      }),
+    ).resolves.not.toThrow();
+
+    await expect(
+      notifyChangelogPosted({
+        title: "Major List Update v1.2",
+        slug: "major-list-update-v1-2",
+        category: "NEWS",
+        summary: "New demons added and rankings updated.",
+      }),
+    ).resolves.not.toThrow();
+
+    await expect(
+      notifyLevelUpdated({
+        levelName: "Acheron Nerfed",
+        levelSlug: "acheron-nerfed",
+        oldRank: 2,
+        newRank: 1,
+        status: "RANKED",
+        points: 320,
+      }),
+    ).resolves.not.toThrow();
   });
 
   it("wires notifyRecordAccepted and notifyNewSubmission into submissions action", () => {
@@ -78,9 +111,17 @@ describe("Discord notification system and website actions integration", () => {
     expect(suggestionsSource).toContain("notifyNewSuggestion");
   });
 
-  it("wires notifyLevelRanked into admin create level action", () => {
+  it("wires notifyLevelRanked, notifyLevelUpdated, and notifyChangelogPosted into admin action", () => {
     const adminSource = source("actions/admin.ts");
 
     expect(adminSource).toContain("notifyLevelRanked");
+    expect(adminSource).toContain("notifyLevelUpdated");
+    expect(adminSource).toContain("notifyChangelogPosted");
+  });
+
+  it("wires notifyUpcomingDemonAdded into upcoming action", () => {
+    const upcomingSource = source("actions/upcoming.ts");
+
+    expect(upcomingSource).toContain("notifyUpcomingDemonAdded");
   });
 });

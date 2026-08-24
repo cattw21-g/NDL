@@ -484,29 +484,38 @@ export async function provisionNdlServer(
 
     // 9. Post Formatted Embeds if requested
     if (postEmbeds) {
-      if (chanWelcome && chanWelcome.isTextBased()) {
-        const welcomeEmbed = createWelcomeEmbed(siteUrl);
-        await chanWelcome.send({ embeds: [welcomeEmbed] });
-        embedsPosted++;
+      const mentions: Record<string, string> = {
+        rules: chanRules.id,
+        "official-links": chanLinks.id,
+        "how-to-submit": chanHowTo.id,
+        welcome: chanWelcome.id,
+      };
+      const chanGeneral = guild.channels.cache.find((c) => c.name.includes("general-chat"));
+      if (chanGeneral) mentions["general-chat"] = chanGeneral.id;
+      const chanDemon = guild.channels.cache.find((c) => c.name.includes("demon-discussion"));
+      if (chanDemon) mentions["demon-discussion"] = chanDemon.id;
+      const chanBot = guild.channels.cache.find((c) => c.name.includes("bot-commands"));
+      if (chanBot) mentions["bot-commands"] = chanBot.id;
+
+      async function purgeAndSend(chan: typeof chanWelcome, embed: ReturnType<typeof createWelcomeEmbed>) {
+        if (chan && chan.isTextBased()) {
+          try {
+            const messages = await chan.messages.fetch({ limit: 20 });
+            for (const [, msg] of messages) {
+              await msg.delete().catch(() => {});
+            }
+          } catch {
+            // Ignore purge errors if messages are too old or cannot be deleted
+          }
+          await chan.send({ embeds: [embed] });
+          embedsPosted++;
+        }
       }
 
-      if (chanRules && chanRules.isTextBased()) {
-        const rulesEmbed = createRulesEmbed(siteUrl);
-        await chanRules.send({ embeds: [rulesEmbed] });
-        embedsPosted++;
-      }
-
-      if (chanLinks && chanLinks.isTextBased()) {
-        const linksEmbed = createOfficialLinksEmbed(siteUrl);
-        await chanLinks.send({ embeds: [linksEmbed] });
-        embedsPosted++;
-      }
-
-      if (chanHowTo && chanHowTo.isTextBased()) {
-        const howToEmbed = createHowToSubmitEmbed(siteUrl);
-        await chanHowTo.send({ embeds: [howToEmbed] });
-        embedsPosted++;
-      }
+      await purgeAndSend(chanWelcome, createWelcomeEmbed(siteUrl, mentions));
+      await purgeAndSend(chanRules, createRulesEmbed(siteUrl));
+      await purgeAndSend(chanLinks, createOfficialLinksEmbed(siteUrl));
+      await purgeAndSend(chanHowTo, createHowToSubmitEmbed(siteUrl, mentions));
     }
   } catch (err) {
     errors.push(`Error during channel provisioning: ${String(err)}`);

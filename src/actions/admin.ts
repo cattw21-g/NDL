@@ -28,7 +28,11 @@ import {
   levelSuggestionConversionGate,
 } from "@/lib/level-suggestion-workflow";
 import { sendLevelSuggestionStatusEmail } from "@/lib/email";
-import { notifyLevelRanked } from "@/lib/discord-notify";
+import {
+  notifyChangelogPosted,
+  notifyLevelRanked,
+  notifyLevelUpdated,
+} from "@/lib/discord-notify";
 import { absoluteSiteUrl } from "@/lib/site-url";
 import { slugify } from "@/lib/slug";
 import {
@@ -312,6 +316,17 @@ export async function updateLevelAction(
 
   if (!result.ok) {
     return levelMutationErrorState(parsed.values, result.error);
+  }
+
+  if (result.value.level.status === "RANKED") {
+    void notifyLevelUpdated({
+      levelName: result.value.level.name,
+      levelSlug: result.value.level.slug,
+      oldRank: null,
+      newRank: result.value.level.rank,
+      status: result.value.level.status,
+      points: result.value.level.points,
+    }).catch(() => {});
   }
 
   revalidatePath("/");
@@ -648,6 +663,15 @@ export async function createChangelogAction(formData: FormData) {
 
   if (result.status === "slug-conflict") {
     redirect("/admin/changelog?error=slug-conflict");
+  }
+
+  if (parsed.data.isPublished) {
+    void notifyChangelogPosted({
+      title: parsed.data.title,
+      slug: result.slug,
+      category: parsed.data.category,
+      summary: parsed.data.summary,
+    }).catch(() => {});
   }
 
   revalidateChangelogPaths(result.slug);
