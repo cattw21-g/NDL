@@ -18,11 +18,12 @@ export async function GET(request: Request) {
 
   const clientId = process.env.DISCORD_APPLICATION_ID || process.env.DISCORD_CLIENT_ID || "1541531776097198080";
 
-  // Derive origin from incoming request headers or fallback to canonical www
-  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || requestUrl.host;
-  const proto = request.headers.get("x-forwarded-proto") || requestUrl.protocol.replace(":", "") || "https";
-  const origin = host ? `${proto}://${host}` : "https://www.nerfeddemonlist.net";
-  const redirectUri = `${origin}/api/auth/discord/callback`;
+  // Use the canonical production redirect URI (or localhost for dev)
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || requestUrl.host || "";
+  const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
+  const redirectUri = isLocal
+    ? `http://${host}/api/auth/discord/callback`
+    : "https://www.nerfeddemonlist.net/api/auth/discord/callback";
 
   // Create state containing userId, returnTo, and the exact redirectUri used
   const statePayload = Buffer.from(
