@@ -169,6 +169,8 @@ export async function provisionNdlServer(
     return cat;
   }
 
+  const isCommunity = guild.features.includes("COMMUNITY");
+
   // Helper to find or create text/voice/announcement channel
   async function ensureChannel(
     name: string,
@@ -177,13 +179,18 @@ export async function provisionNdlServer(
     topic?: string,
     permissionOverwrites: OverwriteResolvable[] = [],
   ) {
+    const effectiveType =
+      type === ChannelType.GuildAnnouncement && !isCommunity
+        ? ChannelType.GuildText
+        : type;
+
     let chan = guild.channels.cache.find(
       (c) => c.name.toLowerCase() === name.toLowerCase() && c.parentId === parentId,
     );
     if (!chan) {
       chan = await guild.channels.create({
         name,
-        type,
+        type: effectiveType,
         parent: parentId,
         topic,
         permissionOverwrites,

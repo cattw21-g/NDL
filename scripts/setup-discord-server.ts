@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Client, GatewayIntentBits } from "discord.js";
+import { Client, Events, GatewayIntentBits } from "discord.js";
 import { provisionNdlServer } from "../bot/src/server-setup.js";
 
 async function main() {
@@ -14,17 +14,13 @@ async function main() {
 
   console.log("🤖 Connecting NDL Setup Bot to Discord...");
   const client = new Client({
-    intents: [
-      GatewayIntentBits.Guilds,
-      GatewayIntentBits.GuildMembers,
-      GatewayIntentBits.GuildMessages,
-    ],
+    intents: [GatewayIntentBits.Guilds],
   });
 
   await client.login(token);
 
   await new Promise<void>((resolve) => {
-    client.once("ready", () => resolve());
+    client.once(Events.ClientReady, () => resolve());
   });
 
   console.log(`✅ Logged in as ${client.user?.tag}`);
