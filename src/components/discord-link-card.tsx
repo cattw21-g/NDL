@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Unlink, Link2, ShieldCheck } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Check, Unlink, ExternalLink, ShieldCheck, KeyRound } from "lucide-react";
 import { linkDiscordWithCodeAction, unlinkDiscordAccountAction } from "@/actions/discord-link";
 
 export function DiscordLinkCard({
@@ -14,10 +15,19 @@ export function DiscordLinkCard({
   discordUsername?: string | null;
   discordLinkedAt?: Date | string | null;
 }) {
-  const [isLinking, setIsLinking] = useState(false);
+  const searchParams = useSearchParams();
+  const [isCodeInputOpen, setIsCodeInputOpen] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [actionMessage, setActionMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  const queryMessage = searchParams.get("discord_linked") === "1"
+    ? { text: "🎉 Discord account successfully connected with OAuth2! Your roles are now synchronized.", type: "success" as const }
+    : searchParams.get("discord_error")
+      ? { text: `❌ Discord connection error: ${searchParams.get("discord_error")}`, type: "error" as const }
+      : null;
+
+  const statusMessage = actionMessage || queryMessage;
 
   if (!isOwner && !discordUserId) {
     return null;
@@ -25,10 +35,10 @@ export function DiscordLinkCard({
 
   const isLinked = Boolean(discordUserId);
 
-  async function handleLink(e: React.FormEvent<HTMLFormElement>) {
+  async function handleCodeLink(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setStatusMessage(null);
+    setActionMessage(null);
 
     const formData = new FormData();
     formData.append("verificationCode", codeInput);
@@ -36,11 +46,11 @@ export function DiscordLinkCard({
     try {
       const res = await linkDiscordWithCodeAction({ status: "idle" }, formData);
       if (res.status === "success") {
-        setStatusMessage({ text: res.message || "Linked!", type: "success" });
-        setIsLinking(false);
+        setActionMessage({ text: res.message || "Linked!", type: "success" });
+        setIsCodeInputOpen(false);
         setCodeInput("");
       } else {
-        setStatusMessage({ text: res.message || "Failed to link", type: "error" });
+        setActionMessage({ text: res.message || "Failed to link", type: "error" });
       }
     } finally {
       setLoading(false);
@@ -52,7 +62,7 @@ export function DiscordLinkCard({
     setLoading(true);
     try {
       await unlinkDiscordAccountAction();
-      setStatusMessage({ text: "Discord account unlinked.", type: "success" });
+      setActionMessage({ text: "Discord account unlinked.", type: "success" });
     } finally {
       setLoading(false);
     }
@@ -69,7 +79,7 @@ export function DiscordLinkCard({
           </div>
           <div>
             <div className="flex items-center gap-2 font-black text-slate-900 dark:text-white">
-              <span>Discord Integration</span>
+              <span>Discord OAuth2 Integration</span>
               {isLinked ? (
                 <span className="inline-flex items-center gap-1 rounded bg-emerald-500/20 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
                   <Check className="h-3 w-3" /> Connected
@@ -82,14 +92,14 @@ export function DiscordLinkCard({
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-300">
               {isLinked
-                ? `Linked Account ${discordUsername ? `(@${discordUsername})` : `(ID: ${discordUserId})`} • Automated Roles Active`
-                : "Link your Discord account to automatically receive your Top 10/50/100, Victor, and Player roles!"}
+                ? `Linked Discord Account: ${discordUsername ? `@${discordUsername}` : `ID ${discordUserId}`} • Automated Roles Active`
+                : "Authorize with Discord to automatically receive your Top 10/50/100, Victor, and Player roles!"}
             </p>
           </div>
         </div>
 
         {isOwner && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {isLinked ? (
               <button
                 type="button"
@@ -98,35 +108,41 @@ export function DiscordLinkCard({
                 className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-50 dark:border-red-800 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950"
               >
                 <Unlink className="h-3.5 w-3.5" />
-                Unlink
+                Unlink Discord
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={() => setIsLinking(!isLinking)}
-                className="inline-flex items-center gap-1.5 rounded-md bg-[#5865F2] px-3.5 py-1.5 text-xs font-bold text-white shadow transition hover:bg-[#4752c4]"
-              >
-                <Link2 className="h-3.5 w-3.5" />
-                {isLinking ? "Cancel" : "Enter Verification Code"}
-              </button>
+              <>
+                <a
+                  href="/api/auth/discord/login"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-[#5865F2] px-4 py-2 text-xs font-black text-white shadow-md transition hover:bg-[#4752c4] active:scale-95"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Connect with Discord (1-Click)
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setIsCodeInputOpen(!isCodeInputOpen)}
+                  className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                >
+                  <KeyRound className="h-3 w-3" />
+                  {isCodeInputOpen ? "Close" : "Use Code"}
+                </button>
+              </>
             )}
           </div>
         )}
       </div>
 
-      {isOwner && isLinking && (
-        <form onSubmit={handleLink} className="mt-4 space-y-3 border-t border-slate-200 pt-3 dark:border-slate-800">
+      {isOwner && isCodeInputOpen && !isLinked && (
+        <form onSubmit={handleCodeLink} className="mt-4 space-y-3 border-t border-slate-200 pt-3 dark:border-slate-800">
           <div className="rounded-md bg-slate-100 p-3 text-xs dark:bg-slate-800/60">
             <div className="flex items-center gap-1.5 font-black text-slate-800 dark:text-slate-200">
               <ShieldCheck className="h-4 w-4 text-[#5865F2]" />
-              How to get your Verification Code:
+              Link via Discord Code:
             </div>
-            <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-slate-600 dark:text-slate-300">
-              <li>Open the Nerfed Demonlist Discord server.</li>
-              <li>Go to <strong>#🎭・roles</strong> and click the blue <strong>&quot;🔗 Link NDL Account&quot;</strong> button.</li>
-              <li>The bot will instantly give you a private 1-time code (e.g. <code className="font-mono font-bold text-[#5865F2]">NDL-8931</code>).</li>
-              <li>Enter it below to securely link your profile!</li>
-            </ol>
+            <p className="mt-1 text-slate-600 dark:text-slate-300">
+              Click <strong>&quot;🔗 Link NDL Account&quot;</strong> in <strong>#🎭・roles</strong> on Discord to get a 1-time verification code and enter it below:
+            </p>
           </div>
 
           <div>
@@ -156,7 +172,7 @@ export function DiscordLinkCard({
 
       {statusMessage && (
         <p
-          className={`mt-2 text-xs font-bold ${
+          className={`mt-3 text-xs font-bold ${
             statusMessage.type === "success" ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
           }`}
         >

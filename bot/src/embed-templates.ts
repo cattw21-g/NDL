@@ -238,7 +238,7 @@ export function createRolesSelectorEmbed(): EmbedBuilder {
     });
 }
 
-export function createRolesActionRow(): ActionRowBuilder<ButtonBuilder> {
+export function createRolesActionRow(siteUrl = "https://www.nerfeddemonlist.net"): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId("toggle_role_announcements")
@@ -249,9 +249,9 @@ export function createRolesActionRow(): ActionRowBuilder<ButtonBuilder> {
       .setLabel("📰 List Updates Ping")
       .setStyle(ButtonStyle.Success),
     new ButtonBuilder()
-      .setCustomId("link_ndl_account")
-      .setLabel("🔗 Link NDL Account")
-      .setStyle(ButtonStyle.Secondary),
+      .setLabel("🔗 Link NDL Account (OAuth2)")
+      .setStyle(ButtonStyle.Link)
+      .setURL(`${siteUrl}/api/auth/discord/login`),
     new ButtonBuilder()
       .setCustomId("sync_ndl_roles")
       .setLabel("🔄 Sync My Roles")
