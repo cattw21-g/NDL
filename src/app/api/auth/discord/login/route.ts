@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const clientId = process.env.DISCORD_APPLICATION_ID || process.env.DISCORD_CLIENT_ID || "1541531776097198080";
+  const clientId = "1541531776097198080";
 
   // Use the canonical production redirect URI (or localhost for dev)
   const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || requestUrl.host || "";
