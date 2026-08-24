@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${fallbackRedirect}?discord_error=access_denied`);
   }
 
-  let stateData: { userId?: string; returnTo?: string } = {};
+  let stateData: { userId?: string; returnTo?: string; redirectUri?: string } = {};
   if (state) {
     try {
       stateData = JSON.parse(Buffer.from(state, "base64url").toString("utf-8"));
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
 
   const clientId = process.env.DISCORD_APPLICATION_ID || process.env.DISCORD_CLIENT_ID || "1541531776097198080";
   const clientSecret = process.env.DISCORD_CLIENT_SECRET?.trim() || "";
-  const redirectUri = absoluteSiteUrl("/api/auth/discord/callback");
+  const redirectUri = stateData.redirectUri || absoluteSiteUrl("/api/auth/discord/callback");
 
   if (!clientSecret) {
     console.error("Missing DISCORD_CLIENT_SECRET in environment variables.");

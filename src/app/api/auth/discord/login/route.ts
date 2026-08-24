@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { absoluteSiteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
-  const { searchParams } = new URL(request.url);
+  const requestUrl = new URL(request.url);
+  const { searchParams } = requestUrl;
   const returnTo = searchParams.get("returnTo") || (user ? `/players/${user.playerName}` : "/login");
 
   if (!user) {
@@ -17,13 +17,19 @@ export async function GET(request: Request) {
   }
 
   const clientId = process.env.DISCORD_APPLICATION_ID || process.env.DISCORD_CLIENT_ID || "1541531776097198080";
-  const redirectUri = absoluteSiteUrl("/api/auth/discord/callback");
 
-  // Create state containing userId and returnTo
+  // Derive origin from incoming request headers or fallback to canonical www
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || requestUrl.host;
+  const proto = request.headers.get("x-forwarded-proto") || requestUrl.protocol.replace(":", "") || "https";
+  const origin = host ? `${proto}://${host}` : "https://www.nerfeddemonlist.net";
+  const redirectUri = `${origin}/api/auth/discord/callback`;
+
+  // Create state containing userId, returnTo, and the exact redirectUri used
   const statePayload = Buffer.from(
     JSON.stringify({
       userId: user.id,
       returnTo,
+      redirectUri,
       timestamp: Date.now(),
     }),
   ).toString("base64url");
