@@ -10,6 +10,8 @@ import {
 } from "discord.js";
 
 import {
+  createAccountLinkingActionRow,
+  createAccountLinkingEmbed,
   createHowToSubmitEmbed,
   createOfficialLinksEmbed,
   createRolesActionRow,
@@ -373,6 +375,13 @@ export async function provisionNdlServer(
       "Directory of verified official Nerfed Demonlist links and socials.",
       readOnlyOverwrites,
     );
+    const chanLinkAccount = await ensureChannel(
+      "🔗・link-account",
+      ChannelType.GuildText,
+      catInfo.id,
+      "Connect your Discord account to NDL for automated player and rank roles!",
+      readOnlyOverwrites,
+    );
     const chanRoles = await ensureChannel(
       "🎭・roles",
       ChannelType.GuildText,
@@ -555,6 +564,7 @@ export async function provisionNdlServer(
       await purgeAndSend(chanWelcome, createWelcomeEmbed(siteUrl, mentions));
       await purgeAndSend(chanRules, createRulesEmbed(siteUrl));
       await purgeAndSend(chanLinks, createOfficialLinksEmbed(siteUrl));
+      await purgeAndSend(chanLinkAccount, createAccountLinkingEmbed(), [createAccountLinkingActionRow(siteUrl)]);
       await purgeAndSend(chanRoles, createRolesSelectorEmbed(), [createRolesActionRow()]);
       await purgeAndSend(chanHowTo, createHowToSubmitEmbed(siteUrl, mentions));
     }

@@ -210,9 +210,9 @@ export function createHowToSubmitEmbed(
 
 export function createRolesSelectorEmbed(): EmbedBuilder {
   return new EmbedBuilder()
-    .setTitle("🎭 Nerfed Demonlist — Interactive Roles & Account Linking")
+    .setTitle("🎭 Nerfed Demonlist — Notification & Ping Roles")
     .setDescription(
-      "Click the buttons below to manage your notification roles and link your NDL website account for automated rank roles!",
+      "Click the buttons below to toggle your notification roles! You can click them at any time to add or remove a role.",
     )
     .setColor(NDL_COLORS.CYAN)
     .addFields(
@@ -226,19 +226,13 @@ export function createRolesSelectorEmbed(): EmbedBuilder {
         value: "Get notified whenever new nerfed demons are placed, verified, or adjusted on the list.",
         inline: false,
       },
-      {
-        name: "🔗 Automated Player & Rank Roles",
-        value:
-          "Click **`🔗 Link NDL Account`** below to connect your Discord. You will automatically receive **`🥇 Top 10 Player`**, **`🥈 Top 50 Player`**, **`🥉 Top 100 Player`**, **`🏆 List Victor`**, **`⚡ List Player`**, and **`📜 Verified Member`** based on your live list achievements!",
-        inline: false,
-      },
     )
     .setFooter({
-      text: "Nerfed Demonlist • Interactive Role & Account Linking System",
+      text: "Nerfed Demonlist • Notification Ping System",
     });
 }
 
-export function createRolesActionRow(siteUrl = "https://www.nerfeddemonlist.net"): ActionRowBuilder<ButtonBuilder> {
+export function createRolesActionRow(): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId("toggle_role_announcements")
@@ -248,8 +242,39 @@ export function createRolesActionRow(siteUrl = "https://www.nerfeddemonlist.net"
       .setCustomId("toggle_role_updates")
       .setLabel("📰 List Updates Ping")
       .setStyle(ButtonStyle.Success),
+  );
+}
+
+export function createAccountLinkingEmbed(): EmbedBuilder {
+  return new EmbedBuilder()
+    .setTitle("🔗 Connect Your Nerfed Demonlist Account")
+    .setDescription(
+      "Connect your Discord account to your NDL website profile to automatically receive and update your player rank, victory, and member roles!",
+    )
+    .setColor(NDL_COLORS.PURPLE)
+    .addFields(
+      {
+        name: "👑 Automated Discord Roles",
+        value:
+          "• **`🥇 Top 10 Player`** (Global Ranks 1 – 10)\n• **`🥈 Top 50 Player`** (Global Ranks 11 – 50)\n• **`🥉 Top 100 Player`** (Global Ranks 51 – 100)\n• **`🏆 List Victor`** (Granted upon your first 100% completion)\n• **`⚡ List Player`** (Granted for having ranked points)\n• **`📜 Verified Member`** (Granted to all linked accounts)",
+        inline: false,
+      },
+      {
+        name: "⚡ 1-Click Authorization",
+        value:
+          "Click the **`🔗 Link NDL Account`** button below, authorize with Discord in 1 click, and your roles will instantly synchronize with your live website stats!",
+        inline: false,
+      },
+    )
+    .setFooter({
+      text: "Nerfed Demonlist • Automated Account & Role Linking",
+    });
+}
+
+export function createAccountLinkingActionRow(siteUrl = "https://www.nerfeddemonlist.net"): ActionRowBuilder<ButtonBuilder> {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
-      .setLabel("🔗 Link NDL Account (OAuth2)")
+      .setLabel("🔗 Link NDL Account")
       .setStyle(ButtonStyle.Link)
       .setURL(`${siteUrl}/api/auth/discord/login`),
     new ButtonBuilder()
