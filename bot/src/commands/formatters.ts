@@ -2,6 +2,7 @@ import { EmbedBuilder } from "discord.js";
 
 import type {
   AuditEntry,
+  NdlChangelogPost,
   NdlLeaderboardRow,
   NdlLevel,
   NdlPlayer,
@@ -180,6 +181,22 @@ export function formatRulesEmbed(rules: NdlRules, baseUrl: string) {
     value: `${rules.version} - ${formatDate(rules.publishedAt)}`,
     inline: true,
   });
+}
+
+export function formatChangelogEmbed(posts: NdlChangelogPost[], baseUrl: string) {
+  const url = `${baseUrl.replace(/\/+$/, "")}/changelog`;
+  return baseEmbed(
+    "NDL Changelog & News",
+    posts.length
+      ? posts
+          .slice(0, 5)
+          .map(
+            (post) =>
+              `${post.isPinned ? "📌 " : "📰 "}**${clean(post.title)}** (${formatDate(post.publishedAt)})\n${truncate(post.content.replace(/#+\s/g, "").replace(/\n+/g, " "), 180)}\n${url}/${post.slug}`,
+          )
+          .join("\n\n")
+      : "No changelog entries found.",
+  ).setURL(url);
 }
 
 export function formatPendingRecordsEmbed(

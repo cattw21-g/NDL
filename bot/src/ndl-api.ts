@@ -70,6 +70,19 @@ export type NdlRules = {
   publishedAt: string;
 };
 
+export type NdlChangelogPost = {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  isPinned: boolean;
+  publishedAt: string;
+  author: {
+    handle: string;
+    displayName: string;
+  };
+};
+
 export type StaffRecordSubmission = {
   id: string;
   status: string;
@@ -230,6 +243,14 @@ export function createNdlApiClient(
         publicBase,
         "/api/public/rules",
         undefined,
+        fetchImpl,
+      );
+    },
+    getChangelog(limit = 5) {
+      return request<{ posts: NdlChangelogPost[]; limit: number }>(
+        publicBase,
+        "/api/public/changelog",
+        { limit },
         fetchImpl,
       );
     },

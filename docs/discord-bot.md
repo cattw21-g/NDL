@@ -42,7 +42,36 @@ Run from the repo root:
 npm.cmd run discord:register
 ```
 
-`DISCORD_BOT_TOKEN` is only needed for this command registration step. It is not required by the Vercel Interactions endpoint and must not be exposed to client code.
+## 1-Click Server Provisioner & Generator
+
+The NDL Bot can automatically create and configure the entire official Discord server structure (Roles, Categories, Channels, Permissions, and Official Embeds) with 1 command.
+
+### Running Setup via CLI:
+```powershell
+npm.cmd run discord:setup-server
+```
+
+### Running Setup via Discord Slash Command:
+- `/setup-server` (Requires Administrator permission): Provisions the entire category and channel tree, creates roles, and locks permissions.
+- `/post-embeds` (Requires Administrator permission): Re-posts or refreshes the official rich embeds in `#welcome`, `#rules`, `#official-links`, and `#how-to-submit`.
+
+### Server Architecture Generated:
+- **📌 INFORMATION & WELCOME**: `#👋・welcome`, `#📜・rules`, `#📢・announcements`, `#📰・list-updates`, `#🔗・official-links`
+- **💬 COMMUNITY & DISCUSSION**: `#💬・general-chat`, `#🎮・demon-discussion`, `#🎬・clips-and-media`, `#🤖・bot-commands`
+- **🏆 SUBMISSIONS & PROGRESS**: `#📥・how-to-submit`, `#✅・accepted-records`, `#💡・level-suggestions`, `#🔥・upcoming-demons`
+- **🛠️ SUPPORT & TICKETS**: `#❓・help-and-questions`, `#🐛・bug-reports`
+- **🛡️ STAFF HQ (Private)**: `#🔒・staff-chat`, `#📋・record-queue-logs`, `#💡・suggestion-queue-logs`, `#📊・staff-commands`, `#🛡️・mod-logs`
+- **🔊 VOICE CHANNELS**: `🔊・General Voice`, `🎮・Demon Grinding (Clicks)`, `🔒・Staff Meeting`
+
+### Roles Matrix:
+- `👑 List Owner` (`#F59E0B` Gold, Administrator)
+- `🛡️ List Moderator` (`#06B6D4` Cyan, Manage Messages, Kick/Ban, Staff Channels Access)
+- `🛠️ List Developer` (`#14B8A6` Teal, Manage Webhooks, Helper)
+- `🏆 List Victor` (`#A855F7` Purple, 100% Victors)
+- `⚡ List Player` (`#38BDF8` Sky Blue, Verified List Players)
+- `🌟 Level Creator` (`#FB923C` Orange, Demon Creators)
+- `🔔 Announcements Ping` (`#94A3B8` Slate)
+- `📰 List Updates Ping` (`#94A3B8` Slate)
 
 ## Public Slash Commands
 

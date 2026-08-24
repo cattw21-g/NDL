@@ -8,6 +8,7 @@ import type { BotConfig } from "../config.js";
 import type { NdlApiClient } from "../ndl-api.js";
 import {
   formatBotError,
+  formatChangelogEmbed,
   formatLevelEmbed,
   formatPlayerEmbed,
   formatRecentRecordsEmbed,
@@ -189,6 +190,19 @@ export const publicCommands: BotCommand[] = [
       await editWithApiResult(interaction, async () => {
         const data = await api.getRules();
         return formatRulesEmbed(data.rules, config.ndlPublicApiBase);
+      });
+    },
+  },
+  {
+    data: new SlashCommandBuilder()
+      .setName("changelog")
+      .setDescription("Show the latest NDL changelog updates and news."),
+    async execute(interaction, { api, config }) {
+      await interaction.deferReply();
+
+      await editWithApiResult(interaction, async () => {
+        const data = await api.getChangelog(5);
+        return formatChangelogEmbed(data.posts, config.ndlPublicApiBase);
       });
     },
   },
