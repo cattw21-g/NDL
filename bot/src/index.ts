@@ -48,6 +48,72 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
       return;
     }
 
+    if (customId === "link_ndl_account") {
+      const randomDigits = Math.floor(1000 + Math.random() * 9000).toString();
+      const code = `NDL-${randomDigits}`;
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+      try {
+        const { prisma } = await import("../../src/lib/db.js");
+        await prisma.discordLinkToken.deleteMany({
+          where: { discordUserId: interaction.user.id },
+        }).catch(() => {});
+
+        await prisma.discordLinkToken.create({
+          data: {
+            code,
+            discordUserId: interaction.user.id,
+            discordUsername: interaction.user.username,
+            expiresAt,
+          },
+        });
+      } catch (err) {
+        console.error("Link token creation error:", err);
+      }
+
+      await interaction.editReply({
+        content: `🔐 **Link Your Nerfed Demonlist Profile**\n\n1. Open your profile on the website: **https://www.nerfeddemonlist.net/players**\n2. In the **Discord Integration** box, enter your 1-time verification code: **\`${code}\`**\n3. Click **"Verify & Link"**!\n\n*(This code expires in 15 minutes. Once linked, your Top 10/50/100, Victor, and Player roles will update automatically!)*`,
+      });
+      return;
+    }
+
+    if (customId === "sync_ndl_roles") {
+      try {
+        const { prisma } = await import("../../src/lib/db.js");
+        const { syncDiscordRolesForUser } = await import("../../src/lib/discord-role-sync.js");
+
+        const user = await prisma.user.findUnique({
+          where: { discordUserId: interaction.user.id },
+        });
+
+        if (!user) {
+          await interaction.editReply({
+            content: "❌ Your Discord account is not linked to an NDL profile yet!\nClick **`🔗 Link NDL Account`** above to connect your account.",
+          });
+          return;
+        }
+
+        const res = await syncDiscordRolesForUser(user.id);
+        const added = res.addedRoles.length > 0 ? `\n✅ **Roles Added:** ${res.addedRoles.join(", ")}` : "";
+        const removed = res.removedRoles.length > 0 ? `\n❌ **Roles Removed:** ${res.removedRoles.join(", ")}` : "";
+
+        if (res.addedRoles.length === 0 && res.removedRoles.length === 0) {
+          await interaction.editReply({
+            content: `✨ Your Discord roles for **${user.playerName}** are already up to date!`,
+          });
+        } else {
+          await interaction.editReply({
+            content: `🎉 **Roles Synchronized for ${user.playerName}:**${added}${removed}`,
+          });
+        }
+      } catch (err) {
+        await interaction.editReply({
+          content: `Failed to sync roles: ${String(err)}`,
+        });
+      }
+      return;
+    }
+
     let targetRoleName = "";
     let roleLabel = "";
     if (customId === "toggle_role_announcements") {
