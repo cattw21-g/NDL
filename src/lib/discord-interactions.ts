@@ -24,6 +24,7 @@ export const discordInteractionEndpointUrl =
 export const DiscordInteractionType = {
   Ping: 1,
   ApplicationCommand: 2,
+  MessageComponent: 3,
   ApplicationCommandAutocomplete: 4,
 } as const;
 
@@ -304,12 +305,22 @@ export const discordCommandDefinitions: DiscordCommandDefinition[] = [
 
 export type DiscordInteraction = {
   type: number;
+  guild_id?: string;
   data?: {
     name?: string;
+    custom_id?: string;
     options?: DiscordInteractionOption[];
   };
   member?: {
     roles?: string[];
+    user?: {
+      id?: string;
+      username?: string;
+    };
+  };
+  user?: {
+    id?: string;
+    username?: string;
   };
 };
 
@@ -423,6 +434,10 @@ export async function handleDiscordInteraction(
     return autocompleteCommand(interaction, service);
   }
 
+  if (interaction.type === DiscordInteractionType.MessageComponent) {
+    return handleMessageComponentInteraction(interaction, env);
+  }
+
   if (interaction.type !== DiscordInteractionType.ApplicationCommand) {
     return messageResponse("Unsupported Discord interaction.", true);
   }
@@ -474,6 +489,71 @@ export async function handleDiscordInteraction(
     }
   } catch (error) {
     return messageResponse(formatDiscordCommandError(error), true);
+  }
+}
+
+async function handleMessageComponentInteraction(
+  interaction: DiscordInteraction,
+  env: Record<string, string | undefined>,
+): Promise<DiscordInteractionResponse> {
+  const customId = interaction.data?.custom_id;
+  const token = env.DISCORD_BOT_TOKEN?.trim();
+  const guildId = interaction.guild_id || env.DISCORD_GUILD_ID?.trim();
+  const userId = interaction.member?.user?.id || interaction.user?.id;
+
+  if (!customId || !token || !guildId || !userId) {
+    return messageResponse("Could not process role button.", true);
+  }
+
+  let roleKeyword = "";
+  let roleLabel = "";
+  if (customId === "toggle_role_announcements") {
+    roleKeyword = "Announcements";
+    roleLabel = "🔔 Announcements Ping";
+  } else if (customId === "toggle_role_updates") {
+    roleKeyword = "List Updates";
+    roleLabel = "📰 List Updates Ping";
+  } else {
+    return messageResponse("Unknown button interaction.", true);
+  }
+
+  try {
+    const rolesRes = await fetch(`https://discord.com/api/v10/guilds/${guildId}/roles`, {
+      headers: { Authorization: `Bot ${token}` },
+    });
+    if (!rolesRes.ok) {
+      return messageResponse("Could not access server roles.", true);
+    }
+    const roles: Array<{ id: string; name: string }> = await rolesRes.json();
+    const targetRole = roles.find((r) => r.name.toLowerCase().includes(roleKeyword.toLowerCase()));
+    if (!targetRole) {
+      return messageResponse(`Role "${roleLabel}" not found on server.`, true);
+    }
+
+    const currentRoles: string[] = interaction.member?.roles ?? [];
+    const hasRole = currentRoles.includes(targetRole.id);
+
+    if (hasRole) {
+      await fetch(
+        `https://discord.com/api/v10/guilds/${guildId}/members/${userId}/roles/${targetRole.id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bot ${token}` },
+        },
+      );
+      return messageResponse(`❌ Removed **${roleLabel}** role. You will no longer receive these pings.`, true);
+    } else {
+      await fetch(
+        `https://discord.com/api/v10/guilds/${guildId}/members/${userId}/roles/${targetRole.id}`,
+        {
+          method: "PUT",
+          headers: { Authorization: `Bot ${token}` },
+        },
+      );
+      return messageResponse(`✅ Added **${roleLabel}** role! You will now receive these notifications.`, true);
+    }
+  } catch {
+    return messageResponse("Failed to update role. Please try again.", true);
   }
 }
 

@@ -27,7 +27,10 @@ import {
   LevelSuggestionConversionError,
   levelSuggestionConversionGate,
 } from "@/lib/level-suggestion-workflow";
-import { sendLevelSuggestionStatusEmail } from "@/lib/email";
+import {
+  sendLevelSuggestionStatusEmail,
+  sendNewsBroadcastEmail,
+} from "@/lib/email";
 import {
   notifyChangelogPosted,
   notifyLevelRanked,
@@ -672,6 +675,30 @@ export async function createChangelogAction(formData: FormData) {
       category: parsed.data.category,
       summary: parsed.data.summary,
     }).catch(() => {});
+
+    const articleUrl = absoluteSiteUrl(`/changelog/${result.slug}`);
+    void (async () => {
+      try {
+        const users = await prisma.user.findMany({
+          where: { email: { not: "" } },
+          select: { email: true, displayName: true, playerName: true },
+        });
+        for (const user of users) {
+          if (user.email) {
+            await sendNewsBroadcastEmail({
+              to: user.email,
+              recipientName: user.displayName || user.playerName,
+              title: parsed.data.title,
+              summary: parsed.data.summary,
+              category: parsed.data.category,
+              articleUrl,
+            }).catch(() => {});
+          }
+        }
+      } catch (err) {
+        console.error("Failed to broadcast news email:", err);
+      }
+    })();
   }
 
   revalidateChangelogPaths(result.slug);

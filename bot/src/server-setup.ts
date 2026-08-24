@@ -1,4 +1,6 @@
 import {
+  ActionRowBuilder,
+  ButtonBuilder,
   ChannelType,
   Guild,
   OverwriteResolvable,
@@ -10,6 +12,8 @@ import {
 import {
   createHowToSubmitEmbed,
   createOfficialLinksEmbed,
+  createRolesActionRow,
+  createRolesSelectorEmbed,
   createRulesEmbed,
   createWelcomeEmbed,
   NDL_COLORS,
@@ -344,6 +348,13 @@ export async function provisionNdlServer(
       "Directory of verified official Nerfed Demonlist links and socials.",
       readOnlyOverwrites,
     );
+    const chanRoles = await ensureChannel(
+      "🎭・roles",
+      ChannelType.GuildText,
+      catInfo.id,
+      "Select your notification ping roles with one click!",
+      readOnlyOverwrites,
+    );
 
     // 4. Category: 💬 COMMUNITY & DISCUSSION
     const catComm = await ensureCategory("💬 COMMUNITY & DISCUSSION");
@@ -497,7 +508,11 @@ export async function provisionNdlServer(
       const chanBot = guild.channels.cache.find((c) => c.name.includes("bot-commands"));
       if (chanBot) mentions["bot-commands"] = chanBot.id;
 
-      async function purgeAndSend(chan: typeof chanWelcome, embed: ReturnType<typeof createWelcomeEmbed>) {
+      async function purgeAndSend(
+        chan: typeof chanWelcome,
+        embed: ReturnType<typeof createWelcomeEmbed>,
+        components?: ActionRowBuilder<ButtonBuilder>[],
+      ) {
         if (chan && chan.isTextBased()) {
           try {
             const messages = await chan.messages.fetch({ limit: 20 });
@@ -507,7 +522,7 @@ export async function provisionNdlServer(
           } catch {
             // Ignore purge errors if messages are too old or cannot be deleted
           }
-          await chan.send({ embeds: [embed] });
+          await chan.send({ embeds: [embed], components: components ?? [] });
           embedsPosted++;
         }
       }
@@ -515,6 +530,7 @@ export async function provisionNdlServer(
       await purgeAndSend(chanWelcome, createWelcomeEmbed(siteUrl, mentions));
       await purgeAndSend(chanRules, createRulesEmbed(siteUrl));
       await purgeAndSend(chanLinks, createOfficialLinksEmbed(siteUrl));
+      await purgeAndSend(chanRoles, createRolesSelectorEmbed(), [createRolesActionRow()]);
       await purgeAndSend(chanHowTo, createHowToSubmitEmbed(siteUrl, mentions));
     }
   } catch (err) {

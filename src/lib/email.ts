@@ -34,6 +34,15 @@ export type LevelSuggestionStatusEmail = {
   levelUrl?: string | null;
 };
 
+export type NewsBroadcastEmail = {
+  to: string;
+  recipientName: string;
+  title: string;
+  summary: string;
+  category: string;
+  articleUrl: string;
+};
+
 type SmtpConfig = {
   host: string;
   port: number;
@@ -552,4 +561,70 @@ function escapeHtml(value: string) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+export async function sendNewsBroadcastEmail(
+  data: NewsBroadcastEmail,
+  dependencies: {
+    env?: EnvMap;
+    transportFactory?: TransportFactory;
+    logger?: Logger;
+  } = {},
+) {
+  const env = dependencies.env ?? process.env;
+  const config = readSmtpConfig(env);
+  const logger = dependencies.logger ?? console;
+
+  const subject = `[NDL News] ${data.title}`;
+  const text = [
+    `Hello ${data.recipientName},`,
+    "",
+    `A new update has been posted to the Nerfed Demonlist:`,
+    "",
+    `📢 ${data.title} (${data.category})`,
+    "",
+    data.summary,
+    "",
+    `Read the full announcement at: ${data.articleUrl}`,
+    "",
+    "— Nerfed Demonlist Team",
+  ].join("\n");
+
+  const html = `
+    <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #0f172a;">
+      ${emailLogoHtml(env)}
+      <div style="margin-bottom: 24px;">
+        <h1 style="color: #0891b2; font-size: 24px; margin: 0;">Nerfed Demonlist</h1>
+        <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Community News & List Updates</p>
+      </div>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+        <span style="display: inline-block; padding: 4px 12px; background: #06b6d4; color: #fff; font-size: 12px; font-weight: bold; border-radius: 9999px; margin-bottom: 12px;">${escapeHtml(data.category)}</span>
+        <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 12px 0;">${escapeHtml(data.title)}</h2>
+        <p style="font-size: 15px; line-height: 1.6; color: #334155; margin: 0 0 20px 0;">${escapeHtml(data.summary)}</p>
+        <a href="${escapeHtml(data.articleUrl)}" style="display: inline-block; background: #0891b2; color: #ffffff; text-decoration: none; font-weight: 700; padding: 12px 24px; border-radius: 8px;">Read Full Announcement</a>
+      </div>
+      <p style="text-align: center; font-size: 12px; color: #94a3b8;">You are receiving this update because you are a member of nerfeddemonlist.net.</p>
+    </div>
+  `;
+
+  if (!config) {
+    logger.log("Development News Broadcast Email (SMTP not configured):", {
+      to: data.to,
+      subject,
+      text,
+    });
+    return;
+  }
+
+  await sendViaSmtp(
+    config,
+    {
+      to: data.to,
+      replyTo: config.replyTo,
+      subject,
+      text,
+      html,
+    },
+    dependencies.transportFactory,
+  );
 }

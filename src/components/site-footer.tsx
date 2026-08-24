@@ -90,6 +90,15 @@ export function SiteFooter({
             >
               @cattw_gd
             </a>
+            . Join our{" "}
+            <a
+              href="https://discord.com/channels/1541532007304003595"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-black text-[#5865F2] underline hover:text-[#4752c4] dark:text-[#7289da]"
+            >
+              Official Discord Server
+            </a>
             .
           </p>
           <p className="max-w-3xl text-xs leading-5 text-slate-600 dark:text-slate-400">

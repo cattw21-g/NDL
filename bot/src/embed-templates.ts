@@ -1,4 +1,4 @@
-import { EmbedBuilder } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
 
 export const NDL_COLORS = {
   CYAN: 0x06b6d4,
@@ -206,4 +206,41 @@ export function createHowToSubmitEmbed(
     .setFooter({
       text: "NDL Submission System",
     });
+}
+
+export function createRolesSelectorEmbed(): EmbedBuilder {
+  return new EmbedBuilder()
+    .setTitle("🎭 Nerfed Demonlist — Notification & Ping Roles")
+    .setDescription(
+      "Click the buttons below to toggle your notification roles! You can click them at any time to add or remove a role.",
+    )
+    .setColor(NDL_COLORS.CYAN)
+    .addFields(
+      {
+        name: "🔔 Announcements Ping",
+        value: "Get notified for official community news, major server events, and announcements.",
+        inline: false,
+      },
+      {
+        name: "📰 List Updates Ping",
+        value: "Get notified whenever new nerfed demons are placed, verified, or adjusted on the list.",
+        inline: false,
+      },
+    )
+    .setFooter({
+      text: "Nerfed Demonlist • Interactive Role System",
+    });
+}
+
+export function createRolesActionRow(): ActionRowBuilder<ButtonBuilder> {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId("toggle_role_announcements")
+      .setLabel("🔔 Announcements Ping")
+      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder()
+      .setCustomId("toggle_role_updates")
+      .setLabel("📰 List Updates Ping")
+      .setStyle(ButtonStyle.Success),
+  );
 }
