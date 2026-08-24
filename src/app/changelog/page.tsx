@@ -5,7 +5,6 @@ import { EmptyState, Eyebrow, SectionPanel } from "@/components/ui";
 import {
   DEFAULT_POSTS,
   ensureLatestChangelogPost,
-  LATEST_RELEASE_POST,
 } from "@/lib/changelog";
 import { prisma } from "@/lib/db";
 import { publicChangelogWhere } from "@/lib/demo-visibility";
@@ -28,16 +27,7 @@ export default async function ChangelogPage() {
     orderBy: [{ isPinned: "desc" }, { publishedAt: "desc" }],
   });
 
-  const validSlugs = new Set(DEFAULT_POSTS.map((p) => p.slug));
-  const filteredDbPosts = postsFromDb.filter((p) => validSlugs.has(p.slug));
-
-  const hasLatest = filteredDbPosts.some((p) => p.slug === LATEST_RELEASE_POST.slug);
-  const posts = hasLatest
-    ? filteredDbPosts
-    : [
-        DEFAULT_POSTS[0],
-        ...filteredDbPosts,
-      ];
+  const posts = postsFromDb.length > 0 ? postsFromDb : DEFAULT_POSTS;
 
   return (
     <div className="space-y-5">

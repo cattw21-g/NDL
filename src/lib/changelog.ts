@@ -95,6 +95,38 @@ export const LATEST_RELEASE_POST = {
 
 export const DEFAULT_POSTS = [
   {
+    id: "official-discord-server-and-bot-launched",
+    title: "🎉 Official Nerfed Demonlist Discord Server & Bot is Live!",
+    slug: "official-discord-server-and-bot-launched",
+    category: "ANNOUNCEMENT" as const,
+    summary:
+      "We are thrilled to officially launch the Nerfed Demonlist Discord Server, featuring 24/7 automated record broadcasts, live bot commands, interactive role selection, and an active community hub for Geometry Dash nerfed extremes!",
+    content: `## Welcome to the Official Nerfed Demonlist Community!
+
+We are excited to announce that the **Official Nerfed Demonlist Discord Server & Bot** is now fully launched and open to the entire Geometry Dash community!
+
+### 🌟 What's New in the Server?
+- **🔴 24/7 Live Website Auto-Broadcasting**: All newly accepted list records, upcoming demon previews, and list updates are automatically broadcast directly to our Discord channels in real-time!
+- **🤖 High-Powered Bot Commands**: Use \`/top\`, \`/level\`, \`/player\`, \`/leaderboard\`, \`/rules\`, and \`/changelog\` directly inside Discord to pull live data from the website.
+- **🎭 Self-Assignable Notification Roles**: Check out the \`#🎭・roles\` channel to click and toggle \`🔔 Announcements Ping\` and \`📰 List Updates Ping\` with zero hassle.
+- **💬 Active Community & Demon Discussion**: Dedicated channels for sharing your progress runs, click audio showcases, nerfed demon balance discussions, and creative artwork.
+
+### 🔗 Join the Server Now
+Click the Discord icon at the top of the website or join via our direct server link:
+**[Join the Official Nerfed Demonlist Discord](https://discord.com/channels/1541532007304003595)**
+
+Thank you for your incredible support as we continue pushing the limits of nerfed demon tracking!
+
+*— The Nerfed Demonlist Team & @cattw_gd*`,
+    isPinned: true,
+    isPublished: true,
+    isDemo: false,
+    publishedAt: new Date("2026-08-24T22:00:00.000Z"),
+    updatedAt: new Date("2026-08-24T22:00:00.000Z"),
+    archivedAt: null,
+    author: { displayName: "cattw21" },
+  },
+  {
     id: "rc-v1-release",
     title: "Nerfed Demonlist v1.0 Release Candidate is Live!",
     slug: "ndl-v1-0-rc-release",
@@ -102,7 +134,7 @@ export const DEFAULT_POSTS = [
     summary:
       "Welcome to the official Release Candidate of Nerfed Demonlist (v1.0-RC)! We’ve completely overhauled the platform with the new Upcoming Levels tab (Currently Verifying & Waiting Levels), universal video playback for Medal.tv & TikTok, player profile champion banners, global member search, Top 50 leaderboards, and instant navigation.",
     content: LATEST_RELEASE_POST.content,
-    isPinned: true,
+    isPinned: false,
     isPublished: true,
     isDemo: false,
     publishedAt: new Date("2026-08-21T21:20:00.000Z"),
@@ -178,15 +210,6 @@ export async function ensureLatestChangelogPost(prismaClient: PrismaClient) {
         },
       });
     }
-
-    const validSlugs = DEFAULT_POSTS.map((p) => p.slug);
-    await prismaClient.changelogPost.deleteMany({
-      where: {
-        slug: {
-          notIn: validSlugs,
-        },
-      },
-    });
   } catch {
     // Fail-safe
   }

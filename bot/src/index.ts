@@ -1,4 +1,5 @@
 import {
+  ActivityType,
   Client,
   Events,
   GatewayIntentBits,
@@ -19,20 +20,31 @@ const commandByName = new Map(
 );
 
 client.once(Events.ClientReady, (readyClient) => {
-  console.log(`NDL Discord bot logged in as ${readyClient.user.tag}.`);
+  console.log(`✅ NDL Discord bot logged in as ${readyClient.user.tag}.`);
+  readyClient.user.setPresence({
+    activities: [
+      {
+        name: "nerfeddemonlist.net | /top",
+        type: ActivityType.Watching,
+      },
+    ],
+    status: "online",
+  });
 });
 
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
   if (interaction.isButton()) {
     const customId = interaction.customId;
-    if (!interaction.guild || !interaction.member) {
+    if (!interaction.guild) {
       await interaction.reply({ content: "This button can only be used in the NDL server.", ephemeral: true });
       return;
     }
 
+    await interaction.deferReply({ ephemeral: true }).catch(() => {});
+
     const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
     if (!member) {
-      await interaction.reply({ content: "Could not fetch your server member data.", ephemeral: true });
+      await interaction.editReply({ content: "Could not fetch your server member data." });
       return;
     }
 
@@ -50,17 +62,17 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
 
     const role = interaction.guild.roles.cache.find((r) => r.name.includes(targetRoleName));
     if (!role) {
-      await interaction.reply({ content: `The role "${roleLabel}" could not be found. Please contact staff.`, ephemeral: true });
+      await interaction.editReply({ content: `The role "${roleLabel}" could not be found. Please contact staff.` });
       return;
     }
 
     const hasRole = member.roles.cache.has(role.id);
     if (hasRole) {
       await member.roles.remove(role.id).catch(() => {});
-      await interaction.reply({ content: `❌ Removed **${roleLabel}** role. You will no longer receive these pings.`, ephemeral: true });
+      await interaction.editReply({ content: `❌ Removed **${roleLabel}** role. You will no longer receive these pings.` });
     } else {
       await member.roles.add(role.id).catch(() => {});
-      await interaction.reply({ content: `✅ Added **${roleLabel}** role! You will now receive these notifications.`, ephemeral: true });
+      await interaction.editReply({ content: `✅ Added **${roleLabel}** role! You will now receive these notifications.` });
     }
     return;
   }

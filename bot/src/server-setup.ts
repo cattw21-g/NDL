@@ -37,7 +37,14 @@ export const SERVER_ROLES = [
     permissions: [PermissionFlagsBits.Administrator],
   },
   {
-    name: "🛡️ List Moderator",
+    name: "🛡️ List Admin",
+    color: 0xef4444,
+    hoist: true,
+    mentionable: true,
+    permissions: [PermissionFlagsBits.Administrator],
+  },
+  {
+    name: "⚖️ List Moderator",
     color: NDL_COLORS.CYAN,
     hoist: true,
     mentionable: true,
@@ -54,6 +61,17 @@ export const SERVER_ROLES = [
       PermissionFlagsBits.AttachFiles,
       PermissionFlagsBits.EmbedLinks,
       PermissionFlagsBits.MentionEveryone,
+    ],
+  },
+  {
+    name: "✨ List Reviewer",
+    color: 0x06b6d4,
+    hoist: true,
+    mentionable: true,
+    permissions: [
+      PermissionFlagsBits.ManageMessages,
+      PermissionFlagsBits.AttachFiles,
+      PermissionFlagsBits.EmbedLinks,
     ],
   },
   {
@@ -119,6 +137,13 @@ export const SERVER_ROLES = [
   {
     name: "🧪 Beta Tester",
     color: 0x22c55e,
+    hoist: false,
+    mentionable: false,
+    permissions: [],
+  },
+  {
+    name: "📜 Verified Member",
+    color: 0x64748b,
     hoist: false,
     mentionable: false,
     permissions: [],

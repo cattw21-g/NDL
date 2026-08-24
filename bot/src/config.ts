@@ -1,4 +1,11 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+dotenv.config();
 
 export type BotConfig = {
   discordToken: string;
@@ -18,7 +25,10 @@ export class BotConfigError extends Error {
 
 export function loadBotConfig(env: NodeJS.ProcessEnv = process.env): BotConfig {
   const discordToken = requiredEnv(env, "DISCORD_BOT_TOKEN");
-  const discordClientId = requiredEnv(env, "DISCORD_CLIENT_ID");
+  const discordClientId =
+    env.DISCORD_CLIENT_ID?.trim() ||
+    env.DISCORD_APPLICATION_ID?.trim() ||
+    requiredEnv(env, "DISCORD_CLIENT_ID");
   const ndlPublicApiBase = normalizeBaseUrl(
     env.NDL_PUBLIC_API_BASE || "https://nerfeddemonlist.net",
   );
