@@ -23,6 +23,10 @@ import {
   type SubmissionFormState,
   validateSubmissionFormSubmission,
 } from "@/lib/submission-form-state";
+import {
+  notifyNewSubmission,
+  notifyRecordAccepted,
+} from "@/lib/discord-notify";
 import { sendRecordStatusEmail } from "@/lib/email";
 import { calculateCurrentLevelPoints } from "@/lib/points";
 import { absoluteSiteUrl } from "@/lib/site-url";
@@ -107,6 +111,16 @@ export async function submitRecordAction(
       formErrors: ["That submission could not be saved. Refresh and try again."],
     });
   }
+
+  void notifyNewSubmission({
+    playerName: user.displayName,
+    playerHandle: user.playerName,
+    levelName: level.name,
+    levelSlug: level.slug,
+    levelRank: level.rank,
+    progress: upload.data.progress ?? 100,
+    videoUrl: upload.data.videoUrl,
+  }).catch(() => {});
 
   revalidatePath(`/levels/${level.slug}`);
   revalidatePath("/");
@@ -251,6 +265,26 @@ export async function reviewSubmissionAction(formData: FormData) {
     }).catch(() => {
       // Ignore background email delivery errors
     });
+  }
+
+  if (parsed.data.status === "ACCEPTED") {
+    const computedPoints = calculateCurrentLevelPoints(submission.level);
+    const levelPoints =
+      computedPoints > 0 ? computedPoints : (submission.level.points ?? 0);
+    const pointsAwarded =
+      (submission.progress ?? 100) === 100 ? levelPoints : 0;
+
+    void notifyRecordAccepted({
+      playerName: submission.player.displayName,
+      playerHandle: submission.player.playerName,
+      levelName: submission.level.name,
+      levelSlug: submission.level.slug,
+      levelRank: submission.level.rank,
+      progress: submission.progress ?? 100,
+      pointsAwarded,
+      videoUrl: submission.videoUrl,
+      reviewerName: moderator.displayName,
+    }).catch(() => {});
   }
 
   revalidatePath("/");

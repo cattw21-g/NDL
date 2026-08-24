@@ -13,6 +13,7 @@ import {
   validateLevelSuggestionFormSubmission,
 } from "@/lib/level-suggestion-form-state";
 import { sendLevelSuggestionStatusEmail } from "@/lib/email";
+import { notifyNewSuggestion } from "@/lib/discord-notify";
 import {
   levelSuggestionConversionGate,
   moderationActionForSuggestionStatus,
@@ -109,6 +110,14 @@ export async function submitLevelSuggestionAction(
       formErrors: ["That level suggestion could not be saved. Refresh and try again."],
     });
   }
+
+  void notifyNewSuggestion({
+    userName: user.displayName,
+    userHandle: user.playerName,
+    levelName: parsed.data.name,
+    originalName: parsed.data.originalName,
+    videoUrl: parsed.data.showcaseUrl || parsed.data.verificationVideoUrl,
+  }).catch(() => {});
 
   revalidatePath("/level-suggestions");
   revalidatePath("/moderation");

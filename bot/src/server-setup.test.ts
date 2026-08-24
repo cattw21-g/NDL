@@ -30,6 +30,14 @@ describe("Discord server setup & embed templates", () => {
 
     expect(player).toBeDefined();
     expect(creator).toBeDefined();
+
+    const top10 = SERVER_ROLES.find((r) => r.name.includes("Top 10"));
+    const contentCreator = SERVER_ROLES.find((r) => r.name.includes("Content Creator"));
+    const betaTester = SERVER_ROLES.find((r) => r.name.includes("Beta Tester"));
+
+    expect(top10).toBeDefined();
+    expect(contentCreator).toBeDefined();
+    expect(betaTester).toBeDefined();
   });
 
   it("creates welcome embed with official website and navigation", () => {

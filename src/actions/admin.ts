@@ -28,6 +28,7 @@ import {
   levelSuggestionConversionGate,
 } from "@/lib/level-suggestion-workflow";
 import { sendLevelSuggestionStatusEmail } from "@/lib/email";
+import { notifyLevelRanked } from "@/lib/discord-notify";
 import { absoluteSiteUrl } from "@/lib/site-url";
 import { slugify } from "@/lib/slug";
 import {
@@ -214,6 +215,18 @@ export async function createLevelAction(
     }).catch(() => {
       // Ignore background email error
     });
+  }
+
+  if (result.value.level.status === "RANKED") {
+    void notifyLevelRanked({
+      levelName: result.value.level.name,
+      levelSlug: result.value.level.slug,
+      levelRank: result.value.level.rank,
+      points: result.value.level.points,
+      verifier: result.value.level.verifier,
+      nerfCreator: result.value.level.nerfCreator,
+      showcaseUrl: result.value.level.showcaseUrl,
+    }).catch(() => {});
   }
 
   revalidatePath("/");

@@ -23,6 +23,7 @@
     "bot:register": "npm.cmd --prefix bot run register-commands",
     "discord:register": "tsx scripts/register-discord-commands.ts",
     "discord:setup-server": "tsx scripts/setup-discord-server.ts",
+    "discord:profile": "tsx scripts/update-bot-profile.ts",
     "postinstall": "prisma generate",
     "prebuild": "prisma generate"
   },

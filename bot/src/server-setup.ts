@@ -64,6 +64,27 @@ export const SERVER_ROLES = [
     ],
   },
   {
+    name: "🥇 Top 10 Player",
+    color: 0xeab308,
+    hoist: true,
+    mentionable: false,
+    permissions: [],
+  },
+  {
+    name: "🥈 Top 50 Player",
+    color: 0x94a3b8,
+    hoist: true,
+    mentionable: false,
+    permissions: [],
+  },
+  {
+    name: "🥉 Top 100 Player",
+    color: 0xd97706,
+    hoist: true,
+    mentionable: false,
+    permissions: [],
+  },
+  {
     name: "🏆 List Victor",
     color: NDL_COLORS.PURPLE,
     hoist: true,
@@ -81,6 +102,20 @@ export const SERVER_ROLES = [
     name: "🌟 Level Creator",
     color: 0xfb923c,
     hoist: true,
+    mentionable: false,
+    permissions: [],
+  },
+  {
+    name: "🎥 Content Creator",
+    color: 0xec4899,
+    hoist: true,
+    mentionable: false,
+    permissions: [],
+  },
+  {
+    name: "🧪 Beta Tester",
+    color: 0x22c55e,
+    hoist: false,
     mentionable: false,
     permissions: [],
   },
@@ -331,6 +366,18 @@ export async function provisionNdlServer(
       "Share screenshots, completion videos, and Geometry Dash clips.",
     );
     await ensureChannel(
+      "🎨・art-and-creations",
+      ChannelType.GuildText,
+      catComm.id,
+      "Share thumbnails, level banners, Geometry Dash artwork, and creative designs.",
+    );
+    await ensureChannel(
+      "💭・off-topic",
+      ChannelType.GuildText,
+      catComm.id,
+      "Casual discussions, memes, and non-GD chats.",
+    );
+    await ensureChannel(
       "🤖・bot-commands",
       ChannelType.GuildText,
       catComm.id,
@@ -352,6 +399,12 @@ export async function provisionNdlServer(
       catSub.id,
       "Live feed of verified and accepted list records.",
       readOnlyOverwrites,
+    );
+    await ensureChannel(
+      "📊・progress-runs",
+      ChannelType.GuildText,
+      catSub.id,
+      "Share your percentage milestones, practice clips, and grind progression.",
     );
     await ensureChannel(
       "💡・level-suggestions",
@@ -422,8 +475,11 @@ export async function provisionNdlServer(
 
     // 8. Category: 🔊 VOICE CHANNELS
     const catVoice = await ensureCategory("🔊 VOICE CHANNELS");
-    await ensureChannel("🔊・General Voice", ChannelType.GuildVoice, catVoice.id);
-    await ensureChannel("🎮・Demon Grinding (Clicks)", ChannelType.GuildVoice, catVoice.id);
+    await ensureChannel("🔊・General Voice 1", ChannelType.GuildVoice, catVoice.id);
+    await ensureChannel("🔊・General Voice 2", ChannelType.GuildVoice, catVoice.id);
+    await ensureChannel("🎮・Demon Grinding 1 (Clicks)", ChannelType.GuildVoice, catVoice.id);
+    await ensureChannel("🎮・Demon Grinding 2", ChannelType.GuildVoice, catVoice.id);
+    await ensureChannel("🎧・Music & Chill", ChannelType.GuildVoice, catVoice.id);
     await ensureChannel("🔒・Staff Meeting", ChannelType.GuildVoice, catVoice.id, undefined, staffOverwrites);
 
     // 9. Post Formatted Embeds if requested
