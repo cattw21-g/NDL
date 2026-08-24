@@ -16,6 +16,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CopyButton } from "@/components/copy-button";
+import { DiscordLinkCard } from "@/components/discord-link-card";
 import { StatusBadge } from "@/components/status-badge";
 import {
   MetricTile,
@@ -266,6 +267,14 @@ export default async function PlayerProfilePage({
           />
         </div>
       </section>
+
+      {/* DISCORD AUTOMATED ROLE INTEGRATION */}
+      <DiscordLinkCard
+        isOwner={isOwnProfile}
+        discordUserId={player.discordUserId}
+        discordUsername={player.discordUsername}
+        discordLinkedAt={player.discordLinkedAt}
+      />
 
       {/* 3. HARDEST DEMON SPOTLIGHT */}
       {hardestCompletion ? (

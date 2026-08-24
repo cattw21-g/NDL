@@ -27,6 +27,7 @@ import {
   notifyNewSubmission,
   notifyRecordAccepted,
 } from "@/lib/discord-notify";
+import { syncAllLinkedDiscordUsers } from "@/lib/discord-role-sync";
 import { sendRecordStatusEmail } from "@/lib/email";
 import { calculateCurrentLevelPoints } from "@/lib/points";
 import { absoluteSiteUrl } from "@/lib/site-url";
@@ -285,6 +286,8 @@ export async function reviewSubmissionAction(formData: FormData) {
       videoUrl: submission.videoUrl,
       reviewerName: moderator.displayName,
     }).catch(() => {});
+
+    void syncAllLinkedDiscordUsers().catch(() => {});
   }
 
   revalidatePath("/");

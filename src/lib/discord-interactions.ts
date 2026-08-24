@@ -63,6 +63,8 @@ const publicCommandNames = [
   "leaderboard",
   "about",
   "status",
+  "sync",
+  "link",
 ] as const;
 
 const staffCommandNames = [
@@ -301,6 +303,22 @@ export const discordCommandDefinitions: DiscordCommandDefinition[] = [
     name: "stats",
     description: "Show NDL staff queue and site stats.",
   },
+  {
+    name: "sync",
+    description: "Synchronize your Discord roles with your NDL website profile and rank.",
+  },
+  {
+    name: "link",
+    description: "Link your Discord account to your NDL website player profile.",
+    options: [
+      {
+        name: "username",
+        description: "Your NDL website player username (e.g. cattw21).",
+        type: commandOptionType.String,
+        required: true,
+      },
+    ],
+  },
 ];
 
 export type DiscordInteraction = {
@@ -484,6 +502,10 @@ export async function handleDiscordInteraction(
         return await auditCommand(interaction, service, env);
       case "stats":
         return await statsCommand(service, env);
+      case "sync":
+        return await syncCommand(interaction, env);
+      case "link":
+        return await linkCommand(interaction, env);
       default:
         return messageResponse("Unknown NDL command.", true);
     }
@@ -555,6 +577,100 @@ async function handleMessageComponentInteraction(
   } catch {
     return messageResponse("Failed to update role. Please try again.", true);
   }
+}
+
+async function syncCommand(
+  interaction: DiscordInteraction,
+  env: Record<string, string | undefined>,
+): Promise<DiscordInteractionResponse> {
+  const userId = interaction.member?.user?.id || interaction.user?.id;
+  if (!userId) {
+    return messageResponse("Could not determine your Discord user ID.", true);
+  }
+
+  const db = await getPrisma();
+  const user = await db.user.findUnique({
+    where: { discordUserId: userId },
+  });
+
+  if (!user) {
+    return messageResponse(
+      "❌ Your Discord account is not linked to an NDL profile yet!\nUse `/link username: <your_website_username>` or link your account on the website.",
+      true,
+    );
+  }
+
+  const { syncDiscordRolesForUser } = await import("@/lib/discord-role-sync");
+  const res = await syncDiscordRolesForUser(user.id, {
+    guildId: interaction.guild_id || env.DISCORD_GUILD_ID?.trim(),
+    token: env.DISCORD_BOT_TOKEN?.trim(),
+  });
+
+  if (!res.success) {
+    return messageResponse(`❌ Failed to sync roles: ${res.error || "Unknown error"}`, true);
+  }
+
+  const added = res.addedRoles.length > 0 ? `\n✅ **Roles Added:** ${res.addedRoles.join(", ")}` : "";
+  const removed = res.removedRoles.length > 0 ? `\n❌ **Roles Removed:** ${res.removedRoles.join(", ")}` : "";
+
+  if (res.addedRoles.length === 0 && res.removedRoles.length === 0) {
+    return messageResponse(`✨ Your Discord roles for **${user.playerName}** are already up to date!`, true);
+  }
+
+  return messageResponse(`🎉 **Roles Synchronized for ${user.playerName}:**${added}${removed}`, true);
+}
+
+async function linkCommand(
+  interaction: DiscordInteraction,
+  env: Record<string, string | undefined>,
+): Promise<DiscordInteractionResponse> {
+  const discordUserId = interaction.member?.user?.id || interaction.user?.id;
+  const discordUsername = interaction.member?.user?.username || interaction.user?.username || null;
+  const username = getStringOption(interaction, "username");
+
+  if (!discordUserId) {
+    return messageResponse("Could not determine your Discord user ID.", true);
+  }
+
+  if (!username) {
+    return messageResponse("Please provide your NDL website username (e.g. `/link username: cattw21`).", true);
+  }
+
+  const db = await getPrisma();
+  const user = await db.user.findFirst({
+    where: {
+      OR: [
+        { playerName: { equals: username, mode: "insensitive" } },
+        { displayName: { equals: username, mode: "insensitive" } },
+      ],
+    },
+  });
+
+  if (!user) {
+    return messageResponse(`❌ No NDL profile found matching username **"${username}"**.`, true);
+  }
+
+  await db.user.update({
+    where: { id: user.id },
+    data: {
+      discordUserId,
+      discordUsername,
+      discordLinkedAt: new Date(),
+    },
+  });
+
+  const { syncDiscordRolesForUser } = await import("@/lib/discord-role-sync");
+  const syncRes = await syncDiscordRolesForUser(user.id, {
+    guildId: interaction.guild_id || env.DISCORD_GUILD_ID?.trim(),
+    token: env.DISCORD_BOT_TOKEN?.trim(),
+  });
+
+  const added = syncRes.addedRoles.length > 0 ? `\n✅ **Roles Granted:** ${syncRes.addedRoles.join(", ")}` : "";
+
+  return messageResponse(
+    `🎉 **Successfully linked your Discord account to NDL player "${user.displayName || user.playerName}"!**${added}\nYour roles (Top 10/50/100, Victor, Player, Verified) will now update automatically!`,
+    true,
+  );
 }
 
 export function createDiscordDataService() {

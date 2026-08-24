@@ -625,6 +625,8 @@ describe("Discord HTTP interactions", () => {
       "suggestion",
       "audit",
       "stats",
+      "sync",
+      "link",
     ]);
     expect(
       discordCommandDefinitions
