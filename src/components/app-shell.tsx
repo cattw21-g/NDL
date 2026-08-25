@@ -225,7 +225,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             )}
             <a
-              href="https://discord.com/channels/1541532007304003595"
+              href="https://discord.gg/kyYBkQzTCq"
               target="_blank"
               rel="noopener noreferrer"
               title="Join Official NDL Discord Server"

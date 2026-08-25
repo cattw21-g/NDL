@@ -113,7 +113,7 @@ We are excited to announce that the **Official Nerfed Demonlist Discord Server &
 
 ### 🔗 Join the Server Now
 Click the Discord icon at the top of the website or join via our direct server link:
-**[Join the Official Nerfed Demonlist Discord](https://discord.com/channels/1541532007304003595)**
+**[Join the Official Nerfed Demonlist Discord](https://discord.gg/kyYBkQzTCq)**
 
 Thank you for your incredible support as we continue pushing the limits of nerfed demon tracking!
 

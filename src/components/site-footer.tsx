@@ -92,7 +92,7 @@ export function SiteFooter({
             </a>
             . Join our{" "}
             <a
-              href="https://discord.com/channels/1541532007304003595"
+              href="https://discord.gg/kyYBkQzTCq"
               target="_blank"
               rel="noopener noreferrer"
               className="font-black text-[#5865F2] underline hover:text-[#4752c4] dark:text-[#7289da]"
