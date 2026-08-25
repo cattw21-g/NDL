@@ -152,7 +152,7 @@ export function UpcomingView({
               href="/suggest-level"
               className="text-xs font-bold text-cyan-700 underline hover:text-cyan-800 dark:text-cyan-400"
             >
-              Suggest a Level &rarr;
+              Suggest a Level →
             </Link>
           </div>
         </div>
@@ -366,26 +366,19 @@ function UpcomingCard({
           href={lvl.isSuggestion ? "/level-suggestions" : `/levels/${lvl.slug}`}
           className="inline-flex items-center gap-1 text-xs font-black text-cyan-700 hover:text-cyan-800 dark:text-cyan-400"
         >
-          {lvl.isSuggestion ? "View Suggestion Details &rarr;" : "View Level Details &rarr;"}
+          {lvl.isSuggestion ? "View Suggestion Details →" : "View Level Details →"}
         </Link>
 
-        <div className="flex items-center gap-2">
-          {isAdmin ? (
+        {isAdmin ? (
+          <div className="flex items-center gap-2">
             <Link
               href="/admin/upcoming"
               className="inline-flex items-center gap-1 rounded bg-amber-100 px-2.5 py-1 text-xs font-black text-amber-900 hover:bg-amber-200 dark:bg-amber-950 dark:text-amber-200"
             >
-              Manage &rarr;
+              Manage →
             </Link>
-          ) : null}
-
-          <Link
-            href="/submit"
-            className="inline-flex items-center gap-1 rounded bg-slate-200 px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300"
-          >
-            Submit Run
-          </Link>
-        </div>
+          </div>
+        ) : null}
       </div>
     </SectionPanel>
   );
