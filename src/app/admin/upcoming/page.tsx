@@ -204,6 +204,20 @@ export default async function AdminUpcomingPage() {
                     </button>
                   </form>
 
+                  {/* Move back to Waiting Levels (Unassign Verifier) */}
+                  <form action={assignVerifierAction}>
+                    <input type="hidden" name="levelId" value={lvl.id} />
+                    <input type="hidden" name="verifier" value="Open" />
+                    <button
+                      type="submit"
+                      title="Unassign verifier and move back to Waiting Levels"
+                      className="inline-flex min-h-9 items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-700 hover:border-cyan-400 hover:bg-cyan-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      <Hourglass className="h-3.5 w-3.5 text-cyan-600" />
+                      Move to Waiting
+                    </button>
+                  </form>
+
                   {/* Delete / Remove */}
                   <form action={deleteUpcomingLevelAction}>
                     <input type="hidden" name="levelId" value={lvl.id} />
