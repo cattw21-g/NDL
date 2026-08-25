@@ -30,6 +30,25 @@ client.once(Events.ClientReady, (readyClient) => {
     ],
     status: "online",
   });
+
+  // Automated 24/7 Role Syncing (runs immediately on startup, then every 2 minutes)
+  async function runAutoSync() {
+    try {
+      const { syncAllLinkedDiscordUsers } = await import("../../src/lib/discord-role-sync.js");
+      const result = await syncAllLinkedDiscordUsers();
+      if (result.syncedCount > 0) {
+        console.log(`🔄 [AutoSync] Updated roles for ${result.syncedCount} / ${result.totalUsers} linked Discord users.`);
+      }
+    } catch (err) {
+      console.error("⚠️ [AutoSync] Note during automated role sync:", err);
+    }
+  }
+
+  // Initial sync after login
+  setTimeout(runAutoSync, 3000);
+
+  // Recurring 2-minute auto-sync
+  setInterval(runAutoSync, 2 * 60 * 1000);
 });
 
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
