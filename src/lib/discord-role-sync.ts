@@ -106,9 +106,6 @@ export async function syncDiscordRolesForUser(
       const ndlDisplayName = user.displayName || user.playerName;
 
       let targetNick = `${discordDisplayName} (${ndlDisplayName})`;
-      if (discordDisplayName.toLowerCase() === ndlDisplayName.toLowerCase()) {
-        targetNick = discordDisplayName;
-      }
 
       if (targetNick.length > 32) {
         const maxBase = Math.max(8, 32 - ndlDisplayName.length - 3);
