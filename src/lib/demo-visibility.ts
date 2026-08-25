@@ -34,7 +34,7 @@ export function publicUserWhere(
     AND: [
       where,
       { isDemo: false },
-      { email: { not: { endsWith: "@ndl.local" } } },
+      { email: { notIn: ["player@ndl.local", "rival@ndl.local", "mod@ndl.local"] } },
     ],
   } satisfies Prisma.UserWhereInput;
 }

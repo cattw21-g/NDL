@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/db";
-import { publicRecordWhere, publicUserWhere } from "@/lib/demo-visibility";
 
 export type RoleSyncResult = {
   discordUserId: string;
@@ -67,13 +66,14 @@ export async function syncDiscordRolesForUser(
     where: { id: userId },
     include: {
       records: {
-        where: publicRecordWhere(),
+        where: { isDemo: false },
         select: {
           progress: true,
           pointsAwarded: true,
         },
       },
       verifiedLevels: {
+        where: { isDemo: false },
         select: { id: true },
       },
     },
@@ -144,11 +144,11 @@ export async function syncDiscordRolesForUser(
 
   // Calculate Player Standing across NDL Leaderboard
   const allPlayers = await prisma.user.findMany({
-    where: publicUserWhere(),
+    where: { isDemo: false },
     select: {
       id: true,
       records: {
-        where: publicRecordWhere(),
+        where: { isDemo: false },
         select: {
           pointsAwarded: true,
         },
