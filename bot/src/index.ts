@@ -227,6 +227,34 @@ server.on("error", (err) => {
 
 server.listen(port, () => {
   console.log(`📡 Bot 24/7 health check server listening on port ${port}`);
+
+  // 24/7 Self Keep-Alive Heartbeat (prevents free cloud platforms like Render from sleeping)
+  const externalUrl = process.env.RENDER_EXTERNAL_URL || process.env.KEEP_ALIVE_URL;
+  if (externalUrl) {
+    console.log(`💓 Starting 24/7 keep-alive ping for ${externalUrl}...`);
+    setInterval(async () => {
+      try {
+        await fetch(externalUrl);
+      } catch {
+        // Ignore ping errors
+      }
+    }, 5 * 60 * 1000); // ping every 5 minutes
+  }
+});
+
+client.on("error", (error) => {
+  console.error("Discord client error:", error);
+});
+
+client.on("shardError", (error) => {
+  console.error("Discord shard error:", error);
+});
+
+client.on("shardDisconnect", (event, shardId) => {
+  console.warn(`Discord shard ${shardId} disconnected (${event.code}). Attempting reconnect...`);
+  setTimeout(() => {
+    client.login(config.discordToken).catch(console.error);
+  }, 5000);
 });
 
 await client.login(config.discordToken);

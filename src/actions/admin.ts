@@ -35,7 +35,9 @@ import {
   notifyChangelogPosted,
   notifyLevelRanked,
   notifyLevelUpdated,
+  notifyRecordAccepted,
 } from "@/lib/discord-notify";
+import { syncAllLinkedDiscordUsers } from "@/lib/discord-role-sync";
 import { absoluteSiteUrl } from "@/lib/site-url";
 import { slugify } from "@/lib/slug";
 import {
@@ -224,7 +226,7 @@ export async function createLevelAction(
     });
   }
 
-  if (result.value.level.status === "RANKED") {
+  if (result.value.level.status === "RANKED" || result.value.level.status === "LEGACY") {
     await notifyLevelRanked({
       levelName: result.value.level.name,
       levelSlug: result.value.level.slug,
@@ -235,6 +237,10 @@ export async function createLevelAction(
       showcaseUrl: result.value.level.showcaseUrl,
     }).catch((err) => {
       console.error("Failed to dispatch notifyLevelRanked:", err);
+    });
+
+    await syncAllLinkedDiscordUsers().catch((err) => {
+      console.error("Failed to sync Discord roles on level addition:", err);
     });
   }
 
@@ -323,7 +329,7 @@ export async function updateLevelAction(
     return levelMutationErrorState(parsed.values, result.error);
   }
 
-  if (result.value.level.status === "RANKED") {
+  if (result.value.level.status === "RANKED" || result.value.level.status === "LEGACY") {
     await notifyLevelUpdated({
       levelName: result.value.level.name,
       levelSlug: result.value.level.slug,
@@ -333,6 +339,10 @@ export async function updateLevelAction(
       points: result.value.level.points,
     }).catch((err) => {
       console.error("Failed to dispatch notifyLevelUpdated:", err);
+    });
+
+    await syncAllLinkedDiscordUsers().catch((err) => {
+      console.error("Failed to sync Discord roles on level update:", err);
     });
   }
 
@@ -1306,6 +1316,24 @@ export async function createAdminRecordAction(formData: FormData) {
     entityId: record.id,
     entityLabel: `${player.displayName} on ${level.name} (${progress}%)`,
     note: `Admin added record for ${player.displayName}`,
+  });
+
+  await notifyRecordAccepted({
+    playerName: player.displayName,
+    playerHandle: player.playerName,
+    levelName: level.name,
+    levelSlug: level.slug,
+    levelRank: level.rank,
+    progress,
+    pointsAwarded: points,
+    videoUrl,
+    reviewerName: admin.displayName,
+  }).catch((err) => {
+    console.error("Failed to dispatch notifyRecordAccepted:", err);
+  });
+
+  await syncAllLinkedDiscordUsers().catch((err) => {
+    console.error("Failed to sync Discord roles on admin record creation:", err);
   });
 
   revalidatePath("/");
