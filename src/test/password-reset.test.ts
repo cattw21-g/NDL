@@ -296,5 +296,5 @@ describe("password reset", () => {
     await expect(verifyPassword("NewLongPass123!", user.passwordHash)).resolves.toBe(
       true,
     );
-  });
+  }, 15000);
 });

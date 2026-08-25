@@ -48,19 +48,21 @@ async function sendDiscordEmbed(
   embed: Record<string, unknown>,
 ) {
   const token = process.env.DISCORD_BOT_TOKEN?.trim();
-  const guildId = process.env.DISCORD_GUILD_ID?.trim();
+  const guildId = process.env.DISCORD_GUILD_ID?.trim() || "1541532007304003595";
 
-  if (!token || !guildId) {
+  if (!token) {
+    console.warn(`Cannot send embed to #${channelName}: Missing DISCORD_BOT_TOKEN`);
     return;
   }
 
   try {
     const channelId = await getChannelIdByName(channelName, guildId, token);
     if (!channelId) {
+      console.warn(`Cannot send embed: Channel "${channelName}" not found in Discord`);
       return;
     }
 
-    await fetch(`${DISCORD_API_BASE}/channels/${channelId}/messages`, {
+    const msgRes = await fetch(`${DISCORD_API_BASE}/channels/${channelId}/messages`, {
       method: "POST",
       headers: {
         Authorization: `Bot ${token}`,
@@ -70,6 +72,11 @@ async function sendDiscordEmbed(
         embeds: [embed],
       }),
     });
+
+    if (!msgRes.ok) {
+      const errText = await msgRes.text();
+      console.error(`Discord API Error [${msgRes.status}] posting to #${channelName}:`, errText);
+    }
   } catch (err) {
     console.error(`Failed to dispatch Discord embed to #${channelName}:`, err);
   }

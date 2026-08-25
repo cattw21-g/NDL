@@ -89,14 +89,16 @@ export async function addUpcomingLevelAction(formData: FormData) {
     note: verifier ? `Currently Verifying by ${verifier}` : "Waiting for Verifier",
   });
 
-  void notifyUpcomingDemonAdded({
+  await notifyUpcomingDemonAdded({
     levelName: level.name,
     originalName: level.originalName,
     verifier: level.verifier,
     nerfCreator: level.nerfCreator,
     showcaseUrl: level.showcaseUrl,
     difficulty: level.difficulty,
-  }).catch(() => {});
+  }).catch((err) => {
+    console.error("Failed to dispatch notifyUpcomingDemonAdded:", err);
+  });
 
   revalidatePath("/upcoming");
   revalidatePath("/admin/upcoming");

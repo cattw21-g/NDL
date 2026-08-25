@@ -111,13 +111,15 @@ export async function submitLevelSuggestionAction(
     });
   }
 
-  void notifyNewSuggestion({
+  await notifyNewSuggestion({
     userName: user.displayName,
     userHandle: user.playerName,
     levelName: parsed.data.name,
     originalName: parsed.data.originalName,
     videoUrl: parsed.data.showcaseUrl || parsed.data.verificationVideoUrl,
-  }).catch(() => {});
+  }).catch((err) => {
+    console.error("Failed to dispatch notifyNewSuggestion:", err);
+  });
 
   revalidatePath("/level-suggestions");
   revalidatePath("/moderation");

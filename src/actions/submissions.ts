@@ -113,7 +113,7 @@ export async function submitRecordAction(
     });
   }
 
-  void notifyNewSubmission({
+  await notifyNewSubmission({
     playerName: user.displayName,
     playerHandle: user.playerName,
     levelName: level.name,
@@ -121,7 +121,9 @@ export async function submitRecordAction(
     levelRank: level.rank,
     progress: upload.data.progress ?? 100,
     videoUrl: upload.data.videoUrl,
-  }).catch(() => {});
+  }).catch((err) => {
+    console.error("Failed to dispatch notifyNewSubmission:", err);
+  });
 
   revalidatePath(`/levels/${level.slug}`);
   revalidatePath("/");
@@ -275,7 +277,7 @@ export async function reviewSubmissionAction(formData: FormData) {
     const pointsAwarded =
       (submission.progress ?? 100) === 100 ? levelPoints : 0;
 
-    void notifyRecordAccepted({
+    await notifyRecordAccepted({
       playerName: submission.player.displayName,
       playerHandle: submission.player.playerName,
       levelName: submission.level.name,
@@ -285,9 +287,13 @@ export async function reviewSubmissionAction(formData: FormData) {
       pointsAwarded,
       videoUrl: submission.videoUrl,
       reviewerName: moderator.displayName,
-    }).catch(() => {});
+    }).catch((err) => {
+      console.error("Failed to dispatch notifyRecordAccepted:", err);
+    });
 
-    void syncAllLinkedDiscordUsers().catch(() => {});
+    await syncAllLinkedDiscordUsers().catch((err) => {
+      console.error("Failed to sync Discord roles on record acceptance:", err);
+    });
   }
 
   revalidatePath("/");

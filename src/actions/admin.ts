@@ -225,7 +225,7 @@ export async function createLevelAction(
   }
 
   if (result.value.level.status === "RANKED") {
-    void notifyLevelRanked({
+    await notifyLevelRanked({
       levelName: result.value.level.name,
       levelSlug: result.value.level.slug,
       levelRank: result.value.level.rank,
@@ -233,7 +233,9 @@ export async function createLevelAction(
       verifier: result.value.level.verifier,
       nerfCreator: result.value.level.nerfCreator,
       showcaseUrl: result.value.level.showcaseUrl,
-    }).catch(() => {});
+    }).catch((err) => {
+      console.error("Failed to dispatch notifyLevelRanked:", err);
+    });
   }
 
   revalidatePath("/");
@@ -322,14 +324,16 @@ export async function updateLevelAction(
   }
 
   if (result.value.level.status === "RANKED") {
-    void notifyLevelUpdated({
+    await notifyLevelUpdated({
       levelName: result.value.level.name,
       levelSlug: result.value.level.slug,
       oldRank: null,
       newRank: result.value.level.rank,
       status: result.value.level.status,
       points: result.value.level.points,
-    }).catch(() => {});
+    }).catch((err) => {
+      console.error("Failed to dispatch notifyLevelUpdated:", err);
+    });
   }
 
   revalidatePath("/");
@@ -669,12 +673,14 @@ export async function createChangelogAction(formData: FormData) {
   }
 
   if (parsed.data.isPublished) {
-    void notifyChangelogPosted({
+    await notifyChangelogPosted({
       title: parsed.data.title,
       slug: result.slug,
       category: parsed.data.category,
       summary: parsed.data.summary,
-    }).catch(() => {});
+    }).catch((err) => {
+      console.error("Failed to dispatch notifyChangelogPosted:", err);
+    });
 
     const articleUrl = absoluteSiteUrl(`/changelog/${result.slug}`);
     void (async () => {
