@@ -23,13 +23,26 @@ async function fetchGuildRoles(guildId: string, token: string): Promise<DiscordR
   return res.json();
 }
 
-async function fetchMemberRoles(guildId: string, userId: string, token: string): Promise<string[]> {
+type DiscordGuildMember = {
+  roles?: string[];
+  nick?: string | null;
+  user?: {
+    id: string;
+    username: string;
+    global_name?: string | null;
+  };
+};
+
+async function fetchMemberDetails(
+  guildId: string,
+  userId: string,
+  token: string,
+): Promise<DiscordGuildMember | null> {
   const res = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}`, {
     headers: { Authorization: `Bot ${token}` },
   });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.roles || [];
+  if (!res.ok) return null;
+  return res.json();
 }
 
 export async function syncDiscordRolesForUser(
@@ -78,7 +91,40 @@ export async function syncDiscordRolesForUser(
   }
 
   const guildRoles = await fetchGuildRoles(guildId, token);
-  const currentMemberRoleIds = await fetchMemberRoles(guildId, user.discordUserId, token);
+  const memberData = await fetchMemberDetails(guildId, user.discordUserId, token);
+  const currentMemberRoleIds = memberData?.roles || [];
+
+  // Automatically update Discord server nickname to: "discord username (ndl username)"
+  if (memberData) {
+    try {
+      const discordBase =
+        memberData.user?.global_name ||
+        memberData.user?.username ||
+        user.discordUsername?.replace(/#0$/, "") ||
+        user.playerName;
+
+      const ndlName = user.displayName || user.playerName;
+
+      let targetNick = `${discordBase} (${ndlName})`;
+      if (targetNick.length > 32) {
+        const maxBase = Math.max(8, 32 - ndlName.length - 3);
+        targetNick = `${discordBase.slice(0, maxBase)} (${ndlName})`.slice(0, 32);
+      }
+
+      if (memberData.nick !== targetNick) {
+        await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${user.discordUserId}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bot ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ nick: targetNick }),
+        }).catch(() => {});
+      }
+    } catch {
+      // Ignore nickname edit errors (e.g. server owner or higher hierarchy role permissions)
+    }
+  }
 
   const roleMap: Record<string, string> = {};
   for (const r of guildRoles) {
