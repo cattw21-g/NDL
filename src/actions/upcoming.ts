@@ -9,7 +9,8 @@ import { prisma } from "@/lib/db";
 import { FALLBACK_THUMBNAIL_SRC } from "@/lib/media";
 import { updateLevelWithRank } from "@/lib/level-ranking";
 import { calculateLevelPoints } from "@/lib/points";
-import { notifyUpcomingDemonAdded } from "@/lib/discord-notify";
+import { notifyLevelRanked, notifyUpcomingDemonAdded } from "@/lib/discord-notify";
+import { syncAllLinkedDiscordUsers } from "@/lib/discord-role-sync";
 import { slugify } from "@/lib/slug";
 
 export async function addUpcomingLevelAction(formData: FormData) {
@@ -298,6 +299,23 @@ export async function promoteUpcomingLevelAction(formData: FormData) {
     entityId: existingLevel.id,
     entityLabel: `${existingLevel.name} ranked #${rank}`,
     note: `Promoted from upcoming queue to main ranked list at #${rank}`,
+  });
+
+  const points = calculateLevelPoints(rank, LevelStatus.RANKED);
+  await notifyLevelRanked({
+    levelName: existingLevel.name,
+    levelSlug: existingLevel.slug,
+    levelRank: rank,
+    points,
+    verifier: finalVerifier,
+    nerfCreator: existingLevel.nerfCreator,
+    showcaseUrl: finalVideo,
+  }).catch((err) => {
+    console.error("Failed to dispatch notifyLevelRanked:", err);
+  });
+
+  await syncAllLinkedDiscordUsers().catch((err) => {
+    console.error("Failed to sync Discord roles on upcoming promotion:", err);
   });
 
   revalidatePath("/");
