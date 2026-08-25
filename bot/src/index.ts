@@ -202,6 +202,10 @@ const server = http.createServer((req, res) => {
   );
 });
 
+server.on("error", (err) => {
+  console.log("Health check server note:", err.message);
+});
+
 server.listen(port, () => {
   console.log(`📡 Bot 24/7 health check server listening on port ${port}`);
 });
