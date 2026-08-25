@@ -105,6 +105,12 @@ export function createRulesEmbed(siteUrl = "https://www.nerfeddemonlist.net"): E
         inline: false,
       },
       {
+        name: "6️⃣ Unverified Level Nerfs Allowed",
+        value:
+          "You are explicitly allowed to create and suggest nerfed versions of unverified or impossible levels, provided the nerfed version has been legitimately verified and uploaded to GD servers.",
+        inline: false,
+      },
+      {
         name: "📖 Complete Rulebook",
         value: `Read the full, official guidelines at [nerfeddemonlist.net/rules](${siteUrl}/rules).`,
         inline: false,

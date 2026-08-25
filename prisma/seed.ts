@@ -71,6 +71,7 @@ const rulesContent = `## General policy
 
 ## Level eligibility
 - Eligible nerfs need a real Geometry Dash level ID, clear publisher or host credit, original level credit, nerf creator credit, verifier credit, and a stable showcase.
+- **Nerfed versions of unverified levels ARE allowed**: You are explicitly permitted to create and suggest nerfed versions of unverified levels (such as unverified upcoming top demons, impossible levels, or work-in-progress projects), as long as the nerfed version has been legitimately verified and uploaded to Geometry Dash servers.
 - A nerfed level should preserve the original route, click timing, speed, portals, gamemode order, and progression closely enough that original replay or macro compatibility is plausible under matching conditions.
 - Matching conditions include game version, physics expectations, FPS/CBF assumptions, intended route, and documented exceptions for bugfixes, impossible original transitions, or necessary compatibility changes.
 - Staff may reject a suggestion if the level is not identifiable, is too far from the original, or cannot be reviewed safely.

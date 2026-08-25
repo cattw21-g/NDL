@@ -65,6 +65,7 @@ export default async function SuggestLevelPage({
             <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
               <li>Use a real GD level ID and stable showcase link.</li>
               <li>Credit the original level, host, nerf creator, and verifier.</li>
+              <li><strong className="text-cyan-800 dark:text-cyan-300">Unverified levels allowed:</strong> Nerfed versions of unverified or impossible levels are fully allowed as long as the nerf is legitimately verified.</li>
               <li>Explain route/timing fidelity and any compatibility exception.</li>
               <li>Staff may replace the thumbnail during review.</li>
               <li>Staff can approve, reject, or request changes.</li>
