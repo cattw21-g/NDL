@@ -97,18 +97,22 @@ export async function syncDiscordRolesForUser(
   // Automatically update Discord server nickname to: "discord username (ndl username)"
   if (memberData) {
     try {
-      const discordBase =
+      const discordDisplayName =
         memberData.user?.global_name ||
         memberData.user?.username ||
         user.discordUsername?.replace(/#0$/, "") ||
         user.playerName;
 
-      const ndlName = user.displayName || user.playerName;
+      const ndlDisplayName = user.displayName || user.playerName;
 
-      let targetNick = `${discordBase} (${ndlName})`;
+      let targetNick = `${discordDisplayName} (${ndlDisplayName})`;
+      if (discordDisplayName.toLowerCase() === ndlDisplayName.toLowerCase()) {
+        targetNick = discordDisplayName;
+      }
+
       if (targetNick.length > 32) {
-        const maxBase = Math.max(8, 32 - ndlName.length - 3);
-        targetNick = `${discordBase.slice(0, maxBase)} (${ndlName})`.slice(0, 32);
+        const maxBase = Math.max(8, 32 - ndlDisplayName.length - 3);
+        targetNick = `${discordDisplayName.slice(0, maxBase)} (${ndlDisplayName})`.slice(0, 32);
       }
 
       if (memberData.nick !== targetNick) {
