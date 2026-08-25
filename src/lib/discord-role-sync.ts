@@ -129,13 +129,13 @@ export async function syncDiscordRolesForUser(
   const roleMap: Record<string, string> = {};
   for (const r of guildRoles) {
     const lower = r.name.toLowerCase();
-    if (lower.includes("top 10")) roleMap["top10"] = r.id;
-    else if (lower.includes("top 50")) roleMap["top50"] = r.id;
-    else if (lower.includes("top 100")) roleMap["top100"] = r.id;
+    if (lower.includes("top 100") || lower.includes("top100")) roleMap["top100"] = r.id;
+    else if (lower.includes("top 50") || lower.includes("top50")) roleMap["top50"] = r.id;
+    else if (lower.includes("top 10") || lower.includes("top10")) roleMap["top10"] = r.id;
     else if (lower.includes("victor")) roleMap["victor"] = r.id;
     else if (lower.includes("list player")) roleMap["player"] = r.id;
-    else if (lower.includes("level creator")) roleMap["creator"] = r.id;
-    else if (lower.includes("verified member")) roleMap["verified"] = r.id;
+    else if (lower.includes("level creator") || lower.includes("creator")) roleMap["creator"] = r.id;
+    else if (lower.includes("verified member") || lower.includes("verified")) roleMap["verified"] = r.id;
     else if (lower.includes("admin")) roleMap["admin"] = r.id;
     else if (lower.includes("moderator")) roleMap["mod"] = r.id;
     else if (lower.includes("reviewer")) roleMap["reviewer"] = r.id;

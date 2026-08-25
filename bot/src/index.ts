@@ -51,6 +51,21 @@ client.once(Events.ClientReady, (readyClient) => {
   setInterval(runAutoSync, 2 * 60 * 1000);
 });
 
+// Auto-assign 'Verified Member' role whenever a new user joins the Discord server
+client.on(Events.GuildMemberAdd, async (member) => {
+  try {
+    const verifiedRole = member.guild.roles.cache.find((r) =>
+      r.name.toLowerCase().includes("verified member"),
+    );
+    if (verifiedRole) {
+      await member.roles.add(verifiedRole).catch(console.error);
+      console.log(`✅ Auto-assigned 'Verified Member' role to new member: ${member.user.tag}`);
+    }
+  } catch (err) {
+    console.error("Failed to auto-assign verified member role on join:", err);
+  }
+});
+
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
   if (interaction.isButton()) {
     const customId = interaction.customId;
