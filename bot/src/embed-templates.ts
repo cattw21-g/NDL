@@ -260,9 +260,9 @@ export function createAccountLinkingEmbed(): EmbedBuilder {
         inline: false,
       },
       {
-        name: "⚡ 1-Click Authorization",
+        name: "⚡ 1-Click Automated Setup",
         value:
-          "Click the **`🔗 Link NDL Account`** button below, authorize with Discord in 1 click, and your roles will instantly synchronize with your live website stats!",
+          "Click the **`🔗 Link NDL Account`** button below and authorize in 1 click.\nYour roles will immediately update and stay continuously synchronized in the background without needing to press anything!",
         inline: false,
       },
     )
@@ -277,9 +277,5 @@ export function createAccountLinkingActionRow(siteUrl = "https://www.nerfeddemon
       .setLabel("🔗 Link NDL Account")
       .setStyle(ButtonStyle.Link)
       .setURL(`${siteUrl}/api/auth/discord/login`),
-    new ButtonBuilder()
-      .setCustomId("sync_ndl_roles")
-      .setLabel("🔄 Sync My Roles")
-      .setStyle(ButtonStyle.Secondary),
   );
 }
