@@ -30,8 +30,8 @@ export default async function SubmitPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requireUser();
-  const [params, levels] = await Promise.all([
+  const user = await requireUser();
+  const [params, rankedLevels, userUpcomingLevels] = await Promise.all([
     searchParams,
     prisma.level.findMany({
       where: publicLevelWhere({
@@ -41,7 +41,26 @@ export default async function SubmitPage({
       }),
       orderBy: [{ rank: { sort: "asc", nulls: "last" } }, { name: "asc" }],
     }),
+    prisma.level.findMany({
+      where: {
+        status: "PENDING",
+        OR: [
+          { verifierUserId: user.id },
+          { verifier: { equals: user.playerName, mode: "insensitive" } },
+          { verifier: { equals: user.displayName, mode: "insensitive" } },
+        ],
+      },
+      orderBy: { name: "asc" },
+    }),
   ]);
+
+  const levels = [
+    ...userUpcomingLevels.map((lvl) => ({
+      ...lvl,
+      name: `🔥 [Upcoming Verification] ${lvl.name}`,
+    })),
+    ...rankedLevels,
+  ];
   const imageUploadsEnabled = localUploadsEnabled();
   const mp4UploadsEnabled = videoUploadsEnabled();
   const maxImageMb = bytesToMb(maxImageUploadBytes());

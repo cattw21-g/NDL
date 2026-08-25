@@ -72,10 +72,24 @@ export async function submitRecordAction(
     },
   });
 
-  if (!level || (level.status !== "RANKED" && level.status !== "LEGACY")) {
+  if (!level) {
     return createSubmissionFormErrorState(parsed.values, {
       fieldErrors: {
         levelId: ["That level is not available for submissions."],
+      },
+    });
+  }
+
+  const isAssignedVerifier =
+    level.status === "PENDING" &&
+    (level.verifierUserId === user.id ||
+      level.verifier?.toLowerCase() === user.displayName?.toLowerCase() ||
+      level.verifier?.toLowerCase() === user.playerName?.toLowerCase());
+
+  if (level.status !== "RANKED" && level.status !== "LEGACY" && !isAssignedVerifier) {
+    return createSubmissionFormErrorState(parsed.values, {
+      fieldErrors: {
+        levelId: ["That level is currently in upcoming verification. Only the assigned verifier can submit verification runs."],
       },
     });
   }
