@@ -135,7 +135,10 @@ export async function notifyRecordAccepted(data: {
     timestamp: new Date().toISOString(),
   };
 
-  await sendDiscordEmbed("accepted-records", embed);
+  await Promise.all([
+    sendDiscordEmbed("accepted-records", embed),
+    sendDiscordEmbed("list-updates", embed),
+  ]);
 }
 
 /**

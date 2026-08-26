@@ -12,10 +12,14 @@ export async function GET() {
   u.searchParams.set("redirect_uri", redirectUri);
   u.searchParams.set("scope", "identify");
 
+  const botToken = process.env.DISCORD_BOT_TOKEN?.trim() || "";
+  const guildId = process.env.DISCORD_GUILD_ID?.trim() || "";
+
   return NextResponse.json({
     status: "ok",
     clientId: clientId.trim(),
-    redirectUri,
-    fullGeneratedUrl: u.toString(),
+    guildId,
+    tokenPrefix: botToken.slice(0, 10),
+    tokenSuffix: botToken.slice(-6),
   });
 }
