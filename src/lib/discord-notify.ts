@@ -95,37 +95,60 @@ export async function notifyRecordAccepted(data: {
   pointsAwarded: number;
   videoUrl: string;
   reviewerName?: string;
+  thumbnailUrl?: string | null;
+  fps?: number | null;
+  cbfUsed?: boolean | null;
 }) {
   const levelUrl = absoluteSiteUrl(`/levels/${data.levelSlug}`);
   const playerUrl = absoluteSiteUrl(`/players/${encodeURIComponent(data.playerHandle)}`);
   const rankStr = data.levelRank ? `#${data.levelRank}` : "Unranked";
+  const is100 = data.progress === 100;
+
+  const validThumbnail =
+    data.thumbnailUrl && data.thumbnailUrl.startsWith("http")
+      ? data.thumbnailUrl
+      : undefined;
 
   const embed = {
-    title: `🎉 Record Accepted — ${data.levelName} (${rankStr})`,
-    description: `**${data.playerName}** just had their **${data.progress}% run** verified and accepted!`,
+    title: is100
+      ? `🏆 100% Completion Verified — ${data.levelName} (${rankStr})`
+      : `⚡ Progress Record Verified — ${data.levelName} (${data.progress}%)`,
+    description: is100
+      ? `**[${data.playerName}](${playerUrl})** has conquered **[${data.levelName}](${levelUrl})** (${rankStr}) and earned **+${data.pointsAwarded} points**!`
+      : `**[${data.playerName}](${playerUrl})** achieved **${data.progress}%** on **[${data.levelName}](${levelUrl})**!`,
     url: levelUrl,
-    color: 0x10b981, // Emerald Green
+    color: is100 ? 0x10b981 : 0x06b6d4, // Emerald Green for 100%, Cyan for progress
+    thumbnail: validThumbnail ? { url: validThumbnail } : undefined,
     fields: [
       {
         name: "🏆 Demon",
-        value: `[${data.levelName}](${levelUrl}) (${rankStr})`,
+        value: `**[${data.levelName}](${levelUrl})**\nRank: **${rankStr}**`,
         inline: true,
       },
       {
         name: "👤 Player",
-        value: `[${data.playerName}](${playerUrl})`,
+        value: `**[${data.playerName}](${playerUrl})**\nProgress: **${data.progress}%**`,
         inline: true,
       },
       {
         name: "💎 Points Awarded",
-        value: `**+${data.pointsAwarded} pts**`,
+        value: `**+${data.pointsAwarded} pts**\nStatus: **Verified**`,
         inline: true,
       },
       {
-        name: "🎬 Video Proof",
-        value: `[Watch Verification Run](${data.videoUrl})`,
-        inline: false,
+        name: "⚙️ Hardware / Run Stats",
+        value: `FPS: **${data.fps || 360} FPS** • CBF: **${data.cbfUsed ? "Yes" : "No"}**`,
+        inline: true,
       },
+      ...(data.videoUrl && data.videoUrl.startsWith("http")
+        ? [
+            {
+              name: "🎬 Proof Video",
+              value: `[Watch Verification Run ↗](${data.videoUrl})`,
+              inline: true,
+            },
+          ]
+        : []),
     ],
     footer: {
       text: data.reviewerName
@@ -252,15 +275,22 @@ export async function notifyLevelRanked(data: {
   verifier: string;
   nerfCreator: string;
   showcaseUrl?: string | null;
+  thumbnailUrl?: string | null;
 }) {
   const levelUrl = absoluteSiteUrl(`/levels/${data.levelSlug}`);
   const rankStr = data.levelRank ? `#${data.levelRank}` : "Unranked";
 
+  const validThumbnail =
+    data.thumbnailUrl && data.thumbnailUrl.startsWith("http")
+      ? data.thumbnailUrl
+      : undefined;
+
   const embed = {
-    title: `📰 Demon Placed on List — ${data.levelName} (${rankStr})`,
-    description: `**${data.levelName}** has been officially placed on the Nerfed Demonlist at **${rankStr}** (${data.points} pts)!`,
+    title: `🔥 New Demon Ranked — ${data.levelName} (${rankStr})`,
+    description: `**[${data.levelName}](${levelUrl})** has officially been added to the Nerfed Demonlist at **${rankStr}** worth **${data.points} points**!`,
     url: levelUrl,
     color: 0xf59e0b, // Amber Gold
+    thumbnail: validThumbnail ? { url: validThumbnail } : undefined,
     fields: [
       {
         name: "🏆 Placement Rank",
@@ -268,32 +298,37 @@ export async function notifyLevelRanked(data: {
         inline: true,
       },
       {
-        name: "💎 Points",
+        name: "💎 Points Value",
         value: `**${data.points} pts**`,
         inline: true,
       },
       {
-        name: "Verifier",
-        value: data.verifier,
+        name: "⚔️ Verifier",
+        value: data.verifier || "N/A",
         inline: true,
       },
       {
-        name: "Nerf Creator",
-        value: data.nerfCreator,
+        name: "🛠️ Nerf Creator",
+        value: data.nerfCreator || "N/A",
         inline: true,
       },
-      ...(data.showcaseUrl
+      ...(data.showcaseUrl && data.showcaseUrl.startsWith("http")
         ? [
             {
-              name: "Showcase Video",
-              value: `[Watch Verification Showcase](${data.showcaseUrl})`,
-              inline: false,
+              name: "🎬 Verification Showcase",
+              value: `[Watch Showcase Video ↗](${data.showcaseUrl})`,
+              inline: true,
             },
           ]
         : []),
+      {
+        name: "🌐 Level Page",
+        value: `[Open on Nerfed Demonlist ↗](${levelUrl})`,
+        inline: true,
+      },
     ],
     footer: {
-      text: "Nerfed Demonlist Placements & Updates",
+      text: "Nerfed Demonlist • Official List Update",
     },
     timestamp: new Date().toISOString(),
   };
@@ -311,14 +346,21 @@ export async function notifyUpcomingDemonAdded(data: {
   nerfCreator: string;
   showcaseUrl?: string | null;
   difficulty?: string;
+  thumbnailUrl?: string | null;
 }) {
   const upcomingUrl = absoluteSiteUrl("/upcoming");
+
+  const validThumbnail =
+    data.thumbnailUrl && data.thumbnailUrl.startsWith("http")
+      ? data.thumbnailUrl
+      : undefined;
 
   const embed = {
     title: `🔥 New Upcoming Demon — ${data.levelName}`,
     description: `A new nerfed demon is currently in verification and coming soon to Nerfed Demonlist!`,
     url: upcomingUrl,
     color: 0xf97316, // Orange / Fire
+    thumbnail: validThumbnail ? { url: validThumbnail } : undefined,
     fields: [
       {
         name: "Demon",
@@ -340,19 +382,19 @@ export async function notifyUpcomingDemonAdded(data: {
         value: data.nerfCreator,
         inline: true,
       },
-      ...(data.showcaseUrl
+      ...(data.showcaseUrl && data.showcaseUrl.startsWith("http")
         ? [
             {
               name: "Showcase Preview",
-              value: `[Watch Verification Showcase](${data.showcaseUrl})`,
-              inline: false,
+              value: `[Watch Verification Showcase ↗](${data.showcaseUrl})`,
+              inline: true,
             },
           ]
         : []),
       {
         name: "Upcoming Hub",
-        value: `[View All Upcoming Demons](${upcomingUrl})`,
-        inline: false,
+        value: `[View All Upcoming Demons ↗](${upcomingUrl})`,
+        inline: true,
       },
     ],
     footer: {
@@ -388,7 +430,7 @@ export async function notifyChangelogPosted(data: {
       },
       {
         name: "Read Full Article",
-        value: `[Open on Website](${changelogUrl})`,
+        value: `[Open on Website ↗](${changelogUrl})`,
         inline: true,
       },
     ],
@@ -411,35 +453,68 @@ export async function notifyLevelUpdated(data: {
   newRank: number | null;
   status: string;
   points: number;
+  thumbnailUrl?: string | null;
 }) {
   const levelUrl = absoluteSiteUrl(`/levels/${data.levelSlug}`);
+  const isRankChange =
+    data.oldRank !== null &&
+    data.newRank !== null &&
+    data.oldRank !== data.newRank;
   const oldRankStr = data.oldRank ? `#${data.oldRank}` : "Unranked";
   const newRankStr = data.newRank ? `#${data.newRank}` : "Unranked";
 
+  const validThumbnail =
+    data.thumbnailUrl && data.thumbnailUrl.startsWith("http")
+      ? data.thumbnailUrl
+      : undefined;
+
+  let title = `📊 Level Adjusted — ${data.levelName} (${newRankStr})`;
+  let description = `**[${data.levelName}](${levelUrl})** has been adjusted on the list to **${newRankStr}** (${data.points} pts).`;
+  let color = 0x6366f1; // Blurple / Indigo
+
+  if (isRankChange) {
+    const isPromotion = (data.oldRank || 999) > (data.newRank || 999);
+    title = isPromotion
+      ? `📈 Demon Moved Up — ${data.levelName} (#${data.oldRank} ➔ #${data.newRank})`
+      : `📉 Demon Moved Down — ${data.levelName} (#${data.oldRank} ➔ #${data.newRank})`;
+    description = `**[${data.levelName}](${levelUrl})** has moved from **#${data.oldRank}** to **#${data.newRank}** on the list!`;
+    color = isPromotion ? 0x10b981 : 0xf43f5e;
+  } else if (data.status === "LEGACY") {
+    title = `📦 Demon Moved to Legacy — ${data.levelName}`;
+    description = `**[${data.levelName}](${levelUrl})** has been moved to the **Legacy List** (${data.points} pts).`;
+    color = 0x64748b; // Slate
+  }
+
   const embed = {
-    title: `🔄 Level Update — ${data.levelName}`,
-    description: `**${data.levelName}** placement has been updated on the list: **${oldRankStr} ➡️ ${newRankStr}** (${data.points} pts).`,
+    title,
+    description,
     url: levelUrl,
-    color: 0x38bdf8, // Sky Blue
+    color,
+    thumbnail: validThumbnail ? { url: validThumbnail } : undefined,
     fields: [
       {
-        name: "Placement",
-        value: `${oldRankStr} ➡️ ${newRankStr}`,
+        name: "📍 Placement Change",
+        value: `${oldRankStr} ➡️ **${newRankStr}**`,
         inline: true,
       },
       {
-        name: "Points",
-        value: `${data.points} pts`,
+        name: "💎 Points",
+        value: `**${data.points} pts**`,
         inline: true,
       },
       {
-        name: "Status",
-        value: data.status,
+        name: "📊 Status",
+        value: `**${data.status}**`,
         inline: true,
+      },
+      {
+        name: "🌐 Level Page",
+        value: `[Open on Nerfed Demonlist ↗](${levelUrl})`,
+        inline: false,
       },
     ],
     footer: {
-      text: "Nerfed Demonlist Placements & Leaderboards",
+      text: "Nerfed Demonlist • Official List Update",
     },
     timestamp: new Date().toISOString(),
   };

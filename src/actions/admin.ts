@@ -235,6 +235,7 @@ export async function createLevelAction(
       verifier: result.value.level.verifier,
       nerfCreator: result.value.level.nerfCreator,
       showcaseUrl: result.value.level.showcaseUrl,
+      thumbnailUrl: result.value.level.thumbnailUrl,
     }).catch((err) => {
       console.error("Failed to dispatch notifyLevelRanked:", err);
     });
@@ -320,7 +321,10 @@ export async function updateLevelAction(
         parsed.data.verifierUserId,
       );
 
-      return mutation;
+      return {
+        ...mutation,
+        beforeRank: beforeLevel?.rank ?? null,
+      };
     }),
     upload.uploadedPaths,
   );
@@ -333,10 +337,11 @@ export async function updateLevelAction(
     await notifyLevelUpdated({
       levelName: result.value.level.name,
       levelSlug: result.value.level.slug,
-      oldRank: null,
+      oldRank: result.value.beforeRank,
       newRank: result.value.level.rank,
       status: result.value.level.status,
       points: result.value.level.points,
+      thumbnailUrl: result.value.level.thumbnailUrl,
     }).catch((err) => {
       console.error("Failed to dispatch notifyLevelUpdated:", err);
     });
@@ -1328,6 +1333,9 @@ export async function createAdminRecordAction(formData: FormData) {
     pointsAwarded: points,
     videoUrl,
     reviewerName: admin.displayName,
+    thumbnailUrl: level.thumbnailUrl,
+    fps,
+    cbfUsed: false,
   }).catch((err) => {
     console.error("Failed to dispatch notifyRecordAccepted:", err);
   });

@@ -310,6 +310,7 @@ export async function promoteUpcomingLevelAction(formData: FormData) {
     verifier: finalVerifier,
     nerfCreator: existingLevel.nerfCreator,
     showcaseUrl: finalVideo,
+    thumbnailUrl: existingLevel.thumbnailUrl,
   }).catch((err) => {
     console.error("Failed to dispatch notifyLevelRanked:", err);
   });

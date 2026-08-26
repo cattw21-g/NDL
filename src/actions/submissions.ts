@@ -301,6 +301,9 @@ export async function reviewSubmissionAction(formData: FormData) {
       pointsAwarded,
       videoUrl: submission.videoUrl,
       reviewerName: moderator.displayName,
+      thumbnailUrl: submission.level.thumbnailUrl,
+      fps: submission.fps,
+      cbfUsed: submission.cbfUsed,
     }).catch((err) => {
       console.error("Failed to dispatch notifyRecordAccepted:", err);
     });
