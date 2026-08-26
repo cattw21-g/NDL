@@ -109,10 +109,13 @@ export async function notifyRecordAccepted(data: {
       ? data.thumbnailUrl
       : undefined;
 
+  const statusText = is100 ? "100% Complete" : "In Progress";
+  const videoLabel = is100 ? "Watch Completion Run ↗" : "Watch Progress Run ↗";
+
   const embed = {
     title: is100
-      ? `🏆 100% Completion Verified — ${data.levelName} (${rankStr})`
-      : `⚡ Progress Record Verified — ${data.levelName} (${data.progress}%)`,
+      ? `🏆 100% Completion Accepted — ${data.levelName} (${rankStr})`
+      : `⚡ Progress Record Accepted — ${data.levelName} (${data.progress}%)`,
     description: is100
       ? `**[${data.playerName}](${playerUrl})** has conquered **[${data.levelName}](${levelUrl})** (${rankStr}) and earned **+${data.pointsAwarded} points**!`
       : `**[${data.playerName}](${playerUrl})** achieved **${data.progress}%** on **[${data.levelName}](${levelUrl})**!`,
@@ -132,7 +135,7 @@ export async function notifyRecordAccepted(data: {
       },
       {
         name: "💎 Points Awarded",
-        value: `**+${data.pointsAwarded} pts**\nStatus: **Verified**`,
+        value: `**+${data.pointsAwarded} pts**\nStatus: **${statusText}**`,
         inline: true,
       },
       {
@@ -144,7 +147,7 @@ export async function notifyRecordAccepted(data: {
         ? [
             {
               name: "🎬 Proof Video",
-              value: `[Watch Verification Run ↗](${data.videoUrl})`,
+              value: `[${videoLabel}](${data.videoUrl})`,
               inline: true,
             },
           ]
@@ -152,8 +155,8 @@ export async function notifyRecordAccepted(data: {
     ],
     footer: {
       text: data.reviewerName
-        ? `Verified by ${data.reviewerName} • Nerfed Demonlist`
-        : "Verified • Nerfed Demonlist",
+        ? `Approved by ${data.reviewerName} • Nerfed Demonlist`
+        : "Approved • Nerfed Demonlist",
     },
     timestamp: new Date().toISOString(),
   };
