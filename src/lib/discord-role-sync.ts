@@ -133,6 +133,7 @@ export async function syncDiscordRolesForUser(
     if (lower.includes("top 100") || lower.includes("top100")) roleMap["top100"] = r.id;
     else if (lower.includes("top 50") || lower.includes("top50")) roleMap["top50"] = r.id;
     else if (lower.includes("top 10") || lower.includes("top10")) roleMap["top10"] = r.id;
+    else if (lower.includes("top 1") || lower.includes("top1")) roleMap["top1"] = r.id;
     else if (lower.includes("victor")) roleMap["victor"] = r.id;
     else if (lower.includes("list player")) roleMap["player"] = r.id;
     else if (lower.includes("level creator")) roleMap["creator"] = r.id;
@@ -184,7 +185,9 @@ export async function syncDiscordRolesForUser(
   }
 
   // 3. Top Player Hierarchy (Mutually exclusive: only 1 top tier role)
-  if (rank && rank >= 1 && rank <= 10) {
+  if (rank === 1) {
+    targetRoleKeys.add("top1");
+  } else if (rank && rank >= 2 && rank <= 10) {
     targetRoleKeys.add("top10");
   } else if (rank && rank > 10 && rank <= 50) {
     targetRoleKeys.add("top50");
@@ -210,7 +213,7 @@ export async function syncDiscordRolesForUser(
   const addedRoles: string[] = [];
   const removedRoles: string[] = [];
 
-  const rolesToManage = ["top10", "top50", "top100", "victor", "player", "creator", "verified", "admin", "mod"];
+  const rolesToManage = ["top1", "top10", "top50", "top100", "victor", "player", "creator", "verified", "admin", "mod"];
 
   for (const key of rolesToManage) {
     const roleId = roleMap[key];

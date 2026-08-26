@@ -262,7 +262,7 @@ export function createAccountLinkingEmbed(): EmbedBuilder {
       {
         name: "👑 Automated Discord Roles",
         value:
-          "• **`🥇 Top 10 Player`** (Global Ranks 1 – 10)\n• **`🥈 Top 50 Player`** (Global Ranks 11 – 50)\n• **`🥉 Top 100 Player`** (Global Ranks 51 – 100)\n• **`🏆 List Victor`** (Granted upon your first 100% completion)\n• **`⚡ List Player`** (Granted for having ranked points)\n• **`📜 Verified Member`** (Granted to all linked accounts)",
+          "• **`👑 Top 1 Player`** (Global Rank #1)\n• **`🥇 Top 10 Player`** (Global Ranks 2 – 10)\n• **`🥈 Top 50 Player`** (Global Ranks 11 – 50)\n• **`🥉 Top 100 Player`** (Global Ranks 51 – 100)\n• **`🏆 List Victor`** (Granted upon your first 100% completion)\n• **`⚡ List Player`** (Granted for having ranked points)\n• **`📜 Verified Member`** (Granted to all linked accounts)",
         inline: false,
       },
       {
