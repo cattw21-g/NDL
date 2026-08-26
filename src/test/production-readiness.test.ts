@@ -376,7 +376,7 @@ describe("production readiness guardrails", () => {
     expect(siteUrl).toContain("https://www.nerfeddemonlist.net");
     expect(layout).toContain("openGraph");
     expect(layout).toContain("alternates");
-    expect(layout).toContain("/og-image.svg");
+    expect(layout).toContain("/og-image.png");
     expect(layout).toContain("/favicon.ico");
     expect(source("app/sitemap.ts")).toContain("absoluteSiteUrl");
     expect(source("app/robots.ts")).toContain("sitemap");
