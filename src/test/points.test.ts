@@ -11,15 +11,15 @@ import {
 } from "../lib/points-recalculation";
 
 describe("calculateLevelPoints", () => {
-  it("uses the 320-point nonlinear formula for ranked levels", () => {
-    expect(calculateLevelPoints(1, "RANKED")).toBe(320);
-    expect(calculateLevelPoints(2, "RANKED")).toBe(310);
-    expect(calculateLevelPoints(3, "RANKED")).toBe(300);
-    expect(calculateLevelPoints(10, "RANKED")).toBe(240);
-    expect(calculateLevelPoints(50, "RANKED")).toBe(68);
-    expect(calculateLevelPoints(100, "RANKED")).toBe(14);
-    expect(calculateLevelPoints(150, "RANKED")).toBe(3);
-    expect(calculateLevelPoints(500, "RANKED")).toBe(1);
+  it("uses the 1000-point tiered formula for ranked levels", () => {
+    expect(calculateLevelPoints(1, "RANKED")).toBe(1000);
+    expect(calculateLevelPoints(2, "RANKED")).toBe(975);
+    expect(calculateLevelPoints(3, "RANKED")).toBe(950);
+    expect(calculateLevelPoints(10, "RANKED")).toBe(800);
+    expect(calculateLevelPoints(50, "RANKED")).toBe(325);
+    expect(calculateLevelPoints(100, "RANKED")).toBe(125);
+    expect(calculateLevelPoints(150, "RANKED")).toBe(25);
+    expect(calculateLevelPoints(500, "RANKED")).toBe(10);
   });
 
   it("keeps lower ranks decreasing smoothly", () => {
@@ -49,7 +49,7 @@ describe("calculateLevelPoints", () => {
         rank: 1,
         status: "RANKED",
       }),
-    ).toBe(320);
+    ).toBe(1000);
     expect(
       calculateCurrentLevelPoints({
         rank: 1,
@@ -109,10 +109,10 @@ describe("recalculateStoredPoints", () => {
     const db = {
       level: {
         findMany: async () => [
-          { id: "rank-1", rank: 1, status: "RANKED", points: 1000 },
-          { id: "rank-2", rank: 2, status: "RANKED", points: 1000 },
-          { id: "legacy", rank: null, status: "LEGACY", points: 1000 },
-          { id: "pending", rank: null, status: "PENDING", points: 1000 },
+          { id: "rank-1", rank: 1, status: "RANKED", points: 999 },
+          { id: "rank-2", rank: 2, status: "RANKED", points: 999 },
+          { id: "legacy", rank: null, status: "LEGACY", points: 999 },
+          { id: "pending", rank: null, status: "PENDING", points: 999 },
         ],
         update: async (args: unknown) => {
           levelUpdates.push(args);
@@ -137,11 +137,11 @@ describe("recalculateStoredPoints", () => {
     expect(levelUpdates).toEqual([
       {
         where: { id: "rank-1" },
-        data: { points: 320 },
+        data: { points: 1000 },
       },
       {
         where: { id: "rank-2" },
-        data: { points: 310 },
+        data: { points: 975 },
       },
       {
         where: { id: "legacy" },
@@ -157,11 +157,11 @@ describe("recalculateStoredPoints", () => {
         levelId: "rank-1",
         progress: 100,
         pointsAwarded: {
-          not: 320,
+          not: 1000,
         },
       },
       data: {
-        pointsAwarded: 320,
+        pointsAwarded: 1000,
       },
     });
   });

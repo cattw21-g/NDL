@@ -40,7 +40,7 @@ const player = {
 };
 
 describe("API serializers", () => {
-  it("serializes public level points from the 320/310 scale", () => {
+  it("serializes public level points from the 1000-point scale", () => {
     const rankOne = serializePublicLevel(rankedLevel);
     const rankTwo = serializePublicLevel({
       ...rankedLevel,
@@ -48,8 +48,8 @@ describe("API serializers", () => {
       rank: 2,
     });
 
-    expect(rankOne.points).toBe(320);
-    expect(rankTwo.points).toBe(310);
+    expect(rankOne.points).toBe(1000);
+    expect(rankTwo.points).toBe(975);
   });
 
   it("keeps public records free of private moderation fields", () => {
@@ -64,7 +64,7 @@ describe("API serializers", () => {
     });
     const output = JSON.stringify(serialized).toLowerCase();
 
-    expect(serialized.pointsAwarded).toBe(320);
+    expect(serialized.pointsAwarded).toBe(1000);
     expect(output).not.toContain("email");
     expect(output).not.toContain("passwordhash");
     expect(output).not.toContain("tokenhash");

@@ -145,7 +145,7 @@ describe("submission workflow", () => {
     const recordUpsert = asRecord(calls.recordUpserts[0]);
     const create = asRecord(recordUpsert.create);
     expect(create.submissionId).toBe("submission-1");
-    expect(create.pointsAwarded).toBe(320);
+    expect(create.pointsAwarded).toBe(1000);
 
     const action = asRecord(asRecord(calls.moderationActions[0]).data);
     expect(action.type).toBe("SUBMISSION_ACCEPTED");

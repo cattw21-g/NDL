@@ -46,7 +46,13 @@ export function calculateLevelPoints(
     return 0;
   }
 
-  return Math.max(1, Math.round(320 * (310 / 320) ** (rank - 1)));
+  if (rank === 1) return 1000;
+  if (rank <= 5) return 1000 - (rank - 1) * 25;
+  if (rank <= 10) return 900 - (rank - 5) * 20;
+  if (rank <= 25) return 800 - (rank - 10) * 15;
+  if (rank <= 50) return 575 - (rank - 25) * 10;
+  if (rank <= 100) return 325 - (rank - 50) * 4;
+  return Math.max(10, 125 - (rank - 100) * 2);
 }
 
 export function calculateCurrentLevelPoints(level: LevelPointSource) {

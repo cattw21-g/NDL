@@ -799,7 +799,7 @@ describe("production readiness guardrails", () => {
   });
 
   it("keeps public points computed from rank and status instead of stale stored rows", () => {
-    expect(source("lib/points.ts")).toContain("320 * (310 / 320)");
+    expect(source("lib/points.ts")).toContain("if (rank === 1) return 1000;");
     expect(source("app/page.tsx")).toContain(
       "points: calculateCurrentLevelPoints(level)",
     );
