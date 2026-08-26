@@ -135,8 +135,8 @@ export async function syncDiscordRolesForUser(
     else if (lower.includes("top 10") || lower.includes("top10")) roleMap["top10"] = r.id;
     else if (lower.includes("victor")) roleMap["victor"] = r.id;
     else if (lower.includes("list player")) roleMap["player"] = r.id;
-    else if (lower.includes("level creator") || lower.includes("creator")) roleMap["creator"] = r.id;
-    else if (lower.includes("verified member") || lower.includes("verified")) roleMap["verified"] = r.id;
+    else if (lower.includes("level creator")) roleMap["creator"] = r.id;
+    else if (lower.includes("verified member")) roleMap["verified"] = r.id;
     else if (lower.includes("admin")) roleMap["admin"] = r.id;
     else if (lower.includes("moderator")) roleMap["mod"] = r.id;
     else if (lower.includes("reviewer")) roleMap["reviewer"] = r.id;
