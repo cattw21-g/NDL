@@ -46,6 +46,7 @@ async function getChannelIdByName(
 async function sendDiscordEmbed(
   channelName: string,
   embed: Record<string, unknown>,
+  autoReactEmojis: string[] = [],
 ) {
   const token = process.env.DISCORD_BOT_TOKEN?.trim();
   const guildId = process.env.DISCORD_GUILD_ID?.trim() || "1541532007304003595";
@@ -76,6 +77,27 @@ async function sendDiscordEmbed(
     if (!msgRes.ok) {
       const errText = await msgRes.text();
       console.error(`Discord API Error [${msgRes.status}] posting to #${channelName}:`, errText);
+      return;
+    }
+
+    if (autoReactEmojis.length > 0) {
+      const messageData: { id?: string } = await msgRes.json().catch(() => ({}));
+      if (messageData.id) {
+        for (const emoji of autoReactEmojis) {
+          const encoded = encodeURIComponent(emoji);
+          await fetch(
+            `${DISCORD_API_BASE}/channels/${channelId}/messages/${messageData.id}/reactions/${encoded}/@me`,
+            {
+              method: "PUT",
+              headers: {
+                Authorization: `Bot ${token}`,
+              },
+            },
+          ).catch((reactErr) => {
+            console.error(`Failed to add reaction ${emoji} to message ${messageData.id}:`, reactErr);
+          });
+        }
+      }
     }
   } catch (err) {
     console.error(`Failed to dispatch Discord embed to #${channelName}:`, err);
@@ -161,7 +183,7 @@ export async function notifyRecordAccepted(data: {
     timestamp: new Date().toISOString(),
   };
 
-  await sendDiscordEmbed("accepted-records", embed);
+  await sendDiscordEmbed("accepted-records", embed, ["🔥"]);
 }
 
 /**
@@ -336,7 +358,7 @@ export async function notifyLevelRanked(data: {
     timestamp: new Date().toISOString(),
   };
 
-  await sendDiscordEmbed("list-updates", embed);
+  await sendDiscordEmbed("list-updates", embed, ["🔥"]);
 }
 
 /**
@@ -406,7 +428,7 @@ export async function notifyUpcomingDemonAdded(data: {
     timestamp: new Date().toISOString(),
   };
 
-  await sendDiscordEmbed("upcoming-demons", embed);
+  await sendDiscordEmbed("upcoming-demons", embed, ["🔥"]);
 }
 
 /**
@@ -443,7 +465,7 @@ export async function notifyChangelogPosted(data: {
     timestamp: new Date().toISOString(),
   };
 
-  await sendDiscordEmbed("list-updates", embed);
+  await sendDiscordEmbed("list-updates", embed, ["🔥"]);
 }
 
 /**
@@ -522,5 +544,5 @@ export async function notifyLevelUpdated(data: {
     timestamp: new Date().toISOString(),
   };
 
-  await sendDiscordEmbed("list-updates", embed);
+  await sendDiscordEmbed("list-updates", embed, ["🔥"]);
 }
