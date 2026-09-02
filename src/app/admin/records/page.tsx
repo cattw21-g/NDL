@@ -192,7 +192,15 @@ export default async function AdminRecordsPage({
             />
           </label>
 
-          <div className="flex items-center gap-2 sm:col-span-2">
+          <div className="flex flex-wrap items-center gap-6 sm:col-span-2">
+            <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
+              <input
+                type="checkbox"
+                name="cbfUsed"
+                className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+              />
+              CBF Enabled (Click Between Frames)
+            </label>
             <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
               <input
                 type="checkbox"
@@ -308,6 +316,10 @@ export default async function AdminRecordsPage({
                       </a>
                     ) : null}
                     <span>FPS: {rec.fps ?? 360}</span>
+                    <span>•</span>
+                    <span className={rec.cbfUsed ? "font-bold text-cyan-600 dark:text-cyan-400" : ""}>
+                      CBF: {rec.cbfUsed ? "Yes" : "No"}
+                    </span>
                   </div>
                 </div>
 
@@ -330,6 +342,15 @@ export default async function AdminRecordsPage({
                       placeholder="Video URL"
                       className={`${inputClass} w-48 text-xs`}
                     />
+                    <label className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-400">
+                      <input
+                        type="checkbox"
+                        name="cbfUsed"
+                        defaultChecked={rec.cbfUsed}
+                        className="h-3.5 w-3.5 rounded"
+                      />
+                      CBF
+                    </label>
                     <label className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-400">
                       <input
                         type="checkbox"

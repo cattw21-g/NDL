@@ -1243,6 +1243,9 @@ export async function createAdminRecordAction(formData: FormData) {
   const rawFootageUrl =
     String(formData.get("rawFootageUrl") || "").trim() || null;
   const fps = parseInt(String(formData.get("fps") || "360"), 10) || 360;
+  const cbfUsed =
+    formData.get("cbfUsed") === "true" ||
+    formData.get("cbfUsed") === "on";
   const isVerifier =
     formData.get("isVerifier") === "true" ||
     formData.get("isVerifier") === "on";
@@ -1291,7 +1294,7 @@ export async function createAdminRecordAction(formData: FormData) {
       videoUrl,
       rawFootageUrl,
       fps,
-      cbfUsed: false,
+      cbfUsed,
       isVerifier,
       pointsAwarded: points,
       isDemo: Boolean(level.isDemo),
@@ -1335,7 +1338,7 @@ export async function createAdminRecordAction(formData: FormData) {
     reviewerName: admin.displayName,
     thumbnailUrl: level.thumbnailUrl,
     fps,
-    cbfUsed: false,
+    cbfUsed,
   }).catch((err) => {
     console.error("Failed to dispatch notifyRecordAccepted:", err);
   });
@@ -1362,6 +1365,9 @@ export async function updateAdminRecordAction(formData: FormData) {
   const rawFootageUrl =
     String(formData.get("rawFootageUrl") || "").trim() || null;
   const fps = parseInt(String(formData.get("fps") || "360"), 10) || 360;
+  const cbfUsed =
+    formData.get("cbfUsed") === "true" ||
+    formData.get("cbfUsed") === "on";
   const isVerifier =
     formData.get("isVerifier") === "true" ||
     formData.get("isVerifier") === "on";
@@ -1391,6 +1397,7 @@ export async function updateAdminRecordAction(formData: FormData) {
       videoUrl: videoUrl || existing.videoUrl,
       rawFootageUrl,
       fps,
+      cbfUsed,
       isVerifier,
       pointsAwarded: points,
     },
