@@ -1286,21 +1286,54 @@ export async function createAdminRecordAction(formData: FormData) {
       ? calculateLevelPoints(level.rank, level.status)
       : 0;
 
-  const record = await prisma.record.create({
-    data: {
+  const existingRecord = await prisma.record.findFirst({
+    where: {
       levelId: level.id,
       playerId: player.id,
-      progress,
-      videoUrl,
-      rawFootageUrl,
-      fps,
-      cbfUsed,
-      isVerifier,
-      pointsAwarded: points,
-      isDemo: Boolean(level.isDemo),
-      acceptedAt: new Date(),
     },
+    orderBy: { progress: "desc" },
   });
+
+  let record;
+  let isUpgrade = false;
+
+  if (existingRecord) {
+    if (progress < existingRecord.progress) {
+      throw new Error(
+        `${player.displayName} already has a higher record on ${level.name} (${existingRecord.progress}%). Lower progress records cannot overwrite a higher personal best.`
+      );
+    }
+    isUpgrade = true;
+    record = await prisma.record.update({
+      where: { id: existingRecord.id },
+      data: {
+        progress,
+        videoUrl,
+        rawFootageUrl,
+        fps,
+        cbfUsed,
+        isVerifier: isVerifier || existingRecord.isVerifier,
+        pointsAwarded: points,
+        acceptedAt: new Date(),
+      },
+    });
+  } else {
+    record = await prisma.record.create({
+      data: {
+        levelId: level.id,
+        playerId: player.id,
+        progress,
+        videoUrl,
+        rawFootageUrl,
+        fps,
+        cbfUsed,
+        isVerifier,
+        pointsAwarded: points,
+        isDemo: Boolean(level.isDemo),
+        acceptedAt: new Date(),
+      },
+    });
+  }
 
   if (isVerifier) {
     await prisma.level.update({
@@ -1319,11 +1352,13 @@ export async function createAdminRecordAction(formData: FormData) {
       displayName: admin.displayName,
       role: admin.role,
     },
-    action: "RECORD_CREATED",
+    action: isUpgrade ? "RECORD_UPDATED" : "RECORD_CREATED",
     entityType: "Record",
     entityId: record.id,
     entityLabel: `${player.displayName} on ${level.name} (${progress}%)`,
-    note: `Admin added record for ${player.displayName}`,
+    note: isUpgrade
+      ? `Admin upgraded record from ${existingRecord?.progress}% to ${progress}%`
+      : `Admin added record for ${player.displayName}`,
   });
 
   await notifyRecordAccepted({

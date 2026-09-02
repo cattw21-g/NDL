@@ -86,7 +86,12 @@ describe("submission workflow", () => {
         },
       },
       record: {
+        findFirst: async () => null,
         upsert: async (args: unknown) => {
+          calls.recordUpserts.push(args);
+          return args;
+        },
+        update: async (args: unknown) => {
           calls.recordUpserts.push(args);
           return args;
         },

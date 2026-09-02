@@ -118,16 +118,37 @@ export async function applySubmissionReview(
       isDemo: Boolean(submission.isDemo),
     };
 
-    await tx.record.upsert({
+    const existingPlayerRecord = await tx.record.findFirst({
       where: {
-        submissionId: submission.id,
+        playerId: submission.playerId,
+        levelId: submission.levelId,
       },
-      update: recordData,
-      create: {
-        submissionId: submission.id,
-        ...recordData,
-      },
+      orderBy: { progress: "desc" },
     });
+
+    if (existingPlayerRecord) {
+      if (progress >= existingPlayerRecord.progress) {
+        await tx.record.update({
+          where: { id: existingPlayerRecord.id },
+          data: {
+            submissionId: submission.id,
+            ...recordData,
+            acceptedAt: reviewedAt,
+          },
+        });
+      }
+    } else {
+      await tx.record.upsert({
+        where: {
+          submissionId: submission.id,
+        },
+        update: recordData,
+        create: {
+          submissionId: submission.id,
+          ...recordData,
+        },
+      });
+    }
   }
 
   const actionType =
