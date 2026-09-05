@@ -29,7 +29,7 @@ export function LevelGdMetadata({
     <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
       <div className="border-b border-zinc-800 pb-3">
         <h3 className="text-base font-bold text-white flex items-center gap-2">
-          <span>🎮</span> Geometry Dash Metadata
+          Geometry Dash Metadata
         </h3>
         <p className="text-xs text-zinc-400">In-game attributes, song details, and level specs</p>
       </div>

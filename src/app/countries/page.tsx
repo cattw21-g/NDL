@@ -120,59 +120,59 @@ export default async function CountriesPage({ searchParams }: Props) {
       {/* Header Banner */}
       <div className="relative overflow-hidden rounded-2xl border border-blue-500/20 bg-gradient-to-b from-blue-500/10 via-zinc-900/50 to-zinc-950 p-6 sm:p-10 shadow-2xl">
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-blue-400">
-            <span>🌍</span> Global Standings
-          </div>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            Country & Continental Rankings
-          </h1>
-          <p className="mt-2 text-sm sm:text-base text-zinc-400 max-w-2xl">
-            Compare national demonlist power across the world. Filter by continent, explore national leaderboards, and discover each country&apos;s top victors.
-          </p>
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-blue-400">
+              Global Standings
+            </div>
+            <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              Country & Continental Rankings
+            </h1>
+            <p className="mt-2 text-sm sm:text-base text-zinc-400 max-w-2xl">
+              Compare national demonlist power across the world. Filter by continent, explore national leaderboards, and discover each country&apos;s top victors.
+            </p>
 
-          {/* Quick Metrics */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-2xl">
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Active Nations</span>
-              <p className="mt-1 text-xl font-bold text-white">{totalCountries}</p>
-            </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Total Points</span>
-              <p className="mt-1 text-xl font-bold text-emerald-400">{totalPoints.toLocaleString()}</p>
-            </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Top Nation</span>
-              <p className="mt-1 text-base font-bold text-amber-400 truncate">
-                {allCountryRows[0] ? `${allCountryRows[0].flag} ${allCountryRows[0].countryName}` : "—"}
-              </p>
-            </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Current Filter</span>
-              <p className="mt-1 text-base font-bold text-blue-400">{continent}</p>
+            {/* Quick Metrics */}
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-2xl">
+              <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+                <span className="text-xs text-zinc-400">Active Nations</span>
+                <p className="mt-1 text-xl font-bold text-white">{totalCountries}</p>
+              </div>
+              <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+                <span className="text-xs text-zinc-400">Total Points</span>
+                <p className="mt-1 text-xl font-bold text-emerald-400">{totalPoints.toLocaleString()}</p>
+              </div>
+              <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+                <span className="text-xs text-zinc-400">Top Nation</span>
+                <p className="mt-1 text-base font-bold text-amber-400 truncate">
+                  {allCountryRows[0] ? `${allCountryRows[0].flag} ${allCountryRows[0].countryName}` : "—"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+                <span className="text-xs text-zinc-400">Current Filter</span>
+                <p className="mt-1 text-base font-bold text-blue-400">{continent}</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Continental Filter Tabs */}
-      <div className="mt-8 flex flex-wrap gap-2 border-b border-zinc-800 pb-4">
-        {CONTINENTS.map((c) => {
-          const isActive = continent === c;
-          return (
-            <Link
-              key={c}
-              href={c === "All" ? "/countries" : `/countries?continent=${encodeURIComponent(c)}`}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                isActive
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-500/30"
-                  : "bg-zinc-900/80 text-zinc-400 hover:bg-zinc-800 hover:text-white border border-zinc-800"
-              }`}
-            >
-              {c === "All" ? "🌐 All Continents" : c}
-            </Link>
-          );
-        })}
-      </div>
+        {/* Continental Filter Tabs */}
+        <div className="mt-8 flex flex-wrap gap-2 border-b border-zinc-800 pb-4">
+          {CONTINENTS.map((c) => {
+            const isActive = continent === c;
+            return (
+              <Link
+                key={c}
+                href={c === "All" ? "/countries" : `/countries?continent=${encodeURIComponent(c)}`}
+                className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                  isActive
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/30"
+                    : "bg-zinc-900/80 text-zinc-400 hover:bg-zinc-800 hover:text-white border border-zinc-800"
+                }`}
+              >
+                {c === "All" ? "All Continents" : c}
+              </Link>
+            );
+          })}
+        </div>
 
       {/* Interactive Continent Visual Grid */}
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">

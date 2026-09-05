@@ -37,7 +37,7 @@ export default async function CreatorsPage() {
       <div className="relative overflow-hidden rounded-2xl border border-purple-500/20 bg-gradient-to-b from-purple-500/10 via-zinc-900/50 to-zinc-950 p-6 sm:p-10 shadow-2xl">
         <div className="relative z-10">
           <div className="inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-purple-400">
-            <span>🎨</span> Level Architects
+            Level Architects
           </div>
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
             Creator Statistics & Leaderboard
@@ -76,7 +76,7 @@ export default async function CreatorsPage() {
       <div className="mt-10 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40 shadow-xl">
         <div className="border-b border-zinc-800 bg-zinc-900/80 px-6 py-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <span>👑</span> Creator Rankings ({creatorRows.length})
+            Creator Rankings ({creatorRows.length})
           </h2>
           <span className="text-xs text-zinc-500">Ranked by creator points & created levels</span>
         </div>

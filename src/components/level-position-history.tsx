@@ -30,7 +30,7 @@ export function LevelPositionHistory({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-4">
         <div>
           <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <span>📈</span> Position History {levelName ? <span className="text-xs font-normal text-zinc-400">({levelName})</span> : null}
+            Position History {levelName ? <span className="text-xs font-normal text-zinc-400">({levelName})</span> : null}
           </h3>
           <p className="text-xs text-zinc-400">Track ranking movements and milestones over time</p>
         </div>

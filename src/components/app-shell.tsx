@@ -144,115 +144,127 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <DecorativeRail side="right" />
 
       <header className="sticky top-0 z-30 border-b border-slate-300 bg-white/95 shadow-[0_2px_14px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-slate-700 dark:bg-slate-950/92 dark:shadow-[0_2px_18px_rgba(0,0,0,0.34)]">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-5 gap-y-3 px-3 py-3 sm:px-5">
-          <Link
-            href="/"
-            prefetch={true}
-            className="group flex min-w-0 flex-[1_1_14rem] items-center gap-3 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-300"
-          >
-            <span className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-md border border-cyan-900 bg-cyan-800 text-sm font-black text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18),0_6px_16px_rgba(15,23,42,0.16)]">
-              <span className="absolute left-0 top-0 h-4 w-4 border-b border-r border-white/35 bg-cyan-400/40" />
-              <span className="absolute bottom-0 right-0 h-5 w-5 border-l border-t border-white/30 bg-teal-400/30" />
-              NDL
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-xl font-black uppercase leading-none text-slate-950">
-                Nerfed Demonlist
+        <div className="mx-auto max-w-7xl px-3 py-2.5 sm:px-5">
+          {/* Top Bar: Brand Logo & User/Platform Controls */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Link
+              href="/"
+              prefetch={true}
+              className="group flex min-w-0 items-center gap-3 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-300"
+            >
+              <span className="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-md border border-cyan-900 bg-cyan-800 text-sm font-black text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18),0_4px_12px_rgba(15,23,42,0.16)]">
+                <span className="absolute left-0 top-0 h-3 w-3 border-b border-r border-white/35 bg-cyan-400/40" />
+                <span className="absolute bottom-0 right-0 h-4 w-4 border-l border-t border-white/30 bg-teal-400/30" />
+                NDL
               </span>
-              <span className="mt-1 block truncate text-xs font-semibold text-slate-600">
-                Community list for reviewed nerfed demon records
+              <span className="min-w-0">
+                <span className="block truncate text-lg font-black uppercase leading-tight text-slate-950 dark:text-slate-50">
+                  Nerfed Demonlist
+                </span>
+                <span className="hidden sm:block truncate text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                  Community list for reviewed nerfed demon records
+                </span>
               </span>
-            </span>
-          </Link>
+            </Link>
 
-          <nav className="flex flex-wrap items-center gap-1.5 text-sm lg:justify-center">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                icon={item.icon}
-                recentNewsSlugs={item.href === "/changelog" ? recentNewsSlugs : undefined}
-              />
-            ))}
-            {user && isModeratorRole(user.role) ? (
-              <NavLink
-                href="/moderation"
-                label="Review"
-                icon="review"
-                tone="cyan"
-                badgeCount={pendingTotalCount}
-              />
-            ) : null}
-            {user && isAdminRole(user.role) ? (
-              <NavLink
-                href="/admin"
-                label="Admin"
-                icon="shield"
-                tone="amber"
-              />
+            {/* Utility / User Controls */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {user && isModeratorRole(user.role) ? (
+                <StaffNotificationCenter initialData={notificationData} />
+              ) : null}
+              <CommandPaletteTrigger />
+              {user ? (
+                <>
+                  <Link
+                    href={`/players/${user.playerName}`}
+                    className="inline-flex min-h-8 min-w-0 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950 dark:hover:text-cyan-100"
+                  >
+                    <UserRound className="h-3.5 w-3.5" />
+                    <span className="max-w-28 truncate">{user.displayName}</span>
+                  </Link>
+                  <form action={logoutAction}>
+                    <button
+                      type="submit"
+                      className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-600 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-red-400 dark:hover:bg-red-950 dark:hover:text-red-100"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                      Logout
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-cyan-800 bg-cyan-800 px-3 text-xs font-black text-white transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-300"
+                >
+                  <LogIn className="h-3.5 w-3.5" />
+                  Login
+                </Link>
+              )}
+              <a
+                href="https://discord.gg/kyYBkQzTCq"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Join Official NDL Discord Server"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#5865F2]/40 bg-[#5865F2]/10 text-[#5865F2] transition hover:border-[#5865F2] hover:bg-[#5865F2] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2]/40 dark:border-[#5865F2]/50 dark:bg-[#5865F2]/20 dark:text-[#7289da] dark:hover:bg-[#5865F2] dark:hover:text-white"
+                aria-label="Discord Server"
+              >
+                <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+                </svg>
+              </a>
+              <a
+                href="https://www.tiktok.com/@cattw_gd"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Follow @cattw_gd on TikTok"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950 dark:hover:text-cyan-100"
+                aria-label="TikTok @cattw_gd"
+              >
+                <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3 15.28a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.71a8.18 8.18 0 0 0 4.91 1.63V6.89a4.85 4.85 0 0 1-1-.2z" />
+                </svg>
+              </a>
+              <ThemeToggle />
+            </div>
+          </div>
+
+          {/* Bottom Bar: Full-Width Navigation Links & Staff Tools */}
+          <nav className="mt-2.5 flex items-center justify-between gap-2 overflow-x-auto border-t border-slate-200/80 pt-2 text-sm dark:border-slate-800/80 [scrollbar-width:none]">
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                  recentNewsSlugs={item.href === "/changelog" ? recentNewsSlugs : undefined}
+                />
+              ))}
+            </div>
+
+            {user && (isModeratorRole(user.role) || isAdminRole(user.role)) ? (
+              <div className="flex items-center gap-1.5 pl-3 border-l border-slate-300 dark:border-slate-700 shrink-0">
+                {isModeratorRole(user.role) && (
+                  <NavLink
+                    href="/moderation"
+                    label="Review"
+                    icon="review"
+                    tone="cyan"
+                    badgeCount={pendingTotalCount}
+                  />
+                )}
+                {isAdminRole(user.role) && (
+                  <NavLink
+                    href="/admin"
+                    label="Admin"
+                    icon="shield"
+                    tone="amber"
+                  />
+                )}
+              </div>
             ) : null}
           </nav>
-
-          <div className="flex min-w-fit items-center gap-2 sm:ml-auto">
-            {user && isModeratorRole(user.role) ? (
-              <StaffNotificationCenter initialData={notificationData} />
-            ) : null}
-            <CommandPaletteTrigger />
-            {user ? (
-              <>
-                <Link
-                  href={`/players/${user.playerName}`}
-                  className="inline-flex min-h-9 min-w-0 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-bold text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950 dark:hover:text-cyan-100"
-                >
-                  <UserRound className="h-4 w-4" />
-                  <span className="max-w-32 truncate">{user.displayName}</span>
-                </Link>
-                <form action={logoutAction}>
-                  <button
-                    type="submit"
-                    className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-bold text-slate-600 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-red-400 dark:hover:bg-red-950 dark:hover:text-red-100"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Logout
-                  </button>
-                </form>
-              </>
-            ) : (
-              <Link
-                href="/login"
-                className="inline-flex min-h-9 items-center gap-2 rounded-md border border-cyan-800 bg-cyan-800 px-3 text-sm font-black text-white transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-300"
-              >
-                <LogIn className="h-4 w-4" />
-                Login
-              </Link>
-            )}
-            <a
-              href="https://discord.gg/kyYBkQzTCq"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Join Official NDL Discord Server"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#5865F2]/40 bg-[#5865F2]/10 text-[#5865F2] transition hover:border-[#5865F2] hover:bg-[#5865F2] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2]/40 dark:border-[#5865F2]/50 dark:bg-[#5865F2]/20 dark:text-[#7289da] dark:hover:bg-[#5865F2] dark:hover:text-white"
-              aria-label="Discord Server"
-            >
-              <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
-                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
-              </svg>
-            </a>
-            <a
-              href="https://www.tiktok.com/@cattw_gd"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Follow @cattw_gd on TikTok"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950 dark:hover:text-cyan-100"
-              aria-label="TikTok @cattw_gd"
-            >
-              <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
-                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3 15.28a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.71a8.18 8.18 0 0 0 4.91 1.63V6.89a4.85 4.85 0 0 1-1-.2z" />
-              </svg>
-            </a>
-            <ThemeToggle />
-          </div>
         </div>
       </header>
 

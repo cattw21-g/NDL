@@ -12,9 +12,9 @@ type TabMode = "MAIN" | "EXTENDED" | "LEGACY" | "ALL";
 type TierFilter = "ALL" | "TOP_10" | "TOP_50" | "EXTREME" | "INSANE";
 
 const tabs: Array<{ value: TabMode; label: string }> = [
-  { value: "MAIN", label: "🟧 Main List (#1–75)" },
-  { value: "EXTENDED", label: "🟦 Extended List (#76–150)" },
-  { value: "LEGACY", label: "📦 Legacy" },
+  { value: "MAIN", label: "Main List (#1–75)" },
+  { value: "EXTENDED", label: "Extended List (#76–150)" },
+  { value: "LEGACY", label: "Legacy" },
   { value: "ALL", label: "All Demons" },
 ];
 
@@ -99,23 +99,26 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
   return (
     <SectionPanel className="overflow-hidden">
       <div className="border-b border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950/60">
-        {/* Main List Tabs */}
-        <div className="flex flex-wrap gap-1.5 px-3 pt-3">
-          {tabs.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              onClick={() => setTab(item.value)}
-              className={cx(
-                "min-h-9 rounded-t-md border border-b-0 px-4 text-sm font-black transition focus:outline-none focus:ring-2 focus:ring-cyan-300",
-                tab === item.value
-                  ? "border-slate-300 bg-white text-cyan-900 shadow-[inset_0_3px_0_#0891b2] dark:border-slate-700 dark:bg-slate-900 dark:text-cyan-100"
-                  : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-white dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900",
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
+        {/* Main List Tier Filter (Matching Country & Creator Rankings) */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-100/70 p-3 dark:border-slate-800 dark:bg-slate-950/70">
+          {tabs.map((item) => {
+            const isActive = tab === item.value;
+            return (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => setTab(item.value)}
+                className={cx(
+                  "rounded-lg px-4 py-2 text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-cyan-300",
+                  isActive
+                    ? "bg-cyan-600 text-white shadow-md shadow-cyan-500/25 border border-cyan-500/50"
+                    : "border border-slate-300 bg-white text-slate-700 hover:border-cyan-400 hover:text-cyan-900 dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-white",
+                )}
+              >
+                {item.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Search & Sort Controls */}
@@ -144,20 +147,20 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
           </label>
         </div>
 
-        {/* Tier Quick Filter Chips */}
+        {/* Difficulty Quick Filter Chips */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-slate-50/60 px-3 py-2 text-xs dark:border-slate-800 dark:bg-slate-950/40">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-bold text-slate-500 mr-1">Tier:</span>
+            <span className="font-bold text-slate-500 mr-1">Difficulty:</span>
             {tierChips.map((chip) => (
               <button
                 key={chip.value}
                 type="button"
                 onClick={() => setTier(chip.value)}
                 className={cx(
-                  "rounded-md border px-2.5 py-1 font-black transition",
+                  "rounded-md border px-2.5 py-1 text-xs font-bold transition-all",
                   tier === chip.value
-                    ? "border-cyan-500 bg-cyan-700 text-white dark:bg-cyan-500 dark:text-slate-950"
-                    : "border-slate-300 bg-white text-slate-700 hover:border-cyan-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
+                    ? "border-cyan-500 bg-cyan-600 text-white shadow-sm dark:bg-cyan-500 dark:text-slate-950"
+                    : "border-slate-300 bg-white text-slate-700 hover:border-cyan-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-700",
                 )}
               >
                 {chip.label}

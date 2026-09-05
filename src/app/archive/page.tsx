@@ -40,7 +40,7 @@ export default async function ArchivePage({ searchParams }: Props) {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-400">
-                <span>🏛️</span> Historical Records
+                Historical Records
               </div>
               <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
                 Demonlist Archive
@@ -133,7 +133,7 @@ export default async function ArchivePage({ searchParams }: Props) {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <span>📜</span> Historical Rankings ({state.levels.length})
+              Historical Rankings ({state.levels.length})
             </h2>
             <span className="text-xs text-zinc-500">As of {formattedDate}</span>
           </div>
@@ -178,7 +178,7 @@ export default async function ArchivePage({ searchParams }: Props) {
                   </div>
 
                   <div className="text-right shrink-0">
-                    <span className="rounded-md bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-400 border border-amber-500/20">
+                    <span className="rounded-md bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-400 border border-amber-500/20">
                       {lvl.points} pts
                     </span>
                   </div>
@@ -192,7 +192,7 @@ export default async function ArchivePage({ searchParams }: Props) {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <span>🏆</span> Historical Standings
+              Historical Standings
             </h2>
             <span className="text-xs text-zinc-500">Top Players</span>
           </div>
