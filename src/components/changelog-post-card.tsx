@@ -90,7 +90,7 @@ export function ChangelogPostCard({ post }: { post: ChangelogPostData }) {
         <button
           type="button"
           onClick={handleToggleExpand}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-cyan-400/80 bg-cyan-50 px-3.5 text-xs font-black text-cyan-900 transition hover:bg-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-cyan-500/50 dark:bg-cyan-950/60 dark:text-cyan-100 dark:hover:bg-cyan-950"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3.5 text-xs font-bold text-cyan-600 dark:text-cyan-400 transition hover:bg-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-cyan-400"
         >
           {expanded ? (
             <>
@@ -101,7 +101,7 @@ export function ChangelogPostCard({ post }: { post: ChangelogPostData }) {
             <>
               <ChevronDown className="h-3.5 w-3.5" />
               Show full update
-              {isUnread ? <Sparkles className="h-3 w-3 text-cyan-700 dark:text-cyan-300 animate-bounce" /> : null}
+              {isUnread ? <Sparkles className="h-3 w-3 text-cyan-500 animate-bounce" /> : null}
             </>
           )}
         </button>
@@ -109,7 +109,7 @@ export function ChangelogPostCard({ post }: { post: ChangelogPostData }) {
         <Link
           href={`/changelog/${post.slug}`}
           onClick={handleMarkRead}
-          className="inline-flex min-h-9 items-center rounded-md border border-slate-300 bg-white px-3 text-xs font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950 dark:hover:text-cyan-100"
+          className="inline-flex min-h-9 items-center rounded-lg border border-zinc-300 bg-white px-3.5 text-xs font-bold text-zinc-700 transition hover:border-cyan-400 hover:text-cyan-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-white"
         >
           Read full update &rarr;
         </Link>

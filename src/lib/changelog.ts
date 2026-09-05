@@ -53,85 +53,60 @@ export function plainTextParagraphs(content: string) {
 }
 
 export const LATEST_RELEASE_POST = {
-  title: "Nerfed Demonlist v1.0 Release Candidate is Live!",
-  slug: "ndl-v1-0-rc-release",
-  category: "SITE_UPDATE" as const,
+  title: "Nerfed Demonlist v1.0.0: Official Stable Release",
+  slug: "ndl-v1-0-0-official-stable-release",
+  category: "ANNOUNCEMENT" as const,
   summary:
-    "Welcome to the official Release Candidate of Nerfed Demonlist (v1.0-RC)! We’ve completely overhauled the platform with the new Upcoming Levels tab (Currently Verifying & Waiting Levels), universal video playback for Medal.tv & TikTok, player profile champion banners, global member search, Top 50 leaderboards, and instant navigation.",
-  content: `## 🗂️ Live Now: The Upcoming Levels Tab
-[NEW] **Dual-View Upcoming Hub**: The **Upcoming** tab is now live! Explore nerfed demons before they are officially placed on the main list.
-[FEATURE] **Currently Verifying**: Watch verified runners tackle approved nerfed demons. Track their progress runs, watch verification proof videos, and copy level IDs with 1 click.
-[FEATURE] **Waiting Levels**: Browse approved nerfed demon versions that are open for verification. Grab a level ID, practice the nerfs, and submit your completion!
+    "Nerfed Demonlist has officially graduated out of Release Candidate into our v1.0.0 Stable Release! Featuring Main List & Extended List tiers (#1–75 / #76–150), partial progress scoring, Country Rankings, Creator Leaderboards, historical List Archive, Level Position History, and a complete site-wide modern redesign.",
+  content: `Hey everyone!
 
-## 🎬 Universal In-Website Video Player
-[VIDEO] **Medal.tv & TikTok Support**: You can now submit and watch verification proofs and showcase runs directly from **Medal.tv** and **TikTok** right inside the list.
-[IMPROVED] **Multi-Platform Playback**: Built-in responsive video player support for **YouTube** (including Shorts & timestamp jumps), **Twitch**, and **Streamable**.
-[FEATURE] **Dual-Proof Switcher**: Seamlessly toggle between official verification runs and showcases with one click.
+Today marks a huge milestone for Nerfed Demonlist: we are officially moving out of Release Candidate status and launching **Nerfed Demonlist v1.0.0 Stable**!
 
-## 👑 Complete Player Profiles & Champion Podiums
-[PROFILE] **Champion Podiums & Crowns**: Profile headers now feature dynamic crowns honoring **NDL Champion #1 🥇**, **Top 3 Victors 🥈🥉**, and your official global rank.
-[FEATURE] **Hardest Demon Spotlight**: Your profile automatically showcases your hardest beaten ranked demon with points earned, CBF/FPS info, and proof video.
-[QOL] **4-Tile Statistics Grid**: Instant breakdown of your Total Points, Global Leaderboard Standing, 100% Victories, and Progress Runs.
-[QOL] **1-Click Profile Share**: Copy and share your direct profile link with friends.
+Over the past weeks we've gathered tons of feedback from players, verifiers, and list runners. With this update, NDL now brings a complete, esports-grade competitive demonlist experience with everything you'd expect from Pointercrate and more.
 
-## 🏆 Top 50 Leaderboard & Global Player Search
-[LEADERBOARD] **Top 50 Leaderboards**: View the top 50 runners battling for points on the community leaderboard.
-[SEARCH] **Find Any Registered Member**: Search for any user across NDL in the players tab, even if they haven't submitted their first record yet.
-[SEARCH] **Ctrl+K Command Palette**: Press **Ctrl+K** (or Cmd+K) anywhere on the website to instantly jump to any level, player profile, or page using your keyboard.
+Here is everything included in the official v1.0.0 release:
 
-## 📋 Ranked Demons & 1-Click GD Tools
-[LIST] **Real-Time Tier Filtering**: Filter the ranked list instantly by difficulty tier (**Top 10**, **Top 50**, **Extreme Nerfed**, **Insane Nerfed**, or **Legacy**).
-[QOL] **1-Click GD ID Copying**: Copy level IDs straight to your clipboard with animated visual confirmation.
+### 1. Main List (#1–75) & Extended List (#76–150)
+The list is now structured into three clear competitive tiers:
+- **Main List (#1–75)**: The hardest nerfed extreme demons. Main list runs are eligible for partial progress points.
+- **Extended List (#76–150)**: Secondary competitive bracket. Only 100% completions award points.
+- **Legacy List**: Demons ranked #151+ or historically archived.
 
-## 🔔 Submissions & On-Page Status Tracking
-[NEW] **On-Page Run Status**: Level pages now show your submission status (**Pending Review**, **Accepted**, **Needs Changes**, or **Rejected**) with feedback from staff.
-[FEATURE] **Automated Email Alerts**: Receive an instant email when your record is accepted (with points awarded!) or when your suggested level is approved.
-[FEATURE] **Suggest Nerfed Demons**: Submit new or unverified nerfed demon candidates with custom thumbnails and video links for the list.
+### 2. Partial Points for Qualifying Progress Runs
+You no longer walk away empty-handed after putting up massive progress on top demons! If you score a qualifying run (e.g. 50%+) on any Main List level, you now earn partial leaderboard points scaled to the level's rank and how far past the requirement you reached.
 
-## ⚡ Instant 0ms Navigation & Cyberpunk Intro Screen
-[SPEED] **Zero-Lag Tab Transitions**: All pages are pre-loaded in the background so you can switch between the List, Upcoming, Players, and Rules with 0ms delay.
-[NEW] **NDL Startup Intro Screen**: A sleek cyberpunk intro screen welcoming you to the platform.`,
+### 3. Country Rankings & Continental Maps
+Check out the **Countries** tab to see how nations around the world rank by total player points. You can filter by continent (Europe, North America, South America, Asia, Oceania, Africa) and click into any country to inspect its national roster and top victors.
+
+### 4. Creator Leaderboards
+We added a dedicated **Creators** tab to celebrate the architects who build, publish, and verify nerfed demons, awarding creator points based on level difficulty.
+
+### 5. Historical List Archive
+Curious what the list looked like weeks ago or at launch? The **Archive** tab lets you pick any date on the calendar and instantly reconstruct the exact rankings, points, and player leaderboards as of that day.
+
+### 6. Level Position History & Peak Ranks
+Every level detail page now features an interactive **Position History** timeline showing placement dates, rank shifts (rises and drops), and the level's all-time Peak Rank badge.
+
+### 7. Deep Geometry Dash Metadata
+Levels now display Newgrounds song titles and direct links, song IDs, object counts, level lengths, in-game difficulties, copy passwords, and minimum qualifying progress.
+
+### 8. Site-Wide Modern Redesign & Clean Navigation
+The entire site has been redesigned with sleek gradient hero banners, unified pill button controls, responsive 2-tier header navigation, and clean tables across every page.
+
+Thank you so much to all the players, verifiers, creators, and moderators who helped test and refine the platform during the RC phase. Enjoy the v1.0.0 update, and we'll see you on the leaderboard!
+
+*— cattw21 & NDL Staff*`,
 };
 
 export const DEFAULT_POSTS = [
   {
     id: "major-update-tiers-countries-archive-partial-points",
-    title: "Major Update: Main & Extended List, Country Rankings, Archive, and Partial Points",
+    title: "Nerfed Demonlist v1.0.0: Official Stable Release",
     slug: "major-update-tiers-countries-archive-partial-points",
-    category: "SITE_UPDATE" as const,
+    category: "ANNOUNCEMENT" as const,
     summary:
-      "A major update just dropped on NDL! We've added Main and Extended List tiers, partial points for Main List progress runs, global Country Rankings, a Creators leaderboard, Level Position History, and a historical List Archive.",
-    content: `Hey everyone!
-
-We just rolled out a major update to the site with a lot of features inspired by Pointercrate that make the list feel much more complete. Here is everything that's new:
-
-### 1. Main List & Extended List
-The demonlist is now organized into three tiers:
-- **Main List (#1–75)**: The hardest nerfed demons on the list. Qualifying progress runs here award partial points.
-- **Extended List (#76–150)**: Secondary tier for demons #76 through #150. Only 100% completions award points.
-- **Legacy List**: Demons that fell off the top 150 or were archived.
-
-### 2. Partial Points for Progress Runs
-If you get a qualifying progress run (like 50%+) on a Main List demon, you now actually earn points on the leaderboard! The points scale depending on the demon's rank and how far past the minimum requirement you got, so huge runs don't go unrewarded.
-
-### 3. Country Rankings & Continent Filters
-Check out the new **Countries** tab to see how countries stack up based on player points. You can filter by continent (Europe, North America, South America, Asia, Oceania, and Africa) or click into any country to view its full player roster.
-
-### 4. Creator Leaderboard
-We added a dedicated **Creators** tab that tracks who is actually making, publishing, and verifying the nerfed demons on the list, complete with points based on demon difficulty.
-
-### 5. Level Position History & Peak Ranks
-Every level page now has a dedicated **Position History** timeline showing placement dates, rank movements (rises and drops), and the level's all-time Peak Rank.
-
-### 6. List Archive
-The new **Archive** tab lets you pick any date on the calendar and see what the Demonlist and player leaderboards looked like back then.
-
-### 7. In-Depth Level Info & Player Stats
-Level pages now include song details (with Newgrounds links), object counts, level lengths, copy passwords, and qualifying percentages. Player profiles also got an updated stats card showing your hardest demon, completions across tiers, and country flags.
-
-Check out the new tabs at the top of the site and let us know what you think in the Discord!
-
-*— cattw21 & NDL Staff*`,
+      "Nerfed Demonlist has officially graduated out of Release Candidate into our v1.0.0 Stable Release! Featuring Main List & Extended List tiers (#1–75 / #76–150), partial progress scoring, Country Rankings, Creator Leaderboards, historical List Archive, Level Position History, and a complete site-wide modern redesign.",
+    content: LATEST_RELEASE_POST.content,
     isPinned: true,
     isPublished: true,
     isDemo: false,

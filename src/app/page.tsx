@@ -1,16 +1,13 @@
 import {
-  Activity,
   BookOpen,
   ClipboardCheck,
   Newspaper,
-  ShieldCheck,
   Trophy,
   Upload,
 } from "lucide-react";
 import Link from "next/link";
 
 import { LevelList } from "@/components/level-list";
-import { Eyebrow, MetricTile, SectionPanel } from "@/components/ui";
 import { changelogCategoryLabel } from "@/lib/changelog";
 import { prisma } from "@/lib/db";
 import {
@@ -85,52 +82,49 @@ export default async function Home() {
   const legacyCount = levels.filter((level) => level.status === "LEGACY").length;
 
   return (
-    <div className="space-y-5">
-      <section className="overflow-hidden rounded-md border border-slate-300 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
-        <div className="grid gap-4 border-b border-slate-300 bg-[linear-gradient(120deg,#ffffff_0%,#f1f7fa_100%)] p-4 dark:border-slate-700 dark:bg-[linear-gradient(120deg,#101722_0%,#0f2634_100%)] lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
-          <div className="min-w-0">
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <Eyebrow icon={Trophy}>Official Rankings</Eyebrow>
-              {isDemoMode ? (
-                <Eyebrow icon={ShieldCheck} tone="amber">
-                  Demo mode
-                </Eyebrow>
-              ) : null}
+    <div className="space-y-6">
+      {/* Header Banner */}
+      <div className="relative overflow-hidden rounded-2xl border border-cyan-500/20 bg-gradient-to-b from-cyan-500/10 via-zinc-900/50 to-zinc-950 p-6 sm:p-10 shadow-2xl">
+        <div className="relative z-10">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-cyan-400">
+              Official v1.0.0 Stable Rankings
             </div>
-            <h1 className="text-balance text-4xl font-black leading-tight text-slate-950 sm:text-5xl">
-              Nerfed Demonlist
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base dark:text-slate-300">
-              The official ranking for legitimately beaten nerfed demons.
-            </p>
+            {isDemoMode ? (
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-400">
+                Demo mode
+              </div>
+            ) : null}
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <MetricTile icon={Trophy} label="Ranked" value={rankedCount} />
-            <MetricTile
-              icon={Activity}
-              label="Legacy"
-              value={legacyCount}
-              tone="zinc"
-            />
-            <MetricTile
-              icon={ClipboardCheck}
-              label="Records"
-              value={acceptedCount}
-              tone="emerald"
-            />
-          </div>
-        </div>
-        <div className="grid gap-2 bg-slate-100 p-3 text-sm leading-6 text-slate-700 dark:bg-slate-950/60 dark:text-slate-300 md:grid-cols-[1fr_auto] md:items-center">
-          <p>
-            {isDemoMode
-              ? "Demo mode is enabled."
-              : "Rankings and points are computed live from accepted community completions."}
+
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            Nerfed Demonlist
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm sm:text-base text-zinc-400">
+            The definitive competitive ranking for verified nerfed Geometry Dash extreme demons. Main List (#1–75), Extended List (#76–150), partial progress scoring, and national leaderboards.
           </p>
-          <span className="font-bold text-cyan-800 dark:text-cyan-300">
-            {pendingCount} submission{pendingCount === 1 ? "" : "s"} in review queue
-          </span>
+
+          {/* Quick Metrics */}
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-2xl">
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Ranked Demons</span>
+              <p className="mt-1 text-xl font-bold text-white">{rankedCount}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Accepted Records</span>
+              <p className="mt-1 text-xl font-bold text-cyan-400">{acceptedCount}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Review Queue</span>
+              <p className="mt-1 text-xl font-bold text-amber-400">{pendingCount}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Platform Status</span>
+              <p className="mt-1 text-base font-bold text-emerald-400">v1.0.0 Stable</p>
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <main className="min-w-0">
@@ -293,13 +287,13 @@ function SidebarCard({
   children: React.ReactNode;
 }) {
   return (
-    <SectionPanel className="p-4">
-      <div className="mb-3 flex items-center gap-2 border-b border-slate-300 pb-3 dark:border-slate-700">
+    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white/90 p-5 shadow-xl backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/60">
+      <div className="mb-4 flex items-center gap-2 border-b border-zinc-200 pb-3 dark:border-zinc-800">
         {icon}
-        <h2 className="font-black text-slate-950">{title}</h2>
+        <h2 className="font-bold text-zinc-900 dark:text-white">{title}</h2>
       </div>
       {children}
-    </SectionPanel>
+    </div>
   );
 }
 
@@ -311,11 +305,11 @@ function SidebarStat({
   value: number | string;
 }) {
   return (
-    <div className="rounded-md border border-slate-300 bg-white p-2 dark:border-slate-700 dark:bg-slate-950/60">
-      <dt className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">
+    <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-2.5 dark:border-zinc-800 dark:bg-zinc-950/60">
+      <dt className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
         {label}
       </dt>
-      <dd className="mt-1 text-xl font-black text-slate-950 dark:text-slate-50">
+      <dd className="mt-1 text-lg font-black text-zinc-900 dark:text-white">
         {value}
       </dd>
     </div>

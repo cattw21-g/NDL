@@ -1,7 +1,7 @@
-import { Info, Newspaper } from "lucide-react";
+import { Info } from "lucide-react";
 
 import { ChangelogPostCard } from "@/components/changelog-post-card";
-import { EmptyState, Eyebrow, SectionPanel } from "@/components/ui";
+import { EmptyState, SectionPanel } from "@/components/ui";
 import {
   DEFAULT_POSTS,
   ensureLatestChangelogPost,
@@ -30,19 +30,41 @@ export default async function ChangelogPage() {
   const posts = postsFromDb.length > 0 ? postsFromDb : DEFAULT_POSTS;
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-md border border-slate-300 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
-        <div className="mb-3">
-          <Eyebrow icon={Newspaper}>Site updates</Eyebrow>
+    <div className="space-y-6">
+      {/* Header Banner */}
+      <div className="relative overflow-hidden rounded-2xl border border-cyan-500/20 bg-gradient-to-b from-cyan-500/10 via-zinc-900/50 to-zinc-950 p-6 sm:p-10 shadow-2xl">
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-cyan-400">
+            Platform Communications
+          </div>
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            News & Changelog
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm sm:text-base text-zinc-400">
+            Official announcements, ranking updates, feature releases, rule amendments, and development notes from the Nerfed Demonlist team.
+          </p>
+
+          {/* Quick Metrics */}
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-2xl">
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Current Milestone</span>
+              <p className="mt-1 text-base font-bold text-emerald-400">v1.0.0 Stable</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Total Updates</span>
+              <p className="mt-1 text-xl font-bold text-white">{posts.length}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Production Status</span>
+              <p className="mt-1 text-base font-bold text-cyan-400">Graduated from RC</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Discord Sync</span>
+              <p className="mt-1 text-base font-bold text-purple-400">Live Auto-Post</p>
+            </div>
+          </div>
         </div>
-        <h1 className="text-4xl font-black leading-tight text-slate-950">
-          News & changelog
-        </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-          Public announcements, ranking updates, rule changes, staff notes, and
-          launch information from NDL staff.
-        </p>
-      </section>
+      </div>
 
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="space-y-4">
@@ -57,18 +79,18 @@ export default async function ChangelogPage() {
             />
           )}
         </div>
-        <aside className="space-y-3">
-          <SectionPanel className="p-4">
-            <div className="flex items-center gap-2 border-b border-slate-300 pb-3 font-black text-slate-950">
-              <Info className="h-5 w-5 text-cyan-800" />
-              What gets posted
+        <aside className="space-y-4">
+          <SectionPanel className="p-5">
+            <div className="flex items-center gap-2 border-b border-zinc-200 pb-3 font-bold text-zinc-900 dark:border-zinc-800 dark:text-white">
+              <Info className="h-5 w-5 text-cyan-500" />
+              Changelog Coverage
             </div>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
-              <li>List policy updates</li>
-              <li>Rules document changes</li>
-              <li>Ranking and placement changes</li>
-              <li>Moderation and launch notes</li>
-              <li>Public project status notes</li>
+            <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+              <li>Official version milestones & stable releases</li>
+              <li>Main List & Extended List tier movements</li>
+              <li>Rules document additions & modifications</li>
+              <li>Ranking formula & partial points adjustments</li>
+              <li>Moderation notices & community announcements</li>
             </ul>
           </SectionPanel>
         </aside>

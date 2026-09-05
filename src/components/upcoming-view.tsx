@@ -11,7 +11,7 @@ import { useMemo, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { LevelVideoEmbed } from "@/components/level-video-embed";
 import { SafeThumbnail } from "@/components/safe-thumbnail";
-import { cx, Eyebrow, MetricTile, SectionPanel, inputClass } from "@/components/ui";
+import { cx, SectionPanel, inputClass } from "@/components/ui";
 
 export type UpcomingLevelItem = {
   id: string;
@@ -68,100 +68,94 @@ export function UpcomingView({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <section className="overflow-hidden rounded-md border border-slate-300 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
-        <div className="grid gap-4 border-b border-slate-300 bg-[linear-gradient(120deg,#ffffff_0%,#f0fdfa_100%)] p-5 dark:border-slate-700 dark:bg-[linear-gradient(120deg,#101722_0%,#09232c_100%)] lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
-          <div className="min-w-0">
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <Eyebrow icon={Hourglass} tone="cyan">
-                Queue & Progress
-              </Eyebrow>
-              <span className="rounded-full border border-teal-500/30 bg-teal-50 px-2.5 py-0.5 text-xs font-black text-teal-800 dark:bg-teal-950/60 dark:text-teal-300">
-                Upcoming Nerfed Demons
-              </span>
+      <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-b from-emerald-500/10 via-zinc-900/50 to-zinc-950 p-6 sm:p-10 shadow-2xl">
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-400">
+            Queue & In-Verification
+          </div>
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            Upcoming Nerfed Demons
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm sm:text-base text-zinc-400">
+            Track nerfed demons in active verification or browse open levels waiting for a verifier to take them on.
+          </p>
+
+          {/* Quick Metrics */}
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-2xl">
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Currently Verifying</span>
+              <p className="mt-1 text-xl font-bold text-amber-400">{currentlyVerifying.length}</p>
             </div>
-            <h1 className="text-balance text-4xl font-black leading-tight text-slate-950 sm:text-5xl dark:text-slate-50">
-              Upcoming Levels
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base dark:text-slate-300">
-              Track nerfed demons in active verification or browse open levels waiting for a verifier to take them on.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <MetricTile
-              icon={Flame}
-              label="Verifying"
-              value={currentlyVerifying.length}
-              tone="amber"
-            />
-            <MetricTile
-              icon={Hourglass}
-              label="Waiting"
-              value={waitingLevels.length}
-              tone="cyan"
-            />
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Waiting for Verifier</span>
+              <p className="mt-1 text-xl font-bold text-emerald-400">{waitingLevels.length}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Total in Pipeline</span>
+              <p className="mt-1 text-xl font-bold text-white">{currentlyVerifying.length + waitingLevels.length}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Verification Status</span>
+              <p className="mt-1 text-base font-bold text-cyan-400">Open Roster</p>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Sub-Tabs Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-100 p-3 dark:bg-slate-950/70">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab("verifying")}
-              className={cx(
-                "inline-flex min-h-9 items-center gap-2 rounded-md px-4 text-xs font-black transition",
-                activeTab === "verifying"
-                  ? "bg-amber-600 text-white shadow-sm dark:bg-amber-500 dark:text-slate-950"
-                  : "bg-white text-slate-700 hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800",
-              )}
-            >
-              <Flame className="h-4 w-4" />
-              Currently Verifying
-              <span className="ml-1 rounded-full bg-black/20 px-1.5 py-0.2 text-[10px]">
-                {currentlyVerifying.length}
-              </span>
-            </button>
+      {/* Sub-Tabs Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 pb-4 dark:border-zinc-800">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("verifying")}
+            className={cx(
+              "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all",
+              activeTab === "verifying"
+                ? "bg-amber-600 text-white shadow-md shadow-amber-500/25 border border-amber-500/50"
+                : "border border-zinc-300 bg-white text-zinc-700 hover:border-amber-400 hover:text-amber-900 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-white",
+            )}
+          >
+            <Flame className="h-4 w-4 text-amber-400" />
+            Currently Verifying ({currentlyVerifying.length})
+          </button>
 
-            <button
-              onClick={() => setActiveTab("waiting")}
-              className={cx(
-                "inline-flex min-h-9 items-center gap-2 rounded-md px-4 text-xs font-black transition",
-                activeTab === "waiting"
-                  ? "bg-cyan-700 text-white shadow-sm dark:bg-cyan-500 dark:text-slate-950"
-                  : "bg-white text-slate-700 hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800",
-              )}
-            >
-              <Hourglass className="h-4 w-4" />
-              Waiting Levels
-              <span className="ml-1 rounded-full bg-black/20 px-1.5 py-0.2 text-[10px]">
-                {waitingLevels.length}
-              </span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab("waiting")}
+            className={cx(
+              "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all",
+              activeTab === "waiting"
+                ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/25 border border-emerald-500/50"
+                : "border border-zinc-300 bg-white text-zinc-700 hover:border-emerald-400 hover:text-emerald-900 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-white",
+            )}
+          >
+            <Hourglass className="h-4 w-4 text-emerald-400" />
+            Waiting Levels ({waitingLevels.length})
+          </button>
+        </div>
 
-          <div className="flex items-center gap-2">
-            {isAdmin ? (
-              <Link
-                href="/admin/upcoming"
-                className="inline-flex min-h-8 items-center gap-1 rounded border border-amber-400 bg-amber-50 px-3 text-xs font-black text-amber-900 hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-950/60 dark:text-amber-200"
-              >
-                ⚙️ Admin Queue Manager
-              </Link>
-            ) : null}
+        <div className="flex items-center gap-3">
+          {isAdmin ? (
             <Link
-              href="/suggest-level"
-              className="text-xs font-bold text-cyan-700 underline hover:text-cyan-800 dark:text-cyan-400"
+              href="/admin/upcoming"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-400 hover:bg-amber-500/20 transition-colors"
             >
-              Suggest a Level →
+              Admin Queue Manager
             </Link>
-          </div>
+          ) : null}
+          <Link
+            href="/suggest-level"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-bold text-cyan-400 hover:bg-cyan-500/20 transition-colors"
+          >
+            Suggest a Level →
+          </Link>
         </div>
-      </section>
+      </div>
 
       {/* Filter and Search Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="relative min-w-[18rem] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -174,12 +168,13 @@ export function UpcomingView({
           {["ALL", "EXTREME", "MYTHIC", "ADVANCED", "ENTRY"].map((diff) => (
             <button
               key={diff}
+              type="button"
               onClick={() => setSelectedDifficulty(diff)}
               className={cx(
-                "rounded px-2.5 py-1 transition",
+                "rounded-lg border px-3 py-1.5 transition-all",
                 selectedDifficulty === diff
-                  ? "bg-slate-900 text-white dark:bg-white dark:text-slate-950"
-                  : "bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700",
+                  ? "border-cyan-500 bg-cyan-600 text-white shadow-sm dark:bg-cyan-500 dark:text-zinc-950"
+                  : "border-zinc-300 bg-white text-zinc-700 hover:border-cyan-300 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:border-zinc-700",
               )}
             >
               {diff === "ALL" ? "All Tiers" : diff}

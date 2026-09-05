@@ -1,8 +1,8 @@
-import { BookOpen, ShieldCheck, Trophy } from "lucide-react";
+import { BookOpen, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 import { LeaderboardView } from "@/components/leaderboard-view";
-import { Eyebrow, MetricTile, SectionPanel } from "@/components/ui";
+import { SectionPanel } from "@/components/ui";
 import { prisma } from "@/lib/db";
 import { demoModeEnabled, publicRecordWhere } from "@/lib/demo-visibility";
 import {
@@ -88,25 +88,47 @@ export default async function PlayersPage() {
 
   const leaderboardRows = [...rankedRows, ...unrankedUsers];
 
+  const totalPoints = leaderboard.reduce((sum, r) => sum + r.points, 0);
+  const champion = leaderboard[0];
+
   return (
-    <div className="space-y-5">
-      <section className="grid gap-4 rounded-md border border-slate-300 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_14px_30px_rgba(0,0,0,0.28)] lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
-        <div>
-          <div className="mb-3">
-            <Eyebrow icon={Trophy}>Global Rankings</Eyebrow>
+    <div className="space-y-6">
+      {/* Header Banner */}
+      <div className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-b from-amber-500/10 via-zinc-900/50 to-zinc-950 p-6 sm:p-10 shadow-2xl">
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-400">
+            Global Standings
           </div>
-          <h1 className="text-4xl font-black leading-tight text-slate-950 dark:text-slate-50">
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
             Player Leaderboard
           </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base">
-            Top players ranked by verified completions and points.
+          <p className="mt-2 max-w-2xl text-sm sm:text-base text-zinc-400">
+            Official competitive player rankings, point totals, completion records, and national roster affiliations.
           </p>
+
+          {/* Quick Metrics */}
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-2xl">
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Ranked Victors</span>
+              <p className="mt-1 text-xl font-bold text-white">{leaderboard.length}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Total Points</span>
+              <p className="mt-1 text-xl font-bold text-amber-400">{totalPoints.toLocaleString()} pts</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">#1 Champion</span>
+              <p className="mt-1 text-base font-bold text-emerald-400 truncate">
+                {champion ? champion.displayName : "—"}
+              </p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Accepted Records</span>
+              <p className="mt-1 text-xl font-bold text-cyan-400">{records.length}</p>
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <MetricTile label="Players" value={leaderboard.length} />
-          <MetricTile label="Records" value={records.length} tone="emerald" />
-        </div>
-      </section>
+      </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <main className="min-w-0">
@@ -114,29 +136,27 @@ export default async function PlayersPage() {
         </main>
 
         <aside className="space-y-3">
-          <SectionPanel className="p-4">
-            <div className="flex items-center gap-2 border-b border-slate-300 pb-3 font-black text-slate-950">
-              <ShieldCheck className="h-5 w-5 text-cyan-800" />
-              Scoring notes
+          <SectionPanel className="p-5">
+            <div className="flex items-center gap-2 border-b border-zinc-200 pb-3 font-bold text-zinc-900 dark:border-zinc-800 dark:text-white">
+              <ShieldCheck className="h-5 w-5 text-amber-500" />
+              Scoring Mechanics
             </div>
-            <p className="mt-3 text-sm leading-6 text-slate-700">
-              Accepted records only. Points count each player&apos;s best accepted
-              record per ranked or legacy level. Pending and rejected
-              submissions do not affect standings.
+            <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+              Ranked and legacy records grant points based on difficulty curve. Main List progress runs earn partial points. Position shifts automatically recalculate points in real-time.
             </p>
           </SectionPanel>
-          <SectionPanel className="p-4">
-            <div className="flex items-center gap-2 border-b border-slate-300 pb-3 font-black text-slate-950">
-              <BookOpen className="h-5 w-5 text-cyan-800" />
-              New runs
+
+          <SectionPanel className="p-5">
+            <div className="flex items-center gap-2 border-b border-zinc-200 pb-3 font-bold text-zinc-900 dark:border-zinc-800 dark:text-white">
+              <BookOpen className="h-5 w-5 text-cyan-500" />
+              Submitting Records
             </div>
-            <p className="mt-3 text-sm leading-6 text-slate-700">
-              Records must include proof links, FPS, CBF usage, click/audio
-              notes, and device details before review.
+            <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+              Records must include legitimate proof footage, click audio, FPS, and CBF settings for staff review.
             </p>
             <Link
               href="/submit"
-              className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
+              className="mt-4 inline-flex min-h-9 w-full items-center justify-center rounded-lg bg-cyan-600 px-3 text-sm font-bold text-white shadow-md shadow-cyan-500/20 transition hover:bg-cyan-500"
             >
               Submit a record
             </Link>

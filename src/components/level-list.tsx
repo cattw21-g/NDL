@@ -98,9 +98,9 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
 
   return (
     <SectionPanel className="overflow-hidden">
-      <div className="border-b border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950/60">
+      <div className="border-b border-zinc-200 bg-zinc-50/80 dark:border-zinc-800 dark:bg-zinc-950/60">
         {/* Main List Tier Filter (Matching Country & Creator Rankings) */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-100/70 p-3 dark:border-slate-800 dark:bg-slate-950/70">
+        <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 bg-zinc-100/70 p-3 dark:border-zinc-800 dark:bg-zinc-950/70">
           {tabs.map((item) => {
             const isActive = tab === item.value;
             return (
@@ -112,7 +112,7 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
                   "rounded-lg px-4 py-2 text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-cyan-300",
                   isActive
                     ? "bg-cyan-600 text-white shadow-md shadow-cyan-500/25 border border-cyan-500/50"
-                    : "border border-slate-300 bg-white text-slate-700 hover:border-cyan-400 hover:text-cyan-900 dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:text-white",
+                    : "border border-zinc-300 bg-white text-zinc-700 hover:border-cyan-400 hover:text-cyan-900 dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-white",
                 )}
               >
                 {item.label}
@@ -124,7 +124,7 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
         {/* Search & Sort Controls */}
         <div className="grid gap-3 p-3 lg:grid-cols-[1fr_auto] lg:items-center">
           <label className="relative block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -133,7 +133,7 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
             />
           </label>
           <label className="flex items-center gap-2">
-            <SlidersHorizontal className="h-4 w-4 text-cyan-700" />
+            <SlidersHorizontal className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
             <select
               value={sort}
               onChange={(event) => setSort(event.target.value as SortMode)}
@@ -148,9 +148,9 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
         </div>
 
         {/* Difficulty Quick Filter Chips */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-slate-50/60 px-3 py-2 text-xs dark:border-slate-800 dark:bg-slate-950/40">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-200 bg-zinc-50/60 px-3 py-2 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-bold text-slate-500 mr-1">Difficulty:</span>
+            <span className="font-bold text-zinc-500 mr-1">Difficulty:</span>
             {tierChips.map((chip) => (
               <button
                 key={chip.value}
@@ -159,8 +159,8 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
                 className={cx(
                   "rounded-md border px-2.5 py-1 text-xs font-bold transition-all",
                   tier === chip.value
-                    ? "border-cyan-500 bg-cyan-600 text-white shadow-sm dark:bg-cyan-500 dark:text-slate-950"
-                    : "border-slate-300 bg-white text-slate-700 hover:border-cyan-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-slate-700",
+                    ? "border-cyan-500 bg-cyan-600 text-white shadow-sm dark:bg-cyan-500 dark:text-zinc-950"
+                    : "border-zinc-300 bg-white text-zinc-700 hover:border-cyan-300 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-700",
                 )}
               >
                 {chip.label}
@@ -168,14 +168,14 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
             ))}
           </div>
 
-          <span className="font-bold text-slate-500 dark:text-slate-400">
+          <span className="font-bold text-zinc-500 dark:text-zinc-400">
             Showing {filtered.length} of {levels.length} {levels.length === 1 ? "level" : "levels"}
           </span>
         </div>
       </div>
 
       {/* Level Cards List */}
-      <div className="space-y-2 bg-white p-2.5 dark:bg-slate-950/30 sm:p-3">
+      <div className="space-y-3 bg-zinc-50/30 p-2.5 dark:bg-zinc-950/30 sm:p-3">
         {filtered.length > 0 ? (
           filtered.map((level) => {
             const userSub = submissionsBySlug[level.slug];

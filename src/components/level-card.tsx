@@ -49,7 +49,7 @@ export function LevelCard({
   return (
     <article
       className={cx(
-        "group relative overflow-hidden rounded-md border transition duration-200 hover:-translate-y-0.5",
+        "group relative overflow-hidden rounded-xl border transition-all duration-200 hover:-translate-y-0.5",
         isPending
           ? "border-amber-400 bg-[linear-gradient(135deg,rgba(254,243,199,0.25)_0%,rgba(255,255,255,1)_100%)] shadow-[0_0_18px_rgba(245,158,11,0.25)] ring-2 ring-amber-400/50 dark:border-amber-400 dark:bg-[linear-gradient(135deg,rgba(120,53,15,0.25)_0%,rgba(15,23,42,1)_100%)] dark:shadow-[0_0_22px_rgba(245,158,11,0.32)]"
           : isAccepted
@@ -59,8 +59,8 @@ export function LevelCard({
               : isNeedsChanges
                 ? "border-amber-500 bg-amber-50/20 shadow-[0_0_18px_rgba(245,158,11,0.25)] ring-2 ring-amber-400/50 dark:border-amber-400 dark:bg-amber-950/20"
                 : isTopThree
-                  ? "border-cyan-400 bg-white shadow-[0_7px_18px_rgba(15,23,42,0.07)] hover:border-cyan-500 hover:shadow-[0_12px_24px_rgba(15,23,42,0.12)] dark:border-cyan-500/70 dark:bg-slate-900 dark:shadow-[0_12px_24px_rgba(0,0,0,0.28)] dark:hover:border-cyan-400"
-                  : "border-slate-300 bg-white shadow-[0_7px_18px_rgba(15,23,42,0.07)] hover:border-cyan-500 hover:shadow-[0_12px_24px_rgba(15,23,42,0.12)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_12px_24px_rgba(0,0,0,0.28)] dark:hover:border-cyan-400",
+                  ? "border-cyan-400/60 bg-white shadow-lg hover:border-cyan-500 hover:shadow-xl dark:border-cyan-500/50 dark:bg-zinc-900/80 dark:hover:border-cyan-400"
+                  : "border-zinc-200 bg-white shadow-md hover:border-cyan-500/60 hover:shadow-xl dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-zinc-700",
       )}
     >
       {/* Dynamic Left Accent Bar */}
@@ -78,16 +78,16 @@ export function LevelCard({
                   : level.rank === 1
                     ? "bg-amber-500"
                     : level.rank === 2
-                      ? "bg-cyan-700"
+                      ? "bg-cyan-500"
                       : level.rank === 3
-                        ? "bg-teal-700"
-                        : "bg-slate-300",
+                        ? "bg-amber-700"
+                        : "bg-zinc-300 dark:bg-zinc-700",
         )}
       />
 
       <div className="grid grid-cols-[4.75rem_minmax(0,1fr)] gap-0 md:grid-cols-[4.75rem_15rem_minmax(0,1fr)_10rem] md:items-center">
         {/* Col 1: Rank Badge */}
-        <div className="flex items-center justify-center bg-slate-50 p-2 dark:bg-slate-950/60 md:self-stretch">
+        <div className="flex items-center justify-center bg-zinc-50/80 p-2 dark:bg-zinc-950/50 md:self-stretch">
           <RankBadge rank={level.rank} />
         </div>
 
@@ -95,7 +95,7 @@ export function LevelCard({
         <div className="min-w-0 p-2 md:w-60">
           <Link
             href={`/levels/${level.slug}`}
-            className="relative block aspect-video w-full overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950"
+            className="relative block aspect-video w-full overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950"
           >
             <SafeThumbnail
               src={level.thumbnailUrl}
@@ -113,7 +113,7 @@ export function LevelCard({
         </div>
 
         {/* Col 3: Metadata and Title */}
-        <div className="col-span-2 min-w-0 border-t border-slate-300 p-3 dark:border-slate-700 md:col-auto md:border-t-0 md:px-3 md:py-2.5">
+        <div className="col-span-2 min-w-0 border-t border-zinc-200 p-3 dark:border-zinc-800 md:col-auto md:border-t-0 md:px-3 md:py-2.5">
           <div className="min-w-0">
             {/* Status Strip above title */}
             {activeSubmission ? (
@@ -189,13 +189,13 @@ export function LevelCard({
             <Link
               href={`/levels/${level.slug}`}
               className={cx(
-                "block truncate text-lg font-black leading-tight text-slate-950 transition hover:text-cyan-800 dark:text-slate-50 dark:hover:text-cyan-200",
+                "block truncate text-lg font-black leading-tight text-zinc-950 transition hover:text-cyan-600 dark:text-white dark:hover:text-cyan-400",
                 level.status !== "RANKED" && !activeSubmission && "mt-1.5",
               )}
             >
               {level.name}
             </Link>
-            <dl className="mt-1.5 grid gap-x-4 gap-y-1 text-sm leading-5 text-slate-700 dark:text-slate-300 sm:grid-cols-2">
+            <dl className="mt-1.5 grid gap-x-4 gap-y-1 text-sm leading-5 text-zinc-600 dark:text-zinc-400 sm:grid-cols-2">
               <Meta label="Original" value={level.originalName} />
               <Meta label="Verified by" value={level.verifier} />
               <Meta label="Hosted by" value={level.publisher} />
@@ -204,15 +204,15 @@ export function LevelCard({
           </div>
         </div>
 
-        {/* Col 4: Points, Records, Details Button - COMPLETELY UNOBSTRUCTED */}
-        <div className="col-span-2 grid grid-cols-3 gap-2 border-t border-slate-300 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950/60 md:col-auto md:grid-cols-1 md:border-l md:border-t-0 md:self-stretch">
+        {/* Col 4: Points, Records, Details Button */}
+        <div className="col-span-2 grid grid-cols-3 gap-2 border-t border-zinc-200 bg-zinc-50/80 p-2.5 dark:border-zinc-800 dark:bg-zinc-950/60 md:col-auto md:grid-cols-1 md:border-l md:border-t-0 md:self-stretch">
           <PointsPill points={level.points} />
-          <span className="inline-flex min-h-8 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-800 tabular-nums dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+          <span className="inline-flex min-h-8 items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-800 tabular-nums dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
             {level._count?.records ?? 0} records
           </span>
           <Link
             href={`/levels/${level.slug}`}
-            className="inline-flex min-h-8 items-center justify-center gap-2 rounded-md border border-cyan-800 bg-cyan-800 px-3 text-sm font-black text-white transition hover:bg-cyan-700"
+            className="inline-flex min-h-8 items-center justify-center gap-2 rounded-lg bg-cyan-600 px-3 text-sm font-bold text-white shadow-md shadow-cyan-500/20 transition hover:bg-cyan-500"
           >
             Details
             <ArrowRight className="h-4 w-4" />

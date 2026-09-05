@@ -1,7 +1,7 @@
-import { BookOpen, GitCompareArrows, ShieldAlert } from "lucide-react";
+import { GitCompareArrows } from "lucide-react";
 import Link from "next/link";
 
-import { EmptyState, Eyebrow, SectionPanel } from "@/components/ui";
+import { EmptyState, SectionPanel } from "@/components/ui";
 import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/format";
 
@@ -28,54 +28,68 @@ export default async function RulesPage() {
       .map((line) => line.replace("## ", "")) ?? [];
 
   return (
-    <div className="space-y-5">
-      <section className="grid gap-4 rounded-md border border-slate-300 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_14px_30px_rgba(0,0,0,0.28)] lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
-        <div>
-          <div className="mb-3">
-            <Eyebrow icon={BookOpen}>Public rules</Eyebrow>
+    <div className="space-y-6">
+      {/* Header Banner */}
+      <div className="relative overflow-hidden rounded-2xl border border-rose-500/20 bg-gradient-to-b from-rose-500/10 via-zinc-900/50 to-zinc-950 p-6 sm:p-10 shadow-2xl">
+        <div className="relative z-10">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-400">
+                Official Standards
+              </div>
+              <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                Demonlist Rules & Guidelines
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm sm:text-base text-zinc-400">
+                The official verification criteria, video proof standards, mod policies, and scoring mechanics enforced by NDL staff.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/submit"
+                className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-bold text-white shadow-md shadow-rose-500/20 hover:bg-rose-500 transition-colors"
+              >
+                Submit a record
+              </Link>
+              <Link
+                href="/suggest-level"
+                className="inline-flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/80 px-4 py-2 text-sm font-bold text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                Suggest a level
+              </Link>
+            </div>
           </div>
-          <h1 className="text-4xl font-black leading-tight text-slate-950">
-            Record rules
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
-            The proof standards moderators use before accepting and scoring a
-            record.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link
-              href="/submit"
-              className="inline-flex min-h-10 items-center justify-center rounded-md bg-cyan-700 px-4 text-sm font-black text-white transition hover:bg-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
-            >
-              Submit a record
-            </Link>
-            <Link
-              href="/suggest-level"
-              className="inline-flex min-h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
-            >
-              Suggest a level
-            </Link>
+
+          {/* Quick Metrics */}
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-2xl">
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Rules Version</span>
+              <p className="mt-1 text-base font-bold text-emerald-400">v1.0.0 Stable</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Total Sections</span>
+              <p className="mt-1 text-xl font-bold text-white">{headings.length}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Audio Standard</span>
+              <p className="mt-1 text-base font-bold text-rose-400">Raw Clicks</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">CBF Policy</span>
+              <p className="mt-1 text-base font-bold text-cyan-400">Tracked & Allowed</p>
+            </div>
           </div>
         </div>
-        <SectionPanel className="p-4 shadow-none">
-          <div className="flex items-center gap-2 font-black text-slate-950">
-            <ShieldAlert className="h-5 w-5 text-red-600" />
-            Enforcement
-          </div>
-          <p className="mt-3 text-sm leading-6 text-slate-700">
-            Suspicious footage, missing proof, invalid versions, bad audio, or
-            rule violations can be rejected.
-          </p>
-        </SectionPanel>
-      </section>
+      </div>
 
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <SectionPanel className="p-5">
+        <SectionPanel className="p-6 sm:p-8">
           {rules ? (
             <>
-              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
+              <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                 Version v1.0 - Last updated {formatDate(rules.updatedAt)}
               </p>
-              <div className="mt-4 space-y-3 text-sm leading-7 text-slate-700 dark:text-slate-300">
+              <div className="mt-6 space-y-4 text-sm leading-7 text-zinc-700 dark:text-zinc-300">
                 {rules.content.split("\n").map((line, index) => {
                   const key = `${index}-${line}`;
                   if (line.startsWith("## ")) {
@@ -84,7 +98,7 @@ export default async function RulesPage() {
                       <h2
                         key={key}
                         id={sectionId(title)}
-                        className="pt-4 text-2xl font-black text-slate-950 dark:text-slate-50"
+                        className="pt-6 text-xl font-extrabold text-zinc-900 dark:text-white border-t border-zinc-200 dark:border-zinc-800 first:border-t-0 first:pt-0"
                       >
                         {title}
                       </h2>
@@ -92,7 +106,7 @@ export default async function RulesPage() {
                   }
                   if (line.startsWith("- ")) {
                     return (
-                      <p key={key} className="border-l border-cyan-300 pl-3">
+                      <p key={key} className="border-l-2 border-rose-500/60 pl-3.5 text-zinc-600 dark:text-zinc-300">
                         {line.replace("- ", "")}
                       </p>
                     );
@@ -105,10 +119,11 @@ export default async function RulesPage() {
             <EmptyState title="No active rules document" />
           )}
         </SectionPanel>
-        <aside className="space-y-3">
+
+        <aside className="space-y-4">
           {headings.length > 0 ? (
-            <SectionPanel className="p-4 lg:sticky lg:top-24">
-              <h2 className="border-b border-slate-300 pb-3 text-xl font-black text-slate-950 dark:border-slate-700 dark:text-slate-50">
+            <SectionPanel className="p-5 lg:sticky lg:top-24">
+              <h2 className="border-b border-zinc-200 pb-3 font-bold text-zinc-900 dark:border-zinc-800 dark:text-white">
                 Table of contents
               </h2>
               <nav
@@ -119,7 +134,7 @@ export default async function RulesPage() {
                   <a
                     key={heading}
                     href={`#${sectionId(heading)}`}
-                    className="inline-flex min-h-9 items-center rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
+                    className="inline-flex min-h-9 items-center rounded-lg border border-zinc-200 bg-white px-3 text-xs font-bold text-zinc-700 transition hover:border-rose-400 hover:text-rose-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-rose-500 dark:hover:text-white"
                   >
                     {heading}
                   </a>
@@ -127,32 +142,26 @@ export default async function RulesPage() {
               </nav>
             </SectionPanel>
           ) : null}
-          <SectionPanel className="p-4">
-            <h2 className="border-b border-slate-300 pb-3 text-xl font-black text-slate-950">
-              Hard bans
+
+          <SectionPanel className="p-5">
+            <h2 className="border-b border-zinc-200 pb-3 font-bold text-zinc-900 dark:border-zinc-800 dark:text-white">
+              Strict Ban Criteria
             </h2>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
+            <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
               <li>Fake or added click sounds</li>
               <li>Speedhack, noclip, macros, replay bots, auto-clickers</li>
               <li>Hitbox-changing tools, input correction, level-modifying hacks</li>
-              <li>Skipped endscreen or wrong NDL version</li>
+              <li>Skipped endscreen or wrong NDL level ID</li>
             </ul>
           </SectionPanel>
-          <SectionPanel className="p-4">
-            <div className="flex items-center gap-2 border-b border-slate-300 pb-3 font-black text-slate-950">
-              <GitCompareArrows className="h-5 w-5 text-cyan-800" />
-              Nerf fidelity check
+
+          <SectionPanel className="p-5">
+            <div className="flex items-center gap-2 border-b border-zinc-200 pb-3 font-bold text-zinc-900 dark:border-zinc-800 dark:text-white">
+              <GitCompareArrows className="h-5 w-5 text-rose-500" />
+              Nerf Fidelity Requirement
             </div>
-            <p className="mt-3 text-sm leading-6 text-slate-700">
-              Original replay/macro compatibility is a structural eligibility
-              check only. Player records must still be completed legitimately
-              without macros or replay bots.
-            </p>
-            <p className="mt-3 text-sm leading-6 text-slate-700">
-              Matching conditions include the same intended route, compatible
-              game version and physics expectations, and compatible FPS/CBF
-              assumptions. Any exception must be documented and approved by
-              moderators.
+            <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+              Original replay/macro compatibility is a structural eligibility check only. Player records must still be completed legitimately without macros or replay bots.
             </p>
           </SectionPanel>
         </aside>
