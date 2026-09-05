@@ -15,6 +15,7 @@ import {
   createRegisterFormState,
   type RegisterFormField,
 } from "@/lib/register-form-state";
+import { getAllCountries } from "@/lib/countries";
 
 const invalidClass =
   "border-red-500 focus:border-red-600 focus:ring-red-200 dark:border-red-400 dark:focus:border-red-300 dark:focus:ring-red-500/30";
@@ -25,6 +26,7 @@ export function RegisterForm() {
     createRegisterFormState(),
   );
   const values = state.values;
+  const allCountries = getAllCountries();
 
   return (
     <form action={formAction} aria-busy={pending}>
@@ -57,6 +59,23 @@ export function RegisterForm() {
           defaultValue={values.playerName}
           errors={state.fieldErrors.playerName}
         />
+        <FieldLabel label="Select your country you represent (Optional)">
+          <select
+            name="countryCode"
+            defaultValue={values.countryCode}
+            className={cx(
+              inputClass,
+              state.fieldErrors.countryCode?.length ? invalidClass : "",
+            )}
+          >
+            <option value="">🌐 None / Worldwide / Hidden</option>
+            {allCountries.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.flag} {c.name} ({c.continent})
+              </option>
+            ))}
+          </select>
+        </FieldLabel>
         <TextInput
           name="password"
           label="Password"

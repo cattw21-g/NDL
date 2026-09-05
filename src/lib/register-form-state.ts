@@ -7,6 +7,7 @@ export const REGISTER_FORM_SUMMARY = "Fix the highlighted fields below.";
 export const registerFormFields = [
   "email",
   "playerName",
+  "countryCode",
   "password",
   "confirmPassword",
 ] as const;
@@ -39,6 +40,7 @@ export type RegisterFormValidationResult =
 export const emptyRegisterFormValues: RegisterFormValues = {
   email: "",
   playerName: "",
+  countryCode: "",
   password: "",
   confirmPassword: "",
 };
@@ -134,6 +136,7 @@ function withoutPasswordValues(
   return {
     email: values.email ?? "",
     playerName: values.playerName ?? "",
+    countryCode: values.countryCode ?? "",
     password: "",
     confirmPassword: "",
   };

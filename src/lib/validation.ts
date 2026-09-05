@@ -78,6 +78,13 @@ export const registerSchema = z
       .min(2)
       .max(32)
       .regex(/^[a-zA-Z0-9_-]+$/, "Use letters, numbers, underscores, or dashes."),
+    countryCode: z
+      .string()
+      .trim()
+      .max(4)
+      .optional()
+      .nullable()
+      .transform((val) => (val && val.length > 0 ? val.toUpperCase() : null)),
     password: passwordSchema,
     confirmPassword: z
       .string({ error: "Confirm password is required." })

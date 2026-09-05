@@ -151,6 +151,7 @@ export async function registerAction(
       playerName: parsed.data.playerName,
       displayName: parsed.data.playerName,
       password: parsed.data.password,
+      countryCode: parsed.data.countryCode,
     }),
   });
 

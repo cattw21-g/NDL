@@ -5,6 +5,7 @@ export type RegistrationInput = {
   playerName: string;
   displayName: string;
   password: string;
+  countryCode?: string | null;
 };
 
 export async function buildRegistrationCreateData(
@@ -17,5 +18,6 @@ export async function buildRegistrationCreateData(
     playerName: input.playerName,
     displayName: input.displayName,
     passwordHash: await hashPassword(input.password),
+    countryCode: input.countryCode ?? null,
   };
 }

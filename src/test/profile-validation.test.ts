@@ -5,6 +5,8 @@ import {
   getAllCountries,
   getCountryMeta,
 } from "../lib/countries";
+import { registerSchema } from "../lib/validation";
+import { buildRegistrationCreateData } from "../lib/registration";
 
 describe("country metadata and representation", () => {
   it("resolves valid country codes correctly", () => {
@@ -55,5 +57,44 @@ describe("country metadata and representation", () => {
     expect(continents.has("Asia")).toBe(true);
     expect(continents.has("Oceania")).toBe(true);
     expect(continents.has("Africa")).toBe(true);
+  });
+
+  it("parses countryCode in registration validation", () => {
+    const result = registerSchema.safeParse({
+      email: "newplayer@example.com",
+      playerName: "NewPlayer",
+      countryCode: "pl",
+      password: "password12345",
+      confirmPassword: "password12345",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.countryCode).toBe("PL");
+    }
+  });
+
+  it("handles optional or omitted countryCode in registration", () => {
+    const result = registerSchema.safeParse({
+      email: "newplayer2@example.com",
+      playerName: "NewPlayer2",
+      password: "password12345",
+      confirmPassword: "password12345",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.countryCode).toBeNull();
+    }
+  });
+
+  it("builds registration create data with countryCode", async () => {
+    const data = await buildRegistrationCreateData({
+      email: "player@example.com",
+      playerName: "PlayerOne",
+      displayName: "PlayerOne",
+      password: "password12345",
+      countryCode: "US",
+    });
+    expect(data.countryCode).toBe("US");
+    expect(data.playerName).toBe("PlayerOne");
   });
 });
