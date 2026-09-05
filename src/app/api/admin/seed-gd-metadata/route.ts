@@ -94,6 +94,66 @@ const METADATA: Record<
 
 export async function GET() {
   try {
+    // 1. Ensure all schema columns, tables, and constraints exist on the database
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "songName" TEXT;
+      ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "songArtist" TEXT;
+      ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "songId" TEXT;
+      ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "songLink" TEXT;
+      ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "levelLength" TEXT;
+      ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "objectCount" INTEGER;
+      ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "gameVersion" TEXT;
+      ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "inGameDifficulty" TEXT;
+      ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "copyPassword" TEXT;
+      ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "minimumProgress" INTEGER NOT NULL DEFAULT 50;
+      ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "creatorUserId" TEXT;
+      ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "publisherUserId" TEXT;
+
+      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "countryCode" TEXT;
+      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "subdivision" TEXT;
+      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "youtubeUrl" TEXT;
+      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "twitchUrl" TEXT;
+      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "twitterUrl" TEXT;
+
+      CREATE TABLE IF NOT EXISTS "LevelPositionSnapshot" (
+        "id" TEXT NOT NULL,
+        "levelId" TEXT NOT NULL,
+        "status" "LevelStatus" NOT NULL,
+        "action" TEXT NOT NULL,
+        "rank" INTEGER,
+        "notes" TEXT,
+        "recordedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "LevelPositionSnapshot_pkey" PRIMARY KEY ("id")
+      );
+
+      CREATE INDEX IF NOT EXISTS "LevelPositionSnapshot_levelId_recordedAt_idx" ON "LevelPositionSnapshot"("levelId", "recordedAt");
+      CREATE INDEX IF NOT EXISTS "LevelPositionSnapshot_recordedAt_idx" ON "LevelPositionSnapshot"("recordedAt");
+    `);
+
+    try {
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE "LevelPositionSnapshot" ADD CONSTRAINT "LevelPositionSnapshot_levelId_fkey" FOREIGN KEY ("levelId") REFERENCES "Level"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+      `);
+    } catch {
+      // Constraint may already exist
+    }
+
+    try {
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE "Level" ADD CONSTRAINT "Level_creatorUserId_fkey" FOREIGN KEY ("creatorUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+      `);
+    } catch {
+      // Constraint may already exist
+    }
+
+    try {
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE "Level" ADD CONSTRAINT "Level_publisherUserId_fkey" FOREIGN KEY ("publisherUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+      `);
+    } catch {
+      // Constraint may already exist
+    }
+
     const levels = await prisma.level.findMany();
     let updatedCount = 0;
     let snapshotCount = 0;
