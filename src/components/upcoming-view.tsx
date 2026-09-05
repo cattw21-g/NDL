@@ -70,18 +70,15 @@ export function UpcomingView({
       {/* Header Banner */}
       <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-b from-emerald-500/10 via-zinc-900/50 to-zinc-950 p-6 sm:p-10 shadow-2xl">
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-400">
-            Queue & In-Verification
-          </div>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+          <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
             Upcoming Nerfed Demons
           </h1>
           <p className="mt-2 max-w-2xl text-sm sm:text-base text-zinc-400">
-            Track nerfed demons in active verification or browse open levels waiting for a verifier to take them on.
+            Track nerfed demons in active verification or browse open levels waiting for a verifier.
           </p>
 
           {/* Quick Metrics */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-2xl">
+          <div className="mt-6 grid grid-cols-3 gap-3 max-w-lg">
             <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
               <span className="text-xs text-zinc-400">Currently Verifying</span>
               <p className="mt-1 text-xl font-bold text-amber-400">{currentlyVerifying.length}</p>
@@ -91,12 +88,8 @@ export function UpcomingView({
               <p className="mt-1 text-xl font-bold text-emerald-400">{waitingLevels.length}</p>
             </div>
             <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Total in Pipeline</span>
+              <span className="text-xs text-zinc-400">Total Upcoming</span>
               <p className="mt-1 text-xl font-bold text-white">{currentlyVerifying.length + waitingLevels.length}</p>
-            </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Verification Status</span>
-              <p className="mt-1 text-base font-bold text-cyan-400">Open Roster</p>
             </div>
           </div>
         </div>

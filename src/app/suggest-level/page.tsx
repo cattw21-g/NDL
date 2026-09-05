@@ -33,10 +33,7 @@ export default async function SuggestLevelPage({
         <div className="relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-purple-400">
-                Level Candidates
-              </div>
-              <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
                 Suggest a Nerfed Level
               </h1>
               <p className="mt-2 max-w-2xl text-sm sm:text-base text-zinc-400">
@@ -49,26 +46,6 @@ export default async function SuggestLevelPage({
             >
               My suggestions →
             </Link>
-          </div>
-
-          {/* Quick Metrics */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-2xl">
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Review Status</span>
-              <p className="mt-1 text-base font-bold text-emerald-400">Staff Active</p>
-            </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Allowed Nerfs</span>
-              <p className="mt-1 text-base font-bold text-purple-400">All Legitimate</p>
-            </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Target GD Version</span>
-              <p className="mt-1 text-base font-bold text-white">2.2 & 2.1</p>
-            </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Video Proof</span>
-              <p className="mt-1 text-base font-bold text-amber-400">Showcase/Run</p>
-            </div>
           </div>
         </div>
       </div>

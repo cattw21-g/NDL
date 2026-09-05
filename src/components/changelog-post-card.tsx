@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 
 import { ChangelogContent } from "@/components/changelog-content";
@@ -51,9 +51,8 @@ export function ChangelogPostCard({ post }: { post: ChangelogPostData }) {
     <SectionPanel className="relative p-5 transition-all duration-200">
       <div className="flex flex-wrap items-center gap-2">
         {isUnread ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-red-500 px-2.5 py-0.5 text-xs font-black text-white shadow-sm">
-            <span className="h-2 w-2 rounded-full bg-white animate-ping" />
-            NEW NOTIFICATION
+          <span className="inline-flex items-center rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 px-2.5 py-0.5 text-xs font-bold">
+            New
           </span>
         ) : null}
         <StatusBadge value={changelogCategoryLabel(post.category)} />
@@ -101,7 +100,6 @@ export function ChangelogPostCard({ post }: { post: ChangelogPostData }) {
             <>
               <ChevronDown className="h-3.5 w-3.5" />
               Show full update
-              {isUnread ? <Sparkles className="h-3 w-3 text-cyan-500 animate-bounce" /> : null}
             </>
           )}
         </button>

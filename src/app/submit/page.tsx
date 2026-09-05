@@ -68,35 +68,12 @@ export default async function SubmitPage({
       {/* Header Banner */}
       <div className="relative overflow-hidden rounded-2xl border border-sky-500/20 bg-gradient-to-b from-sky-500/10 via-zinc-900/50 to-zinc-950 p-6 sm:p-10 shadow-2xl">
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-sky-400">
-            Record Intake
-          </div>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+          <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
             Submit a Demon Record
           </h1>
           <p className="mt-2 max-w-2xl text-sm sm:text-base text-zinc-400">
             Send proof links, run settings, and notes for moderator review. 100% completions and qualifying Main List progress runs earn leaderboard points upon acceptance.
           </p>
-
-          {/* Quick Metrics */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-2xl">
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Eligible Demons</span>
-              <p className="mt-1 text-xl font-bold text-white">{levels.length}</p>
-            </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Turnaround Time</span>
-              <p className="mt-1 text-base font-bold text-sky-400">&lt; 24 Hours</p>
-            </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Main List Runs</span>
-              <p className="mt-1 text-base font-bold text-emerald-400">Partial Points</p>
-            </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Proof Standard</span>
-              <p className="mt-1 text-base font-bold text-amber-400">Video + Audio</p>
-            </div>
-          </div>
         </div>
       </div>
 

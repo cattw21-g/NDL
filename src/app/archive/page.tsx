@@ -105,10 +105,7 @@ export default async function ArchivePage({ searchParams }: Props) {
       <div className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-b from-amber-500/10 via-zinc-900/50 to-zinc-950 p-6 sm:p-10 shadow-2xl">
         <div className="relative z-10">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-400">
-              Historical Records
-            </div>
-            <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
               Demonlist Archive
             </h1>
             <p className="mt-2 text-sm sm:text-base text-zinc-400 max-w-2xl">

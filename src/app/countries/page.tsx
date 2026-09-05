@@ -120,10 +120,7 @@ export default async function CountriesPage({ searchParams }: Props) {
       {/* Header Banner */}
       <div className="relative overflow-hidden rounded-2xl border border-blue-500/20 bg-gradient-to-b from-blue-500/10 via-zinc-900/50 to-zinc-950 p-6 sm:p-10 shadow-2xl">
         <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-blue-400">
-              Global Standings
-            </div>
-            <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
               Country & Continental Rankings
             </h1>
             <p className="mt-2 text-sm sm:text-base text-zinc-400 max-w-2xl">

@@ -86,26 +86,21 @@ export default async function Home() {
       {/* Header Banner */}
       <div className="relative overflow-hidden rounded-2xl border border-cyan-500/20 bg-gradient-to-b from-cyan-500/10 via-zinc-900/50 to-zinc-950 p-6 sm:p-10 shadow-2xl">
         <div className="relative z-10">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-cyan-400">
-              Official v1.0.0 Stable Rankings
+          {isDemoMode ? (
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-400">
+              Demo mode
             </div>
-            {isDemoMode ? (
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-400">
-                Demo mode
-              </div>
-            ) : null}
-          </div>
+          ) : null}
 
-          <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+          <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
             Nerfed Demonlist
           </h1>
           <p className="mt-2 max-w-2xl text-sm sm:text-base text-zinc-400">
-            The definitive competitive ranking for verified nerfed Geometry Dash extreme demons. Main List (#1–75), Extended List (#76–150), partial progress scoring, and national leaderboards.
+            Community list for reviewed nerfed demon records and rankings.
           </p>
 
           {/* Quick Metrics */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-2xl">
+          <div className="mt-6 grid grid-cols-3 gap-3 max-w-lg">
             <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
               <span className="text-xs text-zinc-400">Ranked Demons</span>
               <p className="mt-1 text-xl font-bold text-white">{rankedCount}</p>
@@ -115,12 +110,8 @@ export default async function Home() {
               <p className="mt-1 text-xl font-bold text-cyan-400">{acceptedCount}</p>
             </div>
             <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Review Queue</span>
+              <span className="text-xs text-zinc-400">Pending Reviews</span>
               <p className="mt-1 text-xl font-bold text-amber-400">{pendingCount}</p>
-            </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Platform Status</span>
-              <p className="mt-1 text-base font-bold text-emerald-400">v1.0.0 Stable</p>
             </div>
           </div>
         </div>

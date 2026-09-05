@@ -34,10 +34,7 @@ export default async function RulesPage() {
         <div className="relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-400">
-                Official Standards
-              </div>
-              <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
                 Demonlist Rules & Guidelines
               </h1>
               <p className="mt-2 max-w-2xl text-sm sm:text-base text-zinc-400">
@@ -57,26 +54,6 @@ export default async function RulesPage() {
               >
                 Suggest a level
               </Link>
-            </div>
-          </div>
-
-          {/* Quick Metrics */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-2xl">
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Rules Version</span>
-              <p className="mt-1 text-base font-bold text-emerald-400">v1.0.0 Stable</p>
-            </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Total Sections</span>
-              <p className="mt-1 text-xl font-bold text-white">{headings.length}</p>
-            </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Audio Standard</span>
-              <p className="mt-1 text-base font-bold text-rose-400">Raw Clicks</p>
-            </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">CBF Policy</span>
-              <p className="mt-1 text-base font-bold text-cyan-400">Tracked & Allowed</p>
             </div>
           </div>
         </div>
