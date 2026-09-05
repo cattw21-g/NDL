@@ -1,4 +1,4 @@
-import { LogIn, LogOut, UserRound } from "lucide-react";
+import { LogIn, LogOut, Settings, UserRound } from "lucide-react";
 import Link from "next/link";
 
 import { logoutAction } from "@/actions/auth";
@@ -181,6 +181,14 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                   >
                     <UserRound className="h-3.5 w-3.5" />
                     <span className="max-w-28 truncate">{user.displayName}</span>
+                  </Link>
+                  <Link
+                    href="/settings"
+                    title="Profile & Country Settings"
+                    className="inline-flex min-h-8 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-xs font-bold text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950 dark:hover:text-cyan-100"
+                    aria-label="Profile Settings"
+                  >
+                    <Settings className="h-3.5 w-3.5" />
                   </Link>
                   <form action={logoutAction}>
                     <button

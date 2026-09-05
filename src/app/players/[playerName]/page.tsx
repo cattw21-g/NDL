@@ -7,6 +7,7 @@ import {
   Gamepad2,
   Medal,
   Play,
+  Settings,
   Shield,
   Trophy,
   User,
@@ -249,7 +250,10 @@ export default async function PlayerProfilePage({
                     href={`/countries/${countryMeta.code.toLowerCase()}`}
                     className="inline-flex items-center gap-1 text-blue-500 hover:underline"
                   >
-                    <span>{countryMeta.flag}</span> {countryMeta.name}
+                    <span>{countryMeta.flag}</span>{" "}
+                    {player.subdivision
+                      ? `${player.subdivision}, ${countryMeta.name}`
+                      : countryMeta.name}
                   </Link>
                 ) : null}
                 {player.verifiedLevels.length > 0 ? (
@@ -269,12 +273,21 @@ export default async function PlayerProfilePage({
               copiedLabel="Link Copied!"
             />
             {isOwnProfile ? (
-              <Link
-                href="/submit"
-                className="inline-flex min-h-9 items-center justify-center gap-1 rounded-md bg-cyan-700 px-4 text-xs font-black text-white hover:bg-cyan-800 dark:bg-cyan-500 dark:text-slate-950"
-              >
-                Submit Run
-              </Link>
+              <>
+                <Link
+                  href="/settings"
+                  className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-xs font-bold text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-slate-700"
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                  Edit Profile
+                </Link>
+                <Link
+                  href="/submit"
+                  className="inline-flex min-h-9 items-center justify-center gap-1 rounded-md bg-cyan-700 px-4 text-xs font-black text-white hover:bg-cyan-800 dark:bg-cyan-500 dark:text-slate-950"
+                >
+                  Submit Run
+                </Link>
+              </>
             ) : null}
           </div>
         </div>

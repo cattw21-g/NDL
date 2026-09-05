@@ -8,6 +8,7 @@ import { ModerationActionType } from "@/generated/prisma/enums";
 import { writeAuditLog, type AuditLogClient } from "@/lib/audit-log";
 import { requireAdmin } from "@/lib/auth";
 import { normalizeChangelogSlug } from "@/lib/changelog";
+import { COUNTRIES } from "@/lib/countries";
 import { prisma } from "@/lib/db";
 import {
   createLevelFormErrorState,
@@ -537,6 +538,51 @@ export async function updateUserRoleAction(formData: FormData) {
 
   revalidatePath("/admin/users");
   revalidatePath("/moderation");
+  redirect("/admin/users?updated=1");
+}
+
+export async function updateUserCountryAdminAction(formData: FormData) {
+  await requireAdmin();
+  const userId = formData.get("userId");
+  const rawCountryCode = formData.get("countryCode");
+
+  if (typeof userId !== "string" || !userId.trim()) {
+    redirect("/admin/users?error=missing");
+  }
+
+  let countryCode: string | null = null;
+  if (typeof rawCountryCode === "string" && rawCountryCode.trim()) {
+    const upper = rawCountryCode.trim().toUpperCase();
+    if (upper in COUNTRIES) {
+      countryCode = upper;
+    } else {
+      redirect("/admin/users?error=invalid");
+    }
+  }
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: userId.trim() },
+  });
+
+  if (!targetUser) {
+    redirect("/admin/users?error=missing");
+  }
+
+  await prisma.user.update({
+    where: { id: targetUser.id },
+    data: { countryCode },
+  });
+
+  revalidatePath("/admin/users");
+  revalidatePath(`/players/${targetUser.playerName}`);
+  revalidatePath("/countries");
+  if (countryCode) {
+    revalidatePath(`/countries/${countryCode.toLowerCase()}`);
+  }
+  if (targetUser.countryCode) {
+    revalidatePath(`/countries/${targetUser.countryCode.toLowerCase()}`);
+  }
+
   redirect("/admin/users?updated=1");
 }
 
