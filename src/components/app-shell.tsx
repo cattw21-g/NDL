@@ -22,7 +22,7 @@ const navItems = [
   { href: "/players", label: "Players", icon: "trophy" },
   { href: "/countries", label: "Countries", icon: "globe" },
   { href: "/creators", label: "Creators", icon: "palette" },
-  { href: "/time-machine", label: "Time Machine", icon: "history" },
+  { href: "/archive", label: "Archive", icon: "history" },
   { href: "/submit", label: "Submit", icon: "upload" },
   { href: "/suggest-level", label: "Suggest", icon: "suggest" },
   { href: "/rules", label: "Rules", icon: "book" },

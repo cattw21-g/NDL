@@ -253,6 +253,7 @@ export async function createLevelAction(
   revalidatePath("/players");
   revalidatePath("/countries");
   revalidatePath("/creators");
+  revalidatePath("/archive");
   revalidatePath("/time-machine");
   revalidatePath("/moderation");
   revalidatePath("/level-suggestions");
@@ -362,6 +363,7 @@ export async function updateLevelAction(
   revalidatePath("/players");
   revalidatePath("/countries");
   revalidatePath("/creators");
+  revalidatePath("/archive");
   revalidatePath("/time-machine");
   revalidatePath("/admin/levels");
   for (const slug of result.value.affectedSlugs) {

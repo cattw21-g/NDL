@@ -95,6 +95,52 @@ export const LATEST_RELEASE_POST = {
 
 export const DEFAULT_POSTS = [
   {
+    id: "major-update-tiers-countries-archive-partial-points",
+    title: "Major Update: Main & Extended List, Country Rankings, Archive, and Partial Points",
+    slug: "major-update-tiers-countries-archive-partial-points",
+    category: "SITE_UPDATE" as const,
+    summary:
+      "A major update just dropped on NDL! We've added Main and Extended List tiers, partial points for Main List progress runs, global Country Rankings, a Creators leaderboard, Level Position History, and a historical List Archive.",
+    content: `Hey everyone!
+
+We just rolled out a major update to the site with a lot of features inspired by Pointercrate that make the list feel much more complete. Here is everything that's new:
+
+### 1. Main List & Extended List
+The demonlist is now organized into three tiers:
+- **Main List (#1–75)**: The hardest nerfed demons on the list. Qualifying progress runs here award partial points.
+- **Extended List (#76–150)**: Secondary tier for demons #76 through #150. Only 100% completions award points.
+- **Legacy List**: Demons that fell off the top 150 or were archived.
+
+### 2. Partial Points for Progress Runs
+If you get a qualifying progress run (like 50%+) on a Main List demon, you now actually earn points on the leaderboard! The points scale depending on the demon's rank and how far past the minimum requirement you got, so huge runs don't go unrewarded.
+
+### 3. Country Rankings & Continent Filters
+Check out the new **Countries** tab to see how countries stack up based on player points. You can filter by continent (Europe, North America, South America, Asia, Oceania, and Africa) or click into any country to view its full player roster.
+
+### 4. Creator Leaderboard
+We added a dedicated **Creators** tab that tracks who is actually making, publishing, and verifying the nerfed demons on the list, complete with points based on demon difficulty.
+
+### 5. Level Position History & Peak Ranks
+Every level page now has a dedicated **Position History** timeline showing placement dates, rank movements (rises and drops), and the level's all-time Peak Rank.
+
+### 6. List Archive
+The new **Archive** tab lets you pick any date on the calendar and see what the Demonlist and player leaderboards looked like back then.
+
+### 7. In-Depth Level Info & Player Stats
+Level pages now include song details (with Newgrounds links), object counts, level lengths, copy passwords, and qualifying percentages. Player profiles also got an updated stats card showing your hardest demon, completions across tiers, and country flags.
+
+Check out the new tabs at the top of the site and let us know what you think in the Discord!
+
+*— cattw21 & NDL Staff*`,
+    isPinned: true,
+    isPublished: true,
+    isDemo: false,
+    publishedAt: new Date("2026-09-05T12:00:00.000Z"),
+    updatedAt: new Date("2026-09-05T12:00:00.000Z"),
+    archivedAt: null,
+    author: { displayName: "cattw21" },
+  },
+  {
     id: "official-discord-server-and-bot-launched",
     title: "🎉 Official Nerfed Demonlist Discord Server & Bot is Live!",
     slug: "official-discord-server-and-bot-launched",
@@ -118,7 +164,7 @@ Click the Discord icon at the top of the website or join via our direct server l
 Thank you for your incredible support as we continue pushing the limits of nerfed demon tracking!
 
 *— The Nerfed Demonlist Team & @cattw_gd*`,
-    isPinned: true,
+    isPinned: false,
     isPublished: true,
     isDemo: false,
     publishedAt: new Date("2026-08-24T22:00:00.000Z"),
