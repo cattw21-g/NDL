@@ -62,7 +62,7 @@ export const LATEST_RELEASE_POST = {
 
 Today marks a huge milestone for Nerfed Demonlist: we are officially moving out of Release Candidate status and launching **Nerfed Demonlist v1.0.0 Stable**!
 
-Over the past weeks we've gathered tons of feedback from players, verifiers, and list runners. With this update, NDL now brings a complete, esports-grade competitive demonlist experience with everything you'd expect from Pointercrate and more.
+Over the past few weeks we've been working non-stop on all of this to turn NDL into a complete, high-quality demonlist with everything you'd expect and more.
 
 Here is everything included in the official v1.0.0 release:
 
@@ -93,7 +93,7 @@ Levels now display Newgrounds song titles and direct links, song IDs, object cou
 ### 8. Site-Wide Modern Redesign & Clean Navigation
 The entire site has been redesigned with sleek gradient hero banners, unified pill button controls, responsive 2-tier header navigation, and clean tables across every page.
 
-Thank you so much to all the players, verifiers, creators, and moderators who helped test and refine the platform during the RC phase. Enjoy the v1.0.0 update, and we'll see you on the leaderboard!
+We put a ton of hard work into getting everything ready for this release. Enjoy the v1.0.0 update, and we'll see you on the leaderboard!
 
 *— cattw21 & NDL Staff*`,
 };
