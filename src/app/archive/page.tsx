@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getListStateAtDate } from "@/lib/time-machine";
+import { ArchiveDatePicker, type ArchivePreset } from "@/components/archive-date-picker";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +16,25 @@ type Props = {
 
 export default async function ArchivePage({ searchParams }: Props) {
   const { date } = await searchParams;
-  const targetDate = date ? new Date(date) : new Date();
+  const today = new Date();
+  const todayIso = today.toISOString().split("T")[0];
 
-  // If invalid date was passed, default to now
-  const validDate = isNaN(targetDate.getTime()) ? new Date() : targetDate;
+  // Parse requested date safely
+  let validDate: Date;
+  if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const [y, m, d] = date.split("-").map(Number);
+    validDate = new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999));
+  } else if (date) {
+    validDate = new Date(date);
+  } else {
+    validDate = new Date();
+  }
+
+  // Prevent selecting future dates or NaN
+  if (isNaN(validDate.getTime()) || validDate.getTime() > today.getTime()) {
+    validDate = new Date();
+  }
+
   const state = await getListStateAtDate(validDate);
 
   const formattedDate = validDate.toLocaleDateString("en-US", {
@@ -27,78 +43,95 @@ export default async function ArchivePage({ searchParams }: Props) {
     day: "numeric",
   });
 
-  const dateValueForInput = validDate.toISOString().split("T")[0];
-  const targetMs = validDate.getTime();
-  const weekAgoIso = new Date(targetMs - 7 * 86400000).toISOString().split("T")[0];
-  const monthAgoIso = new Date(targetMs - 30 * 86400000).toISOString().split("T")[0];
+  const currentDateIso = validDate.toISOString().split("T")[0];
+  const isToday = !date || currentDateIso === todayIso;
+
+  // Compute preset dates strictly relative to today
+  const yesterday = new Date(today.getTime() - 1 * 86400000);
+  const yesterdayIso = yesterday.toISOString().split("T")[0];
+
+  const oneWeekAgo = new Date(today.getTime() - 7 * 86400000);
+  const oneWeekAgoIso = oneWeekAgo.toISOString().split("T")[0];
+
+  const oneMonthAgo = new Date(today.getTime() - 30 * 86400000);
+  const oneMonthAgoIso = oneMonthAgo.toISOString().split("T")[0];
+
+  const firstWeekReleaseIso = "2026-06-08"; // 1st week of release
+  const launchDayIso = "2026-06-01"; // Release launch day
+
+  // Determine active preset key
+  let activePreset = "custom";
+  if (isToday) {
+    activePreset = "today";
+  } else if (currentDateIso === yesterdayIso) {
+    activePreset = "yesterday";
+  } else if (currentDateIso === oneWeekAgoIso) {
+    activePreset = "1week";
+  } else if (currentDateIso === oneMonthAgoIso) {
+    activePreset = "1month";
+  } else if (currentDateIso === firstWeekReleaseIso) {
+    activePreset = "1stweek";
+  } else if (currentDateIso === launchDayIso) {
+    activePreset = "launch";
+  }
+
+  const presets: ArchivePreset[] = [
+    { key: "today", label: "Today (Current)", dateIso: todayIso },
+    { key: "yesterday", label: "Yesterday", dateIso: yesterdayIso },
+    { key: "1week", label: "1 Week Ago", dateIso: oneWeekAgoIso },
+    { key: "1month", label: "1 Month Ago", dateIso: oneMonthAgoIso },
+    { key: "1stweek", label: "1st Week of Release", dateIso: firstWeekReleaseIso, badge: "Jun 8" },
+    { key: "launch", label: "Launch Day", dateIso: launchDayIso, badge: "Jun 1" },
+  ];
+
+  // Step dates relative to validDate
+  const prevDay = new Date(validDate.getTime() - 1 * 86400000);
+  const prevDayIso = prevDay.toISOString().split("T")[0];
+
+  const nextDay = new Date(validDate.getTime() + 1 * 86400000);
+  const nextDayIso = nextDay.toISOString().split("T")[0];
+  const canGoNextDay = nextDayIso <= todayIso;
+
+  const prevWeek = new Date(validDate.getTime() - 7 * 86400000);
+  const prevWeekIso = prevWeek.toISOString().split("T")[0];
+
+  const nextWeek = new Date(validDate.getTime() + 7 * 86400000);
+  const nextWeekIso = nextWeek.toISOString().split("T")[0];
+  const canGoNextWeek = nextWeekIso <= todayIso;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header Banner */}
       <div className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-b from-amber-500/10 via-zinc-900/50 to-zinc-950 p-6 sm:p-10 shadow-2xl">
         <div className="relative z-10">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-400">
-                Historical Records
-              </div>
-              <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-                Demonlist Archive
-              </h1>
-              <p className="mt-2 text-sm sm:text-base text-zinc-400 max-w-2xl">
-                Inspect past list standings, historical level positions, and player leaderboards exactly as they existed on any past date.
-              </p>
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-400">
+              Historical Records
             </div>
-
-            {/* Date Selector Form */}
-            <form method="GET" className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-zinc-900/80 p-3 rounded-xl border border-zinc-800">
-              <label htmlFor="date" className="text-xs font-medium text-zinc-400 self-center">
-                Select Date:
-              </label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                defaultValue={dateValueForInput}
-                max={new Date().toISOString().split("T")[0]}
-                className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
-              />
-              <button
-                type="submit"
-                className="inline-flex items-center justify-center rounded-lg bg-amber-500 px-4 py-1.5 text-sm font-semibold text-zinc-950 hover:bg-amber-400 transition-colors shadow-sm"
-              >
-                Load Archive
-              </button>
-            </form>
+            <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              Demonlist Archive
+            </h1>
+            <p className="mt-2 text-sm sm:text-base text-zinc-400 max-w-2xl">
+              Inspect past list standings, historical level positions, and player leaderboards exactly as they existed on any past date.
+            </p>
           </div>
 
-          {/* Quick Presets */}
-          <div className="mt-6 flex flex-wrap gap-2 pt-4 border-t border-zinc-800/80">
-            <span className="text-xs text-zinc-500 self-center mr-1">Quick Presets:</span>
-            <Link
-              href="/archive"
-              className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300 hover:bg-amber-500/20 transition-colors"
-            >
-              Today (Current)
-            </Link>
-            <Link
-              href={`/archive?date=${weekAgoIso}`}
-              className="rounded-md border border-zinc-800 bg-zinc-900/90 px-2.5 py-1 text-xs text-zinc-300 hover:border-amber-500/40 hover:text-white transition-colors"
-            >
-              1 Week Ago
-            </Link>
-            <Link
-              href={`/archive?date=${monthAgoIso}`}
-              className="rounded-md border border-zinc-800 bg-zinc-900/90 px-2.5 py-1 text-xs text-zinc-300 hover:border-amber-500/40 hover:text-white transition-colors"
-            >
-              1 Month Ago
-            </Link>
-            <Link
-              href="/archive?date=2026-06-01"
-              className="rounded-md border border-zinc-800 bg-zinc-900/90 px-2.5 py-1 text-xs text-zinc-300 hover:border-amber-500/40 hover:text-white transition-colors"
-            >
-              Beta Launch (Jun 2026)
-            </Link>
+          <div className="mt-6">
+            <ArchiveDatePicker
+              currentDateIso={currentDateIso}
+              todayIso={todayIso}
+              formattedDate={formattedDate}
+              activePreset={activePreset}
+              presets={presets}
+              steppers={{
+                prevDayIso,
+                nextDayIso,
+                canGoNextDay,
+                prevWeekIso,
+                nextWeekIso,
+                canGoNextWeek,
+              }}
+            />
           </div>
         </div>
       </div>
