@@ -147,6 +147,16 @@ function levelFormValues(level: {
   difficulty: string;
   description: string;
   versionNotes: string | null;
+  songName?: string | null;
+  songArtist?: string | null;
+  songId?: string | null;
+  songLink?: string | null;
+  levelLength?: string | null;
+  objectCount?: number | null;
+  gameVersion?: string | null;
+  inGameDifficulty?: string | null;
+  copyPassword?: string | null;
+  minimumProgress?: number | null;
 }): LevelFormValues {
   return {
     id: level.id,
@@ -168,6 +178,16 @@ function levelFormValues(level: {
     difficulty: level.difficulty,
     description: level.description,
     versionNotes: level.versionNotes ?? "",
+    songName: level.songName ?? "",
+    songArtist: level.songArtist ?? "",
+    songId: level.songId ?? "",
+    songLink: level.songLink ?? "",
+    levelLength: level.levelLength ?? "",
+    objectCount: level.objectCount?.toString() ?? "",
+    gameVersion: level.gameVersion ?? "2.2",
+    inGameDifficulty: level.inGameDifficulty ?? "Extreme Demon",
+    copyPassword: level.copyPassword ?? "Free copy",
+    minimumProgress: level.minimumProgress?.toString() ?? "50",
   };
 }
 

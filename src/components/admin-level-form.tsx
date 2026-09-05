@@ -340,6 +340,79 @@ export function AdminLevelForm({
       </FormSection>
 
       <FormSection
+        title="Geometry Dash & Soundtrack"
+        description="Song details, level length, object counts, copy password, and qualifying progress requirements."
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field
+            formId={formId}
+            name="songName"
+            label="Song Name"
+            defaultValue={values.songName}
+            errors={state.fieldErrors.songName}
+          />
+          <Field
+            formId={formId}
+            name="songArtist"
+            label="Song Artist"
+            defaultValue={values.songArtist}
+            errors={state.fieldErrors.songArtist}
+          />
+          <Field
+            formId={formId}
+            name="songId"
+            label="Song ID"
+            defaultValue={values.songId}
+            errors={state.fieldErrors.songId}
+          />
+          <Field
+            formId={formId}
+            name="songLink"
+            label="Song Link (Newgrounds/YouTube)"
+            defaultValue={values.songLink}
+            errors={state.fieldErrors.songLink}
+          />
+          <Field
+            formId={formId}
+            name="levelLength"
+            label="Level Length (e.g. XL, 2m 14s)"
+            defaultValue={values.levelLength}
+            errors={state.fieldErrors.levelLength}
+          />
+          <Field
+            formId={formId}
+            name="objectCount"
+            label="Object Count"
+            type="number"
+            defaultValue={values.objectCount}
+            errors={state.fieldErrors.objectCount}
+          />
+          <Field
+            formId={formId}
+            name="gameVersion"
+            label="Game Version (e.g. 2.2, 2.1)"
+            defaultValue={values.gameVersion}
+            errors={state.fieldErrors.gameVersion}
+          />
+          <Field
+            formId={formId}
+            name="copyPassword"
+            label="Copy Password"
+            defaultValue={values.copyPassword}
+            errors={state.fieldErrors.copyPassword}
+          />
+          <Field
+            formId={formId}
+            name="minimumProgress"
+            label="Minimum Progress Requirement (%)"
+            type="number"
+            defaultValue={values.minimumProgress}
+            errors={state.fieldErrors.minimumProgress}
+          />
+        </div>
+      </FormSection>
+
+      <FormSection
         title="List copy"
         description="Use description/version notes to document eligibility exceptions. Original replay/macro compatibility is a structural nerf check only; it never permits player record submissions with macros or replay bots."
       >

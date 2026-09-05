@@ -24,6 +24,16 @@ export const levelFormFields = [
   "difficulty",
   "description",
   "versionNotes",
+  "songName",
+  "songArtist",
+  "songId",
+  "songLink",
+  "levelLength",
+  "objectCount",
+  "gameVersion",
+  "inGameDifficulty",
+  "copyPassword",
+  "minimumProgress",
 ] as const;
 
 export type LevelFormField = (typeof levelFormFields)[number];
@@ -69,6 +79,16 @@ export const emptyLevelFormValues: LevelFormValues = {
   difficulty: "EXTREME",
   description: "",
   versionNotes: "",
+  songName: "",
+  songArtist: "",
+  songId: "",
+  songLink: "",
+  levelLength: "",
+  objectCount: "",
+  gameVersion: "2.2",
+  inGameDifficulty: "Extreme Demon",
+  copyPassword: "Free copy",
+  minimumProgress: "50",
 };
 
 export function createLevelFormState(

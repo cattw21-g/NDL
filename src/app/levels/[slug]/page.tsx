@@ -15,6 +15,8 @@ import { LevelVideoEmbed } from "@/components/level-video-embed";
 import { SafeThumbnail } from "@/components/safe-thumbnail";
 import { StatusBadge } from "@/components/status-badge";
 import { UserLevelSubmissionBanner } from "@/components/user-level-submission-banner";
+import { LevelPositionHistory } from "@/components/level-position-history";
+import { LevelGdMetadata } from "@/components/level-gd-metadata";
 import {
   cx,
   EmptyState,
@@ -104,6 +106,11 @@ export default async function LevelPage({
         },
         orderBy: {
           createdAt: "desc",
+        },
+      },
+      positionSnapshots: {
+        orderBy: {
+          recordedAt: "desc",
         },
       },
     },
@@ -330,6 +337,20 @@ export default async function LevelPage({
             </SectionPanel>
           </div>
 
+          <LevelGdMetadata
+            gdLevelId={level.gdLevelId}
+            songName={level.songName}
+            songArtist={level.songArtist}
+            songId={level.songId}
+            songLink={level.songLink}
+            levelLength={level.levelLength}
+            objectCount={level.objectCount}
+            gameVersion={level.gameVersion}
+            inGameDifficulty={level.inGameDifficulty}
+            copyPassword={level.copyPassword}
+            minimumProgress={level.minimumProgress}
+          />
+
           {/* SECTION 1: 100% VICTORS */}
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
@@ -554,6 +575,13 @@ export default async function LevelPage({
               <NavAction href="/suggest-level">Suggest level/correction</NavAction>
             </div>
           </SectionPanel>
+
+          <LevelPositionHistory
+            currentRank={level.rank}
+            snapshots={level.positionSnapshots}
+            placementDate={level.placementDate}
+            levelName={level.name}
+          />
 
           <SectionPanel className="p-4">
             <div className="flex items-center gap-2 border-b border-slate-300 pb-3 font-black text-slate-950 dark:border-slate-700 dark:text-slate-50">

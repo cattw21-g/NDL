@@ -124,6 +124,11 @@ describe("recalculateStoredPoints", () => {
           recordUpdates.push(args);
           return { count: args.where?.progress === 100 ? 1 : 0 };
         },
+        findMany: async () => [],
+        update: async (args: unknown) => {
+          recordUpdates.push(args);
+          return args;
+        },
       },
     } as unknown as PointsRecalculationClient;
 

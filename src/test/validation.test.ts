@@ -235,6 +235,16 @@ const validLevel = {
   difficulty: "EXTREME",
   description: "A valid level description for validation tests.",
   versionNotes: "",
+  songName: "",
+  songArtist: "",
+  songId: "",
+  songLink: "",
+  levelLength: "",
+  objectCount: "",
+  gameVersion: "2.2",
+  inGameDifficulty: "Extreme Demon",
+  copyPassword: "Free copy",
+  minimumProgress: "50",
 };
 
 function levelFormData(values: Record<string, string>) {

@@ -1,6 +1,6 @@
 import type { Prisma } from "../generated/prisma/client";
 
-import { calculateLevelPoints } from "./points";
+import { calculateLevelPoints, calculateRecordPoints } from "./points";
 
 export type PointsRecalculationClient = Pick<
   Prisma.TransactionClient,
@@ -22,6 +22,7 @@ export async function recalculateStoredPoints(
       rank: true,
       status: true,
       points: true,
+      minimumProgress: true,
     },
     orderBy: [{ rank: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
   });
@@ -61,21 +62,36 @@ export async function recalculateStoredPoints(
     });
     result.recordsUpdated += fullRecords.count;
 
-    const progressRecords = await db.record.updateMany({
+    const progressRecords = await db.record.findMany({
       where: {
         levelId: level.id,
         progress: {
           lt: 100,
         },
-        pointsAwarded: {
-          not: 0,
-        },
       },
-      data: {
-        pointsAwarded: 0,
+      select: {
+        id: true,
+        progress: true,
+        pointsAwarded: true,
       },
     });
-    result.recordsUpdated += progressRecords.count;
+
+    for (const rec of progressRecords) {
+      const expectedPoints = calculateRecordPoints({
+        levelRank: level.rank,
+        status: level.status,
+        progress: rec.progress,
+        requirement: level.minimumProgress ?? 50,
+      });
+
+      if (rec.pointsAwarded !== expectedPoints) {
+        await db.record.update({
+          where: { id: rec.id },
+          data: { pointsAwarded: expectedPoints },
+        });
+        result.recordsUpdated += 1;
+      }
+    }
   }
 
   return result;

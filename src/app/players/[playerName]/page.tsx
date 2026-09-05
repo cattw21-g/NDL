@@ -35,6 +35,7 @@ import {
   calculateCurrentLevelPoints,
   calculateLeaderboard,
 } from "@/lib/points";
+import { getCountryMeta } from "@/lib/countries";
 import { absoluteSiteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
@@ -57,6 +58,9 @@ export default async function PlayerProfilePage({
         playerName,
       }),
       include: {
+        createdLevels: {
+          select: { id: true },
+        },
         verifiedLevels: {
           where: publicLevelWhere(),
           select: {
@@ -143,6 +147,20 @@ export default async function PlayerProfilePage({
     (record) => (record.progress ?? 100) < 100,
   );
 
+  const countryMeta = getCountryMeta(player.countryCode);
+
+  const mainListCompletions = fullCompletions.filter(
+    (r) => r.level.rank !== null && r.level.rank <= 75 && r.level.status === "RANKED",
+  );
+  const extendedListCompletions = fullCompletions.filter(
+    (r) => r.level.rank !== null && r.level.rank > 75 && r.level.rank <= 150 && r.level.status === "RANKED",
+  );
+  const legacyCompletions = fullCompletions.filter(
+    (r) => r.level.status === "LEGACY" || (r.level.rank !== null && r.level.rank > 150),
+  );
+  const createdDemonsCount = player.createdLevels.length;
+  const verifiedDemonsCount = player.verifiedLevels.length;
+
   const summary = globalRankIndex !== -1 ? globalLeaderboard[globalRankIndex] : null;
   const totalPoints = summary?.points ?? 0;
 
@@ -180,6 +198,15 @@ export default async function PlayerProfilePage({
                 </p>
               ) : null}
               <div className="flex flex-wrap items-center gap-2">
+                {countryMeta ? (
+                  <Link
+                    href={`/countries/${countryMeta.code.toLowerCase()}`}
+                    title={`${countryMeta.name} (${countryMeta.continent})`}
+                    className="text-2xl hover:scale-125 transition-transform mr-1"
+                  >
+                    {countryMeta.flag}
+                  </Link>
+                ) : null}
                 <h1 className="truncate text-3xl font-black text-slate-950 sm:text-4xl dark:text-slate-50">
                   {player.displayName}
                 </h1>
@@ -217,6 +244,14 @@ export default async function PlayerProfilePage({
                 <span className="inline-flex items-center gap-1">
                   <Calendar className="h-3.5 w-3.5" /> Member since {formatDate(player.createdAt)}
                 </span>
+                {countryMeta ? (
+                  <Link
+                    href={`/countries/${countryMeta.code.toLowerCase()}`}
+                    className="inline-flex items-center gap-1 text-blue-500 hover:underline"
+                  >
+                    <span>{countryMeta.flag}</span> {countryMeta.name}
+                  </Link>
+                ) : null}
                 {player.verifiedLevels.length > 0 ? (
                   <span className="inline-flex items-center gap-1 text-amber-600 font-bold dark:text-amber-400">
                     <Flame className="h-3.5 w-3.5" /> {player.verifiedLevels.length} Verified {player.verifiedLevels.length === 1 ? "Demon" : "Demons"}
@@ -244,8 +279,8 @@ export default async function PlayerProfilePage({
           </div>
         </div>
 
-        {/* 2. STATS TILES BAR */}
-        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-200 pt-5 dark:border-slate-800 sm:grid-cols-4">
+        {/* 2. ADVANCED STATS TILES BAR (POINTERCRATE TIER SPEC) */}
+        <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-200 pt-5 dark:border-slate-800 sm:grid-cols-4 lg:grid-cols-8">
           <MetricTile
             label="Total Points"
             value={`${totalPoints} pts`}
@@ -257,13 +292,32 @@ export default async function PlayerProfilePage({
             tone={globalRank === 1 ? "amber" : undefined}
           />
           <MetricTile
-            label="100% Victories"
-            value={fullCompletions.length}
-            tone="emerald"
+            label="Main List"
+            value={mainListCompletions.length}
+            tone="amber"
+          />
+          <MetricTile
+            label="Extended"
+            value={extendedListCompletions.length}
+            tone="cyan"
+          />
+          <MetricTile
+            label="Legacy"
+            value={legacyCompletions.length}
           />
           <MetricTile
             label="Progress Runs"
             value={progressRecords.length}
+          />
+          <MetricTile
+            label="Verified"
+            value={verifiedDemonsCount}
+            tone={verifiedDemonsCount > 0 ? "emerald" : undefined}
+          />
+          <MetricTile
+            label="Created"
+            value={createdDemonsCount}
+            tone={createdDemonsCount > 0 ? "cyan" : undefined}
           />
         </div>
       </section>

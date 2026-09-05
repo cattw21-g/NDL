@@ -251,6 +251,41 @@ export const levelSchema = z.object({
     emptyToUndefined,
     z.string().trim().max(1000).optional(),
   ),
+  songName: optionalText(120),
+  songArtist: optionalText(120),
+  songId: optionalText(32),
+  songLink: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .trim()
+      .refine((val) => !val || isHttpUrl(val), "Must be a valid URL.")
+      .optional(),
+  ),
+  levelLength: optionalText(50),
+  objectCount: z.preprocess(
+    (value) => {
+      const trimmed = emptyToUndefined(value);
+      if (typeof trimmed === "string" && /^\d+$/.test(trimmed)) {
+        return Number(trimmed);
+      }
+      return trimmed;
+    },
+    z.number().int().min(0).max(10000000).optional(),
+  ),
+  gameVersion: optionalText(20),
+  inGameDifficulty: optionalText(50),
+  copyPassword: optionalText(50),
+  minimumProgress: z.preprocess(
+    (value) => {
+      const trimmed = emptyToUndefined(value);
+      if (typeof trimmed === "string" && /^\d+$/.test(trimmed)) {
+        return Number(trimmed);
+      }
+      return trimmed;
+    },
+    z.number().int().min(1).max(100).optional(),
+  ),
 });
 
 export const userRoleSchema = z.object({

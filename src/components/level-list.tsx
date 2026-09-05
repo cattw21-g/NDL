@@ -8,13 +8,14 @@ import { cx, EmptyState, inputClass, SectionPanel } from "@/components/ui";
 import { useUserSubmissions } from "@/lib/use-user-submissions";
 
 type SortMode = "rank" | "points" | "records" | "name";
-type TabMode = "RANKED" | "LEGACY" | "ALL";
+type TabMode = "MAIN" | "EXTENDED" | "LEGACY" | "ALL";
 type TierFilter = "ALL" | "TOP_10" | "TOP_50" | "EXTREME" | "INSANE";
 
 const tabs: Array<{ value: TabMode; label: string }> = [
-  { value: "RANKED", label: "Ranked List" },
-  { value: "LEGACY", label: "Legacy" },
-  { value: "ALL", label: "All Entries" },
+  { value: "MAIN", label: "🟧 Main List (#1–75)" },
+  { value: "EXTENDED", label: "🟦 Extended List (#76–150)" },
+  { value: "LEGACY", label: "📦 Legacy" },
+  { value: "ALL", label: "All Demons" },
 ];
 
 const tierChips: Array<{ value: TierFilter; label: string }> = [
@@ -27,7 +28,7 @@ const tierChips: Array<{ value: TierFilter; label: string }> = [
 
 export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<TabMode>("RANKED");
+  const [tab, setTab] = useState<TabMode>("MAIN");
   const [tier, setTier] = useState<TierFilter>("ALL");
   const [sort, setSort] = useState<SortMode>("rank");
 
@@ -38,7 +39,23 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
 
     return levels
       .filter((level) => {
-        const matchesTab = tab === "ALL" || level.status === tab;
+        let matchesTab = true;
+        if (tab === "MAIN") {
+          matchesTab =
+            level.status === "RANKED" &&
+            level.rank !== null &&
+            level.rank <= 75;
+        } else if (tab === "EXTENDED") {
+          matchesTab =
+            level.status === "RANKED" &&
+            level.rank !== null &&
+            level.rank > 75 &&
+            level.rank <= 150;
+        } else if (tab === "LEGACY") {
+          matchesTab =
+            level.status === "LEGACY" ||
+            (level.rank !== null && level.rank > 150);
+        }
 
         let matchesTier = true;
         if (tier === "TOP_10") {

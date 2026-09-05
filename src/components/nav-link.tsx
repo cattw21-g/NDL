@@ -3,11 +3,14 @@
 import {
   BookOpen,
   ClipboardCheck,
+  Globe,
+  History,
   Hourglass,
+  Lightbulb,
   ListOrdered,
   Newspaper,
+  Palette,
   ShieldCheck,
-  Lightbulb,
   Trophy,
   Upload,
 } from "lucide-react";
@@ -19,9 +22,12 @@ import { useReadNewsSlugs } from "@/lib/news-read-store";
 
 const icons = {
   book: BookOpen,
+  globe: Globe,
+  history: History,
   hourglass: Hourglass,
   list: ListOrdered,
   news: Newspaper,
+  palette: Palette,
   review: ClipboardCheck,
   shield: ShieldCheck,
   suggest: Lightbulb,

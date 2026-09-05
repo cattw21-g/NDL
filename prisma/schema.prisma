@@ -79,6 +79,11 @@ model User {
   displayName             String
   role                    Role                     @default(PLAYER)
   bio                     String?
+  countryCode             String?
+  subdivision             String?
+  youtubeUrl              String?
+  twitchUrl               String?
+  twitterUrl              String?
   isDemo                  Boolean                  @default(false)
   discordUserId           String?                  @unique
   discordUsername         String?
@@ -92,6 +97,8 @@ model User {
   reviewedLevelSuggestions LevelSuggestion[]       @relation("LevelSuggestionReviewer")
   records                 Record[]                 @relation("RecordPlayer")
   verifiedLevels          Level[]                  @relation("LevelVerifierUser")
+  createdLevels           Level[]                  @relation("LevelCreatorUser")
+  publishedLevels         Level[]                  @relation("LevelPublisherUser")
   moderationActions       ModerationAction[]       @relation("ModerationActor")
   adminAuditLogs          AdminAuditLog[]          @relation("AdminAuditActor")
   levelHistory            LevelHistory[]           @relation("LevelHistoryActor")
@@ -100,6 +107,7 @@ model User {
   passwordResetTokens     PasswordResetToken[]
 
   @@index([role])
+  @@index([countryCode])
   @@index([isDemo])
 }
 
@@ -167,18 +175,35 @@ model Level {
   points                Int                @default(0)
   description           String
   versionNotes          String?
+  songName              String?
+  songArtist            String?
+  songId                String?
+  songLink              String?
+  levelLength           String?
+  objectCount           Int?
+  gameVersion           String?
+  inGameDifficulty      String?
+  copyPassword          String?
+  minimumProgress       Int                @default(50)
+  creatorUserId         String?
+  publisherUserId       String?
   isDemo                Boolean            @default(false)
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
   verifierUser          User?              @relation("LevelVerifierUser", fields: [verifierUserId], references: [id], onDelete: SetNull)
+  creatorUser           User?              @relation("LevelCreatorUser", fields: [creatorUserId], references: [id], onDelete: SetNull)
+  publisherUser         User?              @relation("LevelPublisherUser", fields: [publisherUserId], references: [id], onDelete: SetNull)
   submissions           RecordSubmission[]
   records               Record[]
   history               LevelHistory[]
+  positionSnapshots     LevelPositionSnapshot[]
   createdFromSuggestion LevelSuggestion?   @relation("SuggestionCreatedLevel")
 
   @@index([status, rank])
   @@index([difficulty])
   @@index([verifierUserId])
+  @@index([creatorUserId])
+  @@index([publisherUserId])
   @@index([isDemo])
 }
 
@@ -395,3 +420,18 @@ model DiscordLinkToken {
   @@index([code])
   @@index([discordUserId])
 }
+
+model LevelPositionSnapshot {
+  id         String      @id @default(cuid())
+  levelId    String
+  rank       Int?
+  status     LevelStatus @default(RANKED)
+  action     String      @default("PLACED")
+  notes      String?
+  recordedAt DateTime    @default(now())
+  level      Level       @relation(fields: [levelId], references: [id], onDelete: Cascade)
+
+  @@index([levelId, recordedAt])
+  @@index([recordedAt])
+}
+

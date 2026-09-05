@@ -21,7 +21,11 @@ import {
   LevelRankingError,
   updateLevelWithRank,
 } from "@/lib/level-ranking";
-import { calculateLevelPoints, type ScoredLevelStatus } from "@/lib/points";
+import {
+  calculateLevelPoints,
+  calculateRecordPoints,
+  type ScoredLevelStatus,
+} from "@/lib/points";
 import {
   assertCanConvertLevelSuggestion,
   LevelSuggestionConversionError,
@@ -247,6 +251,9 @@ export async function createLevelAction(
 
   revalidatePath("/");
   revalidatePath("/players");
+  revalidatePath("/countries");
+  revalidatePath("/creators");
+  revalidatePath("/time-machine");
   revalidatePath("/moderation");
   revalidatePath("/level-suggestions");
   revalidatePath("/admin");
@@ -353,6 +360,9 @@ export async function updateLevelAction(
 
   revalidatePath("/");
   revalidatePath("/players");
+  revalidatePath("/countries");
+  revalidatePath("/creators");
+  revalidatePath("/time-machine");
   revalidatePath("/admin/levels");
   for (const slug of result.value.affectedSlugs) {
     revalidatePath(`/levels/${slug}`);
@@ -1281,10 +1291,12 @@ export async function createAdminRecordAction(formData: FormData) {
     });
   }
 
-  const points =
-    progress === 100
-      ? calculateLevelPoints(level.rank, level.status)
-      : 0;
+  const points = calculateRecordPoints({
+    levelRank: level.rank,
+    status: level.status,
+    progress,
+    requirement: level.minimumProgress ?? 50,
+  });
 
   const existingRecord = await prisma.record.findFirst({
     where: {
@@ -1420,10 +1432,12 @@ export async function updateAdminRecordAction(formData: FormData) {
     throw new Error("Record not found.");
   }
 
-  const points =
-    progress === 100
-      ? calculateLevelPoints(existing.level.rank, existing.level.status)
-      : 0;
+  const points = calculateRecordPoints({
+    levelRank: existing.level.rank,
+    status: existing.level.status,
+    progress,
+    requirement: existing.level.minimumProgress ?? 50,
+  });
 
   await prisma.record.update({
     where: { id: recordId },

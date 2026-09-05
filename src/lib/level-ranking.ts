@@ -46,13 +46,28 @@ export type LevelWriteInput = {
   difficulty: DifficultyCategory;
   description: string;
   versionNotes?: string;
+  songName?: string;
+  songArtist?: string;
+  songId?: string;
+  songLink?: string;
+  levelLength?: string;
+  objectCount?: number;
+  gameVersion?: string;
+  inGameDifficulty?: string;
+  copyPassword?: string;
+  minimumProgress?: number;
+  creatorUserId?: string;
+  publisherUserId?: string;
 };
 
 export type LevelCreateInput = LevelWriteInput & {
   slug: string;
 };
 
-type LevelRankingClient = Pick<Prisma.TransactionClient, "level" | "record">;
+type LevelRankingClient = Pick<
+  Prisma.TransactionClient,
+  "level" | "record" | "levelPositionSnapshot"
+>;
 
 type StoredRankLevel = {
   id: string;
@@ -148,8 +163,35 @@ export async function createLevelWithRank(
       points,
       description: input.description,
       versionNotes: input.versionNotes,
+      songName: input.songName,
+      songArtist: input.songArtist,
+      songId: input.songId,
+      songLink: input.songLink,
+      levelLength: input.levelLength,
+      objectCount: input.objectCount,
+      gameVersion: input.gameVersion,
+      inGameDifficulty: input.inGameDifficulty,
+      copyPassword: input.copyPassword,
+      minimumProgress: input.minimumProgress ?? 50,
+      creatorUserId: input.creatorUserId,
+      publisherUserId: input.publisherUserId,
+      verifierUserId: input.verifierUserId,
+      verificationVideoUrl: input.verificationVideoUrl,
     },
   });
+
+  if (finalRank) {
+    await tx.levelPositionSnapshot.create({
+      data: {
+        levelId: level.id,
+        rank: finalRank,
+        status: input.status,
+        action: "PLACED",
+        notes: `Placed at #${finalRank}`,
+        recordedAt: input.placementDate || new Date(),
+      },
+    });
+  }
 
   await applyRankPlan(tx, plan.ranked, currentRanked, NEW_LEVEL_ID);
 
@@ -209,8 +251,42 @@ export async function updateLevelWithRank(
       points,
       description: input.description,
       versionNotes: input.versionNotes,
+      songName: input.songName,
+      songArtist: input.songArtist,
+      songId: input.songId,
+      songLink: input.songLink,
+      levelLength: input.levelLength,
+      objectCount: input.objectCount,
+      gameVersion: input.gameVersion,
+      inGameDifficulty: input.inGameDifficulty,
+      copyPassword: input.copyPassword,
+      minimumProgress: input.minimumProgress ?? 50,
+      creatorUserId: input.creatorUserId,
+      publisherUserId: input.publisherUserId,
+      verifierUserId: input.verifierUserId,
+      verificationVideoUrl: input.verificationVideoUrl,
     },
   });
+
+  if (existing.rank !== finalRank || existing.status !== input.status) {
+    let action = "MOVED";
+    if (existing.rank && finalRank) {
+      action = finalRank < existing.rank ? "PROMOTED" : "DEMOTED";
+    } else if (!existing.rank && finalRank) {
+      action = "PLACED";
+    } else if (input.status === LevelStatus.LEGACY) {
+      action = "LEGACY";
+    }
+    await tx.levelPositionSnapshot.create({
+      data: {
+        levelId: id,
+        rank: finalRank,
+        status: input.status,
+        action,
+        notes: `Moved from #${existing.rank ?? "Unranked"} to #${finalRank ?? "Unranked"}`,
+      },
+    });
+  }
 
   await updateRecordsForLevel(tx, id, points);
   await applyRankPlan(tx, plan.ranked, currentRanked, id);
