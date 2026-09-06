@@ -65,6 +65,8 @@ export function publicChangelogWhere(
   const publicPostWhere = {
     isPublished: true,
     archivedAt: null,
+    slug: { not: "nerfed-demonlist-v2-0-0-official-roadmap" },
+    title: { not: { contains: "v2.0.0" } },
   } satisfies Prisma.ChangelogPostWhereInput;
 
   if (demoModeEnabled(env)) {

@@ -342,6 +342,15 @@ More updates will be shared soon, so stay tuned!`,
 
 export async function ensureLatestChangelogPost(prismaClient: PrismaClient) {
   try {
+    await prismaClient.changelogPost.deleteMany({
+      where: {
+        OR: [
+          { slug: "nerfed-demonlist-v2-0-0-official-roadmap" },
+          { title: { contains: "v2.0.0" } },
+        ],
+      },
+    });
+
     for (const post of DEFAULT_POSTS) {
       await prismaClient.changelogPost.upsert({
         where: { slug: post.slug },

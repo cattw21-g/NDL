@@ -10,6 +10,7 @@ import { prisma } from "@/lib/db";
 import { publicChangelogWhere } from "@/lib/demo-visibility";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 export const metadata = {
   title: "News & Changelog - NDL",
   description:
