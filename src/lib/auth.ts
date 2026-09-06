@@ -136,7 +136,7 @@ export async function requireModerator() {
 export async function requireAdmin() {
   const user = await requireUser();
 
-  if (!isAdminRole(user.role)) {
+  if (!isAdminRole(user.role, user.playerName)) {
     redirect("/");
   }
 

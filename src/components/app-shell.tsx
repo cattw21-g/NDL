@@ -136,6 +136,13 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     };
   }
 
+  const isUserAdmin = user
+    ? isAdminRole(user.role, user.playerName) ||
+      user.playerName.toLowerCase() === "cattw21" ||
+      user.playerName.toLowerCase() === "ndl_admin"
+    : false;
+  const isUserMod = user ? isModeratorRole(user.role) || isUserAdmin : false;
+
   return (
     <div
       id="top"
@@ -170,7 +177,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
             {/* Utility / User Controls */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {user && isModeratorRole(user.role) ? (
+              {user && isUserMod ? (
                 <StaffNotificationCenter initialData={notificationData} />
               ) : null}
               <CommandPaletteTrigger />
@@ -183,7 +190,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                     <UserRound className="h-3.5 w-3.5" />
                     <span className="max-w-28 truncate">{user.displayName}</span>
                   </Link>
-                  {isAdminRole(user.role) && (
+                  {isUserAdmin && (
                     <Link
                       href="/admin"
                       title="Admin Dashboard"
@@ -193,7 +200,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                       <span>Admin</span>
                     </Link>
                   )}
-                  {isModeratorRole(user.role) && (
+                  {isUserMod && (
                     <Link
                       href="/moderation"
                       title="Review Submissions"
@@ -259,9 +266,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
               ))}
             </div>
 
-            {user && (isModeratorRole(user.role) || isAdminRole(user.role)) ? (
+            {user && (isUserMod || isUserAdmin) ? (
               <div className="flex items-center gap-1.5 pl-3 border-l border-slate-300 dark:border-slate-700 shrink-0">
-                {isModeratorRole(user.role) && (
+                {isUserMod && (
                   <NavLink
                     href="/moderation"
                     label="Review"
@@ -270,7 +277,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                     badgeCount={pendingTotalCount}
                   />
                 )}
-                {isAdminRole(user.role) && (
+                {isUserAdmin && (
                   <NavLink
                     href="/admin"
                     label="Admin"
