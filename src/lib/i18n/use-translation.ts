@@ -47,8 +47,35 @@ export function useTranslation() {
     try {
       localStorage.setItem("ndl_lang", newLang);
       document.cookie = `ndl_lang=${newLang}; path=/; max-age=31536000; SameSite=Lax`;
+
+      // Set Google Translate target
+      const targetTrans = newLang === "en" ? "/en/en" : `/en/${newLang}`;
+      document.cookie = `googtrans=${targetTrans}; path=/; max-age=31536000; SameSite=Lax`;
+
+      const host = window.location.hostname;
+      if (host && host !== "localhost") {
+        document.cookie = `googtrans=${targetTrans}; domain=.${host}; path=/; max-age=31536000; SameSite=Lax`;
+        const parts = host.split(".");
+        if (parts.length > 2) {
+          const rootDomain = parts.slice(-2).join(".");
+          document.cookie = `googtrans=${targetTrans}; domain=.${rootDomain}; path=/; max-age=31536000; SameSite=Lax`;
+        }
+      }
     } catch {}
+
     window.dispatchEvent(new CustomEvent("ndl_language_change", { detail: newLang }));
+
+    // Try Google Translate combo element
+    try {
+      const combo = document.querySelector(".goog-te-combo") as HTMLSelectElement | null;
+      if (combo) {
+        combo.value = newLang;
+        combo.dispatchEvent(new Event("change"));
+      }
+    } catch {}
+
+    // Smooth page reload to apply full language translation across all cards, tables, and server content
+    window.location.reload();
   }, []);
 
   return {

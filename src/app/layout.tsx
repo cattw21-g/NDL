@@ -74,6 +74,18 @@ export const metadata: Metadata = {
   },
 };
 
+const googleTranslateScript = `
+function googleTranslateElementInit() {
+  if (window.google && window.google.translate) {
+    new window.google.translate.TranslateElement({
+      pageLanguage: 'en',
+      includedLanguages: 'en,pl,es,de,ru',
+      autoDisplay: false
+    }, 'google_translate_element');
+  }
+}
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -89,6 +101,13 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full">
+        <div id="google_translate_element" style={{ display: "none" }} />
+        <script dangerouslySetInnerHTML={{ __html: googleTranslateScript }} />
+        <script
+          type="text/javascript"
+          src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+          async
+        />
         <AppShell>{children}</AppShell>
       </body>
     </html>
