@@ -15,11 +15,18 @@ export type TranslationDictionary = {
   rules: string;
   news: string;
   login: string;
+  logout: string;
   register: string;
   profile: string;
+  settings: string;
   points: string;
   completions: string;
   rank: string;
+  search: string;
+  subdivisions: string;
+  qualifying: string;
+  all: string;
+  tagline: string;
 };
 
 export const LANGUAGES: { code: SupportedLanguage; label: string; flag: string }[] = [
@@ -46,11 +53,18 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     rules: "Rules",
     news: "News",
     login: "Log In",
+    logout: "Log Out",
     register: "Register",
     profile: "Profile",
+    settings: "Settings",
     points: "Points",
     completions: "Completions",
     rank: "Rank",
+    search: "Search",
+    subdivisions: "Subdivisions",
+    qualifying: "Qualifying",
+    all: "All",
+    tagline: "Community list for reviewed nerfed demon records",
   },
   ru: {
     list: "Список",
@@ -67,11 +81,18 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     rules: "Правила",
     news: "Новости",
     login: "Войти",
+    logout: "Выйти",
     register: "Регистрация",
     profile: "Профиль",
+    settings: "Настройки",
     points: "Очки",
     completions: "Прохождения",
     rank: "Ранг",
+    search: "Поиск",
+    subdivisions: "Регионы",
+    qualifying: "Квалификация",
+    all: "Все",
+    tagline: "Список проверенных рекордов нерфнутых демонов",
   },
   es: {
     list: "Lista",
@@ -88,11 +109,18 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     rules: "Reglas",
     news: "Noticias",
     login: "Entrar",
+    logout: "Cerrar sesión",
     register: "Registrarse",
     profile: "Perfil",
+    settings: "Ajustes",
     points: "Puntos",
     completions: "Completados",
     rank: "Rango",
+    search: "Buscar",
+    subdivisions: "Subdivisiones",
+    qualifying: "Calificación",
+    all: "Todos",
+    tagline: "Lista comunitaria de récords de nerfed demons",
   },
   de: {
     list: "Liste",
@@ -109,11 +137,18 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     rules: "Regeln",
     news: "Neuigkeiten",
     login: "Anmelden",
+    logout: "Abmelden",
     register: "Registrieren",
     profile: "Profil",
+    settings: "Einstellungen",
     points: "Punkte",
     completions: "Abschlüsse",
     rank: "Rang",
+    search: "Suchen",
+    subdivisions: "Unterteilungen",
+    qualifying: "Qualifikation",
+    all: "Alle",
+    tagline: "Community-Liste für geprüfte Nerfed-Demon-Rekorde",
   },
   pl: {
     list: "Lista",
@@ -130,10 +165,17 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     rules: "Zasady",
     news: "Wiadomości",
     login: "Zaloguj",
+    logout: "Wyloguj",
     register: "Zarejestruj",
     profile: "Profil",
+    settings: "Ustawienia",
     points: "Punkty",
     completions: "Ukończenia",
     rank: "Ranga",
+    search: "Szukaj",
+    subdivisions: "Regiony",
+    qualifying: "Kwalifikacja",
+    all: "Wszystkie",
+    tagline: "Społecznościowa lista zweryfikowanych rekordów",
   },
 };

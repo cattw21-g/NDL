@@ -23,6 +23,7 @@ import { usePathname } from "next/navigation";
 
 import { cx } from "@/components/ui";
 import { useReadNewsSlugs } from "@/lib/news-read-store";
+import { useTranslation } from "@/lib/i18n/use-translation";
 
 const icons = {
   book: BookOpen,
@@ -78,6 +79,24 @@ export function NavLink({
         ? "hover:border-amber-400 hover:bg-amber-50 hover:text-amber-900 dark:hover:border-amber-400 dark:hover:bg-amber-950 dark:hover:text-amber-100"
         : "hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 dark:hover:border-cyan-400 dark:hover:bg-cyan-950 dark:hover:text-cyan-100";
 
+  const { t } = useTranslation();
+  const translationKeyMap: Record<string, string> = {
+    "/": "list",
+    "/upcoming": "upcoming",
+    "/players": "players",
+    "/countries": "countries",
+    "/stats": "stats",
+    "/creators": "creators",
+    "/archive": "archive",
+    "/submit": "submit",
+    "/suggest-level": "suggest",
+    "/staff": "staff",
+    "/rules": "rules",
+    "/changelog": "news",
+  };
+  const key = translationKeyMap[href] || label.toLowerCase();
+  const displayLabel = t(key, label);
+
   return (
     <Link
       href={href}
@@ -92,7 +111,7 @@ export function NavLink({
       )}
     >
       <Icon className="h-4 w-4" />
-      <span>{label}</span>
+      <span>{displayLabel}</span>
       {effectiveBadgeCount > 0 ? (
         <span
           className={cx(

@@ -49,7 +49,7 @@ export function LevelGdMetadata({
         <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/60 p-3">
           <p className="text-xs font-medium text-zinc-400">In-Game Rating</p>
           <p className="mt-1 text-sm font-bold text-rose-400">
-            {inGameDifficulty || "Extreme Demon"}
+            {inGameDifficulty || "Unrated / Custom"}
           </p>
         </div>
 

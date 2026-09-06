@@ -1,7 +1,6 @@
-import { LogIn, LogOut, Settings, UserRound } from "lucide-react";
+import { Settings, UserRound } from "lucide-react";
 import Link from "next/link";
 
-import { logoutAction } from "@/actions/auth";
 import { CommandPalette, CommandPaletteTrigger } from "@/components/command-palette";
 import { NavLink } from "@/components/nav-link";
 import { SiteFooter } from "@/components/site-footer";
@@ -12,6 +11,7 @@ import {
 } from "@/components/staff-notification-center";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageSelector } from "@/components/language-selector";
+import { HeaderTagline, LoginButton, LogoutButton } from "@/components/app-shell-i18n";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { demoModeEnabled, publicChangelogWhere } from "@/lib/demo-visibility";
@@ -164,9 +164,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="block truncate text-lg font-black uppercase leading-tight text-slate-950 dark:text-slate-50">
                   Nerfed Demonlist
                 </span>
-                <span className="hidden sm:block truncate text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                  Community list for reviewed nerfed demon records
-                </span>
+                <HeaderTagline />
               </span>
             </Link>
 
@@ -193,24 +191,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                   >
                     <Settings className="h-3.5 w-3.5" />
                   </Link>
-                  <form action={logoutAction}>
-                    <button
-                      type="submit"
-                      className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-600 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-red-400 dark:hover:bg-red-950 dark:hover:text-red-100"
-                    >
-                      <LogOut className="h-3.5 w-3.5" />
-                      Logout
-                    </button>
-                  </form>
+                  <LogoutButton />
                 </>
               ) : (
-                <Link
-                  href="/login"
-                  className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-cyan-800 bg-cyan-800 px-3 text-xs font-black text-white transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-300"
-                >
-                  <LogIn className="h-3.5 w-3.5" />
-                  Login
-                </Link>
+                <LoginButton />
               )}
               <a
                 href="https://discord.gg/kyYBkQzTCq"

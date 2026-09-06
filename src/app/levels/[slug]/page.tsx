@@ -435,15 +435,19 @@ export default async function LevelPage({
 
           <LevelGdMetadata
             gdLevelId={level.gdLevelId}
-            songName={level.songName || gdMetadata?.songName}
-            songArtist={level.songArtist || gdMetadata?.songArtist}
-            songId={level.songId || gdMetadata?.songId}
-            songLink={level.songLink}
-            levelLength={level.levelLength || gdMetadata?.length}
-            objectCount={level.objectCount ?? gdMetadata?.objects}
-            gameVersion={level.gameVersion || gdMetadata?.gameVersion}
-            inGameDifficulty={level.inGameDifficulty || gdMetadata?.difficulty}
-            copyPassword={level.copyPassword || gdMetadata?.copyPassword}
+            songName={gdMetadata?.songName || level.songName}
+            songArtist={gdMetadata?.songArtist || level.songArtist}
+            songId={gdMetadata?.songId || level.songId}
+            songLink={
+              gdMetadata?.songId && /^\d+$/.test(gdMetadata.songId)
+                ? `https://www.newgrounds.com/audio/listen/${gdMetadata.songId}`
+                : level.songLink
+            }
+            levelLength={gdMetadata?.length || level.levelLength}
+            objectCount={gdMetadata?.objects ?? level.objectCount}
+            gameVersion={gdMetadata?.gameVersion || level.gameVersion}
+            inGameDifficulty={gdMetadata?.difficulty || level.inGameDifficulty}
+            copyPassword={gdMetadata?.copyPassword || level.copyPassword}
             minimumProgress={level.minimumProgress}
             downloads={gdMetadata?.downloads}
             likes={gdMetadata?.likes}
