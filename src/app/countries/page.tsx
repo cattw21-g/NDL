@@ -7,6 +7,7 @@ import {
   type LeaderboardRecord,
 } from "@/lib/points";
 import { getCountryMeta, type Continent } from "@/lib/countries";
+import { InteractiveWorldMap } from "@/components/interactive-world-map";
 
 export const dynamic = "force-dynamic";
 
@@ -115,49 +116,74 @@ export default async function CountriesPage({ searchParams }: Props) {
   const totalPoints = allCountryRows.reduce((sum, c) => sum + c.points, 0);
   const totalCountries = allCountryRows.length;
 
+  const mapCountryData = allCountryRows.map((c, i) => ({
+    code: c.countryCode,
+    name: c.countryName,
+    flag: c.flag,
+    continent: c.continent as Continent,
+    rank: i + 1,
+    totalPoints: c.points,
+    playersCount: c.playersCount,
+    topPlayer:
+      c.topPlayerName && c.topPlayerName !== "N/A"
+        ? {
+            playerName: c.topPlayerHandle,
+            displayName: c.topPlayerName,
+            points: c.topPlayerPoints,
+          }
+        : undefined,
+  }));
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
       {/* Header Banner */}
       <div className="relative overflow-hidden rounded-2xl border border-blue-500/20 bg-gradient-to-b from-blue-500/10 via-zinc-900/50 to-zinc-950 p-6 sm:p-10 shadow-2xl">
         <div className="relative z-10">
-            <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-              Country & Continental Rankings
-            </h1>
-            <p className="mt-2 text-sm sm:text-base text-zinc-400 max-w-2xl">
-              Compare national demonlist power across the world. Filter by continent, explore national leaderboards, and discover each country&apos;s top victors.
-            </p>
-            <div className="mt-4">
-              <Link
-                href="/map"
-                className="inline-flex items-center gap-2 rounded-lg border border-cyan-500/50 bg-cyan-500/20 px-4 py-2 text-xs font-black text-cyan-300 hover:bg-cyan-500/30 transition shadow-lg"
-              >
-                🌍 Open Interactive World Map &rarr;
-              </Link>
-            </div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            Country & Continental Rankings
+          </h1>
+          <p className="mt-2 text-sm sm:text-base text-zinc-400 max-w-2xl">
+            Compare national demonlist power across the world. Explore the interactive activity map, filter by continent, and discover each country&apos;s top victors.
+          </p>
 
-            {/* Quick Metrics */}
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-2xl">
-              <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-                <span className="text-xs text-zinc-400">Active Nations</span>
-                <p className="mt-1 text-xl font-bold text-white">{totalCountries}</p>
-              </div>
-              <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-                <span className="text-xs text-zinc-400">Total Points</span>
-                <p className="mt-1 text-xl font-bold text-emerald-400">{totalPoints.toLocaleString()}</p>
-              </div>
-              <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-                <span className="text-xs text-zinc-400">Top Nation</span>
-                <p className="mt-1 text-base font-bold text-amber-400 truncate">
-                  {allCountryRows[0] ? `${allCountryRows[0].flag} ${allCountryRows[0].countryName}` : "—"}
-                </p>
-              </div>
-              <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-                <span className="text-xs text-zinc-400">Current Filter</span>
-                <p className="mt-1 text-base font-bold text-blue-400">{continent}</p>
-              </div>
+          {/* Quick Metrics */}
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-2xl">
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Active Nations</span>
+              <p className="mt-1 text-xl font-bold text-white">{totalCountries}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Total Points</span>
+              <p className="mt-1 text-xl font-bold text-emerald-400">{totalPoints.toLocaleString()}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Top Nation</span>
+              <p className="mt-1 text-base font-bold text-amber-400 truncate">
+                {allCountryRows[0] ? `${allCountryRows[0].flag} ${allCountryRows[0].countryName}` : "—"}
+              </p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
+              <span className="text-xs text-zinc-400">Current Filter</span>
+              <p className="mt-1 text-base font-bold text-blue-400">{continent}</p>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Interactive World Map Section (Pointercrate Style) */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-black text-white flex items-center gap-2">
+              <span>🗺️</span> Global Activity World Map
+            </h2>
+            <p className="text-xs text-zinc-400">
+              Blue-shaded countries mark regions with registered NDL players. Click any country to filter and view its national leaderboard.
+            </p>
+          </div>
+        </div>
+        <InteractiveWorldMap countryData={mapCountryData} />
+      </section>
 
         {/* Continental Filter Tabs */}
         <div className="mt-8 flex flex-wrap gap-2 border-b border-zinc-800 pb-4">

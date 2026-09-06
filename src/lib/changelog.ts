@@ -98,29 +98,29 @@ We put a ton of hard work into getting everything ready for this release. Enjoy 
 *— cattw21 & NDL Staff*`,
 };
 
-export const V2_ANNOUNCEMENT_POST = {
-  title: "Nerfed Demonlist v2.0.0: The Future of NDL (Official Roadmap & Feature Release)",
-  slug: "nerfed-demonlist-v2-0-0-official-roadmap",
+export const V1_5_ANNOUNCEMENT_POST = {
+  title: "Nerfed Demonlist v1.5.0: Official Major Feature Release",
+  slug: "nerfed-demonlist-v1-5-0-official-release",
   category: "ANNOUNCEMENT" as const,
   summary:
-    "Announcing Nerfed Demonlist v2.0.0! A monumental milestone featuring 19 generational upgrades: Official Public API, Interactive World Map, Subdivisions, Player Geolocation, Advanced Stats Viewer, Completion Sorting, Player Claiming, Submission Locking, Under Consideration status, and more.",
+    "Announcing Nerfed Demonlist v1.5.0! A monumental milestone featuring 19 generational upgrades: Interactive World Map on Countries, Official Public API, Subdivisions, Player Geolocation, Advanced Stats Viewer, Completion Sorting, Player Claiming, Submission Locking, Under Consideration status, and more.",
   content: `Hey everyone!
 
-Following the successful rollout of **Nerfed Demonlist v1.0.0 Stable**, the NDL team is proud to officially announce our biggest milestone yet: **Nerfed Demonlist v2.0.0**!
+Following the successful rollout of **Nerfed Demonlist v1.0.0 Stable**, the NDL team is proud to officially announce our newest major update: **Nerfed Demonlist v1.5.0**!
 
 This update brings full competitive feature parity with the wider Geometry Dash demonlist ecosystem while introducing custom features engineered specifically for nerfed demons.
 
 ---
 
-### The 19 Official Features of Nerfed Demonlist v2.0.0
+### The 19 Official Features of Nerfed Demonlist v1.5.0
 
 #### 1. Public API
 Gives developers an official way to retrieve demons, players, records, rankings, etc. A Discord bot or another website can now automatically pull current NDL data instead of scraping webpages.
 *Explore the documentation at [/api-docs](/api-docs).*
 
 #### 2. Interactive World Map
-Displays leaderboard activity geographically. Areas are shaded based on player points, and users can click locations to explore players from that area. Pointercrate has a point-distribution heat map.
-*View the live map at [/map](/map).*
+Displays leaderboard activity geographically directly on the Countries page. Countries with registered players are highlighted in blue based on player points, and users can click any country to filter and explore its national leaderboard.
+*Explore the live map on [/countries](/countries).*
 
 #### 3. State / Province Rankings
 Goes below country level. For example, Germany can be split into NRW, Bavaria, Berlin, etc., while the USA has California, Texas, Florida, and so on. Pointercrate supports political subdivisions for many countries.
@@ -194,7 +194,7 @@ Pointercrate has a public Discord bot that integrates with Demonlist data, letti
 | # | Feature | Status | Live Link |
 | :---: | :--- | :---: | :--- |
 | **1** | Public API | Live | [/api-docs](/api-docs) |
-| **2** | Interactive World Map | Live | [/map](/map) |
+| **2** | Interactive World Map | Live | [/countries](/countries) |
 | **3** | State / Province Rankings | Live | [/countries](/countries) |
 | **4** | Player Geolocation | Live | [/settings](/settings) |
 | **5** | Advanced Stats Viewer | Live | [/stats](/stats) |
@@ -222,12 +222,12 @@ We're incredibly excited to bring all of this to the Nerfed Demonlist community.
 
 export const DEFAULT_POSTS = [
   {
-    id: "nerfed-demonlist-v2-0-0-official-roadmap",
-    title: V2_ANNOUNCEMENT_POST.title,
-    slug: V2_ANNOUNCEMENT_POST.slug,
-    category: V2_ANNOUNCEMENT_POST.category,
-    summary: V2_ANNOUNCEMENT_POST.summary,
-    content: V2_ANNOUNCEMENT_POST.content,
+    id: "nerfed-demonlist-v1-5-0-official-release",
+    title: V1_5_ANNOUNCEMENT_POST.title,
+    slug: V1_5_ANNOUNCEMENT_POST.slug,
+    category: V1_5_ANNOUNCEMENT_POST.category,
+    summary: V1_5_ANNOUNCEMENT_POST.summary,
+    content: V1_5_ANNOUNCEMENT_POST.content,
     isPinned: true,
     isPublished: true,
     isDemo: false,

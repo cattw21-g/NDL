@@ -104,7 +104,7 @@ export async function submitRecordAction(
     });
   }
 
-  // --- AUTOMATED DUPLICATE-SUBMISSION DETECTION (v2.0.0 Feature #17) ---
+  // --- AUTOMATED DUPLICATE-SUBMISSION DETECTION (v1.5.0 Feature #17) ---
   const submittedProgress = upload.data.progress ?? 100;
   const submittedVideoUrl = (upload.data.videoUrl ?? "").trim();
 

@@ -30,7 +30,7 @@ export async function fetchGdLevelMetadata(gdLevelId: string): Promise<GdLevelIn
 
     const res = await fetch(`https://gdbrowser.com/api/level/${cleanId}`, {
       headers: {
-        "User-Agent": "NerfedDemonlist-Bot/2.0",
+        "User-Agent": "NerfedDemonlist-Bot/1.5",
       },
       signal: controller.signal,
     });

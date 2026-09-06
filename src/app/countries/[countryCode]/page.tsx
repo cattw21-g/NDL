@@ -93,7 +93,7 @@ export default async function CountryDetailPage({ params }: Props) {
 
   const totalPoints = countryPlayers.reduce((sum, p) => sum + p.points, 0);
 
-  // Regional Subdivisions (States / Provinces) (v2.0.0 Feature #3)
+  // Regional Subdivisions (States / Provinces) (v1.5.0 Feature #3)
   const subMap: Record<string, { name: string; points: number; playersCount: number; topPlayer: string }> = {};
   for (const p of countryPlayers) {
     const playerRecord = records.find((r) => r.playerId === p.playerId);
@@ -224,7 +224,7 @@ export default async function CountryDetailPage({ params }: Props) {
         )}
       </div>
 
-      {/* State / Province Rankings (Subdivisions) (v2.0.0 Feature #3) */}
+      {/* State / Province Rankings (Subdivisions) (v1.5.0 Feature #3) */}
       {subdivisionStandings.length > 0 ? (
         <div className="mt-8 space-y-4">
           <div className="border-b border-zinc-800 pb-3">

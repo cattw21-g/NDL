@@ -22,7 +22,6 @@ const navItems = [
   { href: "/upcoming", label: "Upcoming", icon: "hourglass" },
   { href: "/players", label: "Players", icon: "trophy" },
   { href: "/countries", label: "Countries", icon: "globe" },
-  { href: "/map", label: "Map", icon: "map" },
   { href: "/stats", label: "Stats", icon: "stats" },
   { href: "/creators", label: "Creators", icon: "palette" },
   { href: "/archive", label: "Archive", icon: "history" },

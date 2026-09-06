@@ -1,6 +1,6 @@
 import { ArrowLeft, Newspaper } from "lucide-react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { ChangelogContent } from "@/components/changelog-content";
 import { MarkNewsReadOnMount } from "@/components/mark-news-read-on-mount";
@@ -29,6 +29,10 @@ export default async function ChangelogPostPage({
 }) {
   await ensureLatestChangelogPost(prisma);
   const { slug } = await params;
+
+  if (slug === "nerfed-demonlist-v2-0-0-official-roadmap") {
+    redirect("/changelog/nerfed-demonlist-v1-5-0-official-release");
+  }
   const postFromDb = await prisma.changelogPost.findFirst({
     where: publicChangelogWhere({
       slug,
