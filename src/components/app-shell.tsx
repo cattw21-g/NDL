@@ -1,4 +1,4 @@
-import { Settings, UserRound } from "lucide-react";
+import { CheckSquare, Settings, Shield, UserRound } from "lucide-react";
 import Link from "next/link";
 
 import { CommandPalette, CommandPaletteTrigger } from "@/components/command-palette";
@@ -183,6 +183,26 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                     <UserRound className="h-3.5 w-3.5" />
                     <span className="max-w-28 truncate">{user.displayName}</span>
                   </Link>
+                  {isAdminRole(user.role) && (
+                    <Link
+                      href="/admin"
+                      title="Admin Dashboard"
+                      className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-amber-400/80 bg-amber-100/90 px-2.5 text-xs font-black text-amber-950 transition hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 dark:border-amber-500/50 dark:bg-amber-950/70 dark:text-amber-200 dark:hover:bg-amber-900"
+                    >
+                      <Shield className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                      <span>Admin</span>
+                    </Link>
+                  )}
+                  {isModeratorRole(user.role) && (
+                    <Link
+                      href="/moderation"
+                      title="Review Submissions"
+                      className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-cyan-400/80 bg-cyan-100/90 px-2.5 text-xs font-black text-cyan-950 transition hover:bg-cyan-200 focus:outline-none focus:ring-2 focus:ring-cyan-400 dark:border-cyan-500/50 dark:bg-cyan-950/70 dark:text-cyan-200 dark:hover:bg-cyan-900"
+                    >
+                      <CheckSquare className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
+                      <span>Review</span>
+                    </Link>
+                  )}
                   <Link
                     href="/settings"
                     title="Profile & Country Settings"
