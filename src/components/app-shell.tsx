@@ -18,7 +18,7 @@ import { prisma } from "@/lib/db";
 import { demoModeEnabled, publicChangelogWhere } from "@/lib/demo-visibility";
 import { isAdminRole, isModeratorRole } from "@/lib/permissions";
 
-const navItems = [
+const primaryNavItems = [
   { href: "/", label: "List", icon: "list" },
   { href: "/upcoming", label: "Upcoming", icon: "hourglass" },
   { href: "/players", label: "Players", icon: "trophy" },
@@ -26,6 +26,9 @@ const navItems = [
   { href: "/stats", label: "Stats", icon: "stats" },
   { href: "/creators", label: "Creators", icon: "palette" },
   { href: "/archive", label: "Archive", icon: "history" },
+] as const;
+
+const secondaryNavItems = [
   { href: "/submit", label: "Submit", icon: "upload" },
   { href: "/suggest-level", label: "Suggest", icon: "suggest" },
   { href: "/staff", label: "Staff", icon: "shield" },
@@ -232,16 +235,29 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
               <ThemeToggle />
               {isUserAdmin && (
                 <div className="ml-1 shrink-0 border-l border-slate-300 pl-2 dark:border-slate-700">
-                  <AdminDropdownMenu />
+                  <AdminDropdownMenu badgeCount={pendingTotalCount} />
                 </div>
               )}
             </div>
           </div>
 
-          {/* Bottom Bar: Full-Width Navigation Links & Staff Tools */}
-          <nav className="mt-2.5 flex items-center justify-between gap-2 overflow-x-auto border-t border-slate-200/80 pt-2 text-sm dark:border-slate-800/80 [scrollbar-width:none]">
+          {/* Bottom Bar: Full-Width Distributed Navigation Across The Website */}
+          <nav className="mt-2.5 flex items-center justify-between gap-3 overflow-x-auto border-t border-slate-200/80 pt-2 text-sm dark:border-slate-800/80 [scrollbar-width:none]">
+            {/* Left Wing: Rankings & Exploration */}
             <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-              {navItems.map((item) => (
+              {primaryNavItems.map((item) => (
+                <NavLink
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                />
+              ))}
+            </div>
+
+            {/* Right Wing: Actions & Community Info */}
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 pr-3 sm:pr-0">
+              {secondaryNavItems.map((item) => (
                 <NavLink
                   key={item.href}
                   href={item.href}
@@ -251,28 +267,6 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                 />
               ))}
             </div>
-
-            {user && (isUserMod || isUserAdmin) ? (
-              <div className="flex items-center gap-1.5 pl-3 border-l border-slate-300 dark:border-slate-700 shrink-0">
-                {isUserMod && (
-                  <NavLink
-                    href="/moderation"
-                    label="Review"
-                    icon="review"
-                    tone="cyan"
-                    badgeCount={pendingTotalCount}
-                  />
-                )}
-                {isUserAdmin && (
-                  <NavLink
-                    href="/admin"
-                    label="Admin"
-                    icon="shield"
-                    tone="amber"
-                  />
-                )}
-              </div>
-            ) : null}
           </nav>
         </div>
       </header>

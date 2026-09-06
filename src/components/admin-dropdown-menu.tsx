@@ -15,7 +15,7 @@ import {
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-export function AdminDropdownMenu() {
+export function AdminDropdownMenu({ badgeCount }: { badgeCount?: number } = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -52,6 +52,11 @@ export function AdminDropdownMenu() {
       >
         <Shield className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
         <span>Admin</span>
+        {badgeCount && badgeCount > 0 ? (
+          <span className="rounded-full bg-rose-500 px-1.5 py-0.2 text-[10px] font-black text-white shadow-xs">
+            {badgeCount}
+          </span>
+        ) : null}
         <ChevronDown
           className={`h-3 w-3 text-amber-600 transition-transform duration-200 dark:text-amber-400 ${
             isOpen ? "rotate-180" : ""
@@ -78,10 +83,17 @@ export function AdminDropdownMenu() {
             <Link
               href="/moderation"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-cyan-50 hover:text-cyan-900 dark:text-slate-200 dark:hover:bg-cyan-950/40 dark:hover:text-cyan-300"
+              className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-cyan-50 hover:text-cyan-900 dark:text-slate-200 dark:hover:bg-cyan-950/40 dark:hover:text-cyan-300"
             >
-              <FileCheck className="h-3.5 w-3.5 text-cyan-500" />
-              <span>Review Submissions</span>
+              <div className="flex items-center gap-2.5">
+                <FileCheck className="h-3.5 w-3.5 text-cyan-500" />
+                <span>Review Submissions</span>
+              </div>
+              {badgeCount && badgeCount > 0 ? (
+                <span className="rounded-full bg-rose-500 px-1.5 py-0.2 text-[10px] font-black text-white shadow-xs">
+                  {badgeCount}
+                </span>
+              ) : null}
             </Link>
 
             <Link
