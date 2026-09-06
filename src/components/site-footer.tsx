@@ -72,7 +72,7 @@ export function SiteFooter({
   return (
     <footer className="relative z-10 border-t border-slate-300 bg-white/82 px-3 py-6 text-sm text-slate-700 backdrop-blur dark:border-slate-800 dark:bg-slate-950/72 dark:text-slate-300 sm:px-5">
       <div className="mx-auto grid w-full max-w-7xl gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-        <div className="min-w-0 space-y-3">
+        <div className="notranslate min-w-0 space-y-3" translate="no">
           <div className="flex flex-wrap items-center gap-3">
             <span className="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-md border border-cyan-900 bg-cyan-800 text-xs font-black text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)]">
               <span className="absolute left-0 top-0 h-3 w-3 border-b border-r border-white/35 bg-cyan-400/40" />

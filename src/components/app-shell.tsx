@@ -158,10 +158,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
               <span className="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-md border border-cyan-900 bg-cyan-800 text-sm font-black text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18),0_4px_12px_rgba(15,23,42,0.16)]">
                 <span className="absolute left-0 top-0 h-3 w-3 border-b border-r border-white/35 bg-cyan-400/40" />
                 <span className="absolute bottom-0 right-0 h-4 w-4 border-l border-t border-white/30 bg-teal-400/30" />
-                NDL
+                <span className="notranslate" translate="no">NDL</span>
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-lg font-black uppercase leading-tight text-slate-950 dark:text-slate-50">
+                <span className="notranslate block truncate text-lg font-black uppercase leading-tight text-slate-950 dark:text-slate-50" translate="no">
                   Nerfed Demonlist
                 </span>
                 <HeaderTagline />

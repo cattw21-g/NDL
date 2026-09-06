@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
+import { ClientAutoTranslator } from "@/components/client-auto-translator";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
@@ -108,6 +109,7 @@ export default function RootLayout({
           src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
           async
         />
+        <ClientAutoTranslator />
         <AppShell>{children}</AppShell>
       </body>
     </html>
