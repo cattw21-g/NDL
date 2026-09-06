@@ -1,16 +1,20 @@
 "use client";
 
 import {
+  BarChart3,
   BookOpen,
+  Bot,
   ClipboardCheck,
   Globe,
   History,
   Hourglass,
   Lightbulb,
   ListOrdered,
+  MapPin,
   Newspaper,
   Palette,
   ShieldCheck,
+  Terminal,
   Trophy,
   Upload,
 } from "lucide-react";
@@ -22,15 +26,19 @@ import { useReadNewsSlugs } from "@/lib/news-read-store";
 
 const icons = {
   book: BookOpen,
+  bot: Bot,
   globe: Globe,
   history: History,
   hourglass: Hourglass,
   list: ListOrdered,
+  map: MapPin,
   news: Newspaper,
   palette: Palette,
   review: ClipboardCheck,
   shield: ShieldCheck,
+  stats: BarChart3,
   suggest: Lightbulb,
+  terminal: Terminal,
   trophy: Trophy,
   upload: Upload,
 };

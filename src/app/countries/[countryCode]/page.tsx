@@ -14,9 +14,23 @@ type Props = {
 export async function generateMetadata({ params }: Props) {
   const { countryCode } = await params;
   const meta = getCountryMeta(countryCode);
+  const title = meta ? `${meta.flag} ${meta.name} Rankings — Nerfed Demonlist` : "Country Rankings — Nerfed Demonlist";
+  const description = `Top Geometry Dash players, national points, and record holders from ${meta?.name || "this country"}.`;
+
   return {
-    title: meta ? `${meta.flag} ${meta.name} Rankings — Nerfed Demonlist` : "Country Rankings",
-    description: `Top Geometry Dash players and record holders from ${meta?.name || "this country"}.`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      siteName: "Nerfed Demonlist",
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
   };
 }
 
@@ -43,6 +57,7 @@ export default async function CountryDetailPage({ params }: Props) {
           playerName: true,
           displayName: true,
           countryCode: true,
+          subdivision: true,
         },
       },
     },
@@ -77,6 +92,21 @@ export default async function CountryDetailPage({ params }: Props) {
   });
 
   const totalPoints = countryPlayers.reduce((sum, p) => sum + p.points, 0);
+
+  // Regional Subdivisions (States / Provinces) (v2.0.0 Feature #3)
+  const subMap: Record<string, { name: string; points: number; playersCount: number; topPlayer: string }> = {};
+  for (const p of countryPlayers) {
+    const playerRecord = records.find((r) => r.playerId === p.playerId);
+    const sub = playerRecord?.player.subdivision?.trim();
+    if (sub) {
+      if (!subMap[sub]) {
+        subMap[sub] = { name: sub, points: 0, playersCount: 0, topPlayer: p.displayName };
+      }
+      subMap[sub].points += p.points;
+      subMap[sub].playersCount += 1;
+    }
+  }
+  const subdivisionStandings = Object.values(subMap).sort((a, b) => b.points - a.points);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -193,6 +223,42 @@ export default async function CountryDetailPage({ params }: Props) {
           </div>
         )}
       </div>
+
+      {/* State / Province Rankings (Subdivisions) (v2.0.0 Feature #3) */}
+      {subdivisionStandings.length > 0 ? (
+        <div className="mt-8 space-y-4">
+          <div className="border-b border-zinc-800 pb-3">
+            <h2 className="text-xl font-black text-white">
+              State & Regional Subdivisions
+            </h2>
+            <p className="text-xs text-zinc-400">
+              Point distribution across regional states, provinces, and territories within {meta.name}.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {subdivisionStandings.map((sub, i) => (
+              <div
+                key={sub.name}
+                className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 flex items-center justify-between"
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-black text-zinc-500">#{i + 1}</span>
+                    <h3 className="font-extrabold text-white text-sm">{sub.name}</h3>
+                  </div>
+                  <p className="mt-1 text-xs text-zinc-400">
+                    {sub.playersCount} {sub.playersCount === 1 ? "player" : "players"} • Top: {sub.topPlayer}
+                  </p>
+                </div>
+                <span className="font-mono font-black text-cyan-400 text-sm">
+                  {sub.points.toLocaleString()} pts
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

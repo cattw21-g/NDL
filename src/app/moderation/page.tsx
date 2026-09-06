@@ -685,7 +685,9 @@ function RecordReviewCard({
   submission: RecordSubmissionListItem;
 }) {
   const canReview =
-    submission.status === "PENDING" || submission.status === "NEEDS_CHANGES";
+    submission.status === "PENDING" ||
+    submission.status === "NEEDS_CHANGES" ||
+    submission.status === "UNDER_CONSIDERATION";
 
   return (
     <SectionPanel className="overflow-hidden">
@@ -755,6 +757,7 @@ function RecordReviewCard({
               <select name="status" required className={inputClass}>
                 <option value="ACCEPTED">Accept</option>
                 <option value="REJECTED">Reject</option>
+                <option value="UNDER_CONSIDERATION">Under Consideration (UC)</option>
                 <option value="NEEDS_CHANGES">Needs changes</option>
               </select>
             </FieldLabel>

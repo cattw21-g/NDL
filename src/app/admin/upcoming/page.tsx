@@ -51,20 +51,24 @@ export default async function AdminUpcomingPage() {
     }),
   ]);
 
+  const isWaitingVerifier = (v?: string | null) => {
+    if (!v || v.trim() === "") return true;
+    const l = v.trim().toLowerCase();
+    return (
+      l === "open" ||
+      l === "open verification" ||
+      l === "unassigned" ||
+      l === "none" ||
+      l === "n/a"
+    );
+  };
+
   const currentlyVerifying = pendingLevels.filter(
-    (lvl) =>
-      lvl.verifier &&
-      lvl.verifier.trim() !== "" &&
-      lvl.verifier.toLowerCase() !== "open" &&
-      lvl.verifier.toLowerCase() !== "unassigned",
+    (lvl) => !isWaitingVerifier(lvl.verifier),
   );
 
   const waitingLevels = pendingLevels.filter(
-    (lvl) =>
-      !lvl.verifier ||
-      lvl.verifier.trim() === "" ||
-      lvl.verifier.toLowerCase() === "open" ||
-      lvl.verifier.toLowerCase() === "unassigned",
+    (lvl) => isWaitingVerifier(lvl.verifier),
   );
 
   const uploads = imageUploadProvider();

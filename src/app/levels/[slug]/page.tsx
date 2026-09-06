@@ -17,6 +17,8 @@ import { StatusBadge } from "@/components/status-badge";
 import { UserLevelSubmissionBanner } from "@/components/user-level-submission-banner";
 import { LevelPositionHistory } from "@/components/level-position-history";
 import { LevelGdMetadata } from "@/components/level-gd-metadata";
+import { MultipleCreatorCredits } from "@/components/multiple-creator-credits";
+import { DifficultyOpinionPanel } from "@/components/difficulty-opinion-panel";
 import {
   cx,
   EmptyState,
@@ -36,12 +38,77 @@ import { formatDate, formatDateTime, statusLabel } from "@/lib/format";
 import { calculateCurrentLevelPoints } from "@/lib/points";
 import { absoluteSiteUrl } from "@/lib/site-url";
 
+import type { Metadata } from "next";
+
 export const dynamic = "force-dynamic";
-export const metadata = {
-  title: "Level Detail - NDL",
-  description:
-    "View a Nerfed Demonlist level's rank, computed points, metadata, and accepted public records.",
-};
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const level = await prisma.level.findFirst({
+    where: publicLevelWhere({ slug }),
+    select: {
+      name: true,
+      rank: true,
+      status: true,
+      points: true,
+      difficulty: true,
+      thumbnailUrl: true,
+      verifier: true,
+      nerfCreator: true,
+      description: true,
+    },
+  });
+
+  if (!level) {
+    return {
+      title: "Level Not Found — Nerfed Demonlist",
+      description: "This level could not be found on the Nerfed Demonlist.",
+    };
+  }
+
+  const computedPoints = calculateCurrentLevelPoints(level);
+  const rankLabel = level.rank
+    ? `#${level.rank}`
+    : level.status === "LEGACY"
+      ? "Legacy"
+      : "Upcoming";
+  const title = `${rankLabel} - ${level.name} | Nerfed Demonlist`;
+  const description = `${computedPoints} Points • Difficulty: ${level.difficulty} • Nerfed by: ${level.nerfCreator} • Verified by: ${level.verifier}`;
+  const pageUrl = absoluteSiteUrl(`/levels/${slug}`);
+  const imageUrl = level.thumbnailUrl?.startsWith("http")
+    ? level.thumbnailUrl
+    : absoluteSiteUrl(level.thumbnailUrl || "/logo.png");
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: "Nerfed Demonlist",
+      images: [
+        {
+          url: imageUrl,
+          width: 1280,
+          height: 720,
+          alt: level.name,
+        },
+      ],
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [imageUrl],
+    },
+  };
+}
 
 export default async function LevelPage({
   params,
@@ -274,7 +341,15 @@ export default async function LevelPage({
             <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <MetaTile label="Original level" value={level.originalName} />
               <MetaTile label="Publisher/host" value={level.publisher} />
-              <MetaTile label="Nerf creator" value={level.nerfCreator} />
+              <MetaTile
+                label="Nerf creator"
+                value={
+                  <MultipleCreatorCredits
+                    nerfCreator={level.nerfCreator}
+                    publisher={level.publisher}
+                  />
+                }
+              />
               <MetaTile
                 label="Verifier"
                 value={
@@ -349,6 +424,13 @@ export default async function LevelPage({
             inGameDifficulty={level.inGameDifficulty}
             copyPassword={level.copyPassword}
             minimumProgress={level.minimumProgress}
+          />
+
+          <DifficultyOpinionPanel
+            levelId={level.id}
+            levelName={level.name}
+            currentRank={level.rank}
+            victorCount={victors.length}
           />
 
           {/* SECTION 1: 100% VICTORS */}

@@ -11,6 +11,7 @@ import {
   type StaffNotificationData,
 } from "@/components/staff-notification-center";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageSelector } from "@/components/language-selector";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { demoModeEnabled, publicChangelogWhere } from "@/lib/demo-visibility";
@@ -21,10 +22,13 @@ const navItems = [
   { href: "/upcoming", label: "Upcoming", icon: "hourglass" },
   { href: "/players", label: "Players", icon: "trophy" },
   { href: "/countries", label: "Countries", icon: "globe" },
+  { href: "/map", label: "Map", icon: "map" },
+  { href: "/stats", label: "Stats", icon: "stats" },
   { href: "/creators", label: "Creators", icon: "palette" },
   { href: "/archive", label: "Archive", icon: "history" },
   { href: "/submit", label: "Submit", icon: "upload" },
   { href: "/suggest-level", label: "Suggest", icon: "suggest" },
+  { href: "/staff", label: "Staff", icon: "shield" },
   { href: "/rules", label: "Rules", icon: "book" },
   { href: "/changelog", label: "News", icon: "news" },
 ] as const;
@@ -233,6 +237,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                   <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3 15.28a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.71a8.18 8.18 0 0 0 4.91 1.63V6.89a4.85 4.85 0 0 1-1-.2z" />
                 </svg>
               </a>
+              <LanguageSelector />
               <ThemeToggle />
             </div>
           </div>

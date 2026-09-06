@@ -46,6 +46,48 @@ describe("level suggestion workflow", () => {
     }
   });
 
+  it("validates an open verification level suggestion without verification video", () => {
+    const result = validateLevelSuggestionFormSubmission(
+      suggestionFormData({
+        isOpenVerification: "true",
+        verifier: "",
+        verificationVideoUrl: "",
+      }),
+    );
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.isOpenVerification).toBe(true);
+      expect(result.data.verificationVideoUrl).toBeUndefined();
+    }
+  });
+
+  it("validates when verifier is set to Open Verification without verification video", () => {
+    const result = validateLevelSuggestionFormSubmission(
+      suggestionFormData({
+        verifier: "Open Verification",
+        verificationVideoUrl: "",
+      }),
+    );
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects when not open verification and verification video is missing", () => {
+    const result = validateLevelSuggestionFormSubmission(
+      suggestionFormData({
+        isOpenVerification: "false",
+        verifier: "SomePlayer",
+        verificationVideoUrl: "",
+      }),
+    );
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.state.fieldErrors.verificationVideoUrl).toBeDefined();
+    }
+  });
+
   it("accepts optional suggestion thumbnail URLs", () => {
     for (const thumbnailUrl of [
       "https://placehold.co/320x180.png",

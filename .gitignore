@@ -52,3 +52,5 @@ next-env.d.ts
 
 .vercel
 .env*
+/ndl-v1-stable-tiktok-raw/
+/scratch/

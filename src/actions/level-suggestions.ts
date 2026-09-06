@@ -77,6 +77,24 @@ export async function submitLevelSuggestionAction(
   }
 
   try {
+    const isExplicitOpen = parsed.data.isOpenVerification === true;
+    const isVerifierOpen =
+      parsed.data.verifier &&
+      ["open", "open verification", "unassigned", "none", "n/a"].includes(
+        parsed.data.verifier.trim().toLowerCase(),
+      );
+    const isOpen = isExplicitOpen || isVerifierOpen;
+
+    const verifier =
+      isOpen && (!parsed.data.verifier || parsed.data.verifier.trim() === "")
+        ? "Open Verification"
+        : (parsed.data.verifier?.trim() || "Open Verification");
+
+    const verificationVideoUrl =
+      isOpen && !parsed.data.verificationVideoUrl
+        ? null
+        : (parsed.data.verificationVideoUrl ?? null);
+
     const suggestion = await prisma.levelSuggestion.create({
       data: {
         submitterId: user.id,
@@ -85,9 +103,9 @@ export async function submitLevelSuggestionAction(
         gdLevelId: parsed.data.gdLevelId,
         publisher: parsed.data.publisher,
         nerfCreator: parsed.data.nerfCreator,
-        verifier: parsed.data.verifier,
-        verifierPlayerName: parsed.data.verifierPlayerName,
-        verificationVideoUrl: parsed.data.verificationVideoUrl,
+        verifier,
+        verifierPlayerName: isOpen ? null : parsed.data.verifierPlayerName,
+        verificationVideoUrl,
         showcaseUrl: parsed.data.showcaseUrl,
         thumbnailUrl,
         versionNotes: parsed.data.versionNotes,
@@ -116,7 +134,7 @@ export async function submitLevelSuggestionAction(
     userHandle: user.playerName,
     levelName: parsed.data.name,
     originalName: parsed.data.originalName,
-    videoUrl: parsed.data.showcaseUrl || parsed.data.verificationVideoUrl,
+    videoUrl: parsed.data.showcaseUrl || parsed.data.verificationVideoUrl || "",
   }).catch((err) => {
     console.error("Failed to dispatch notifyNewSuggestion:", err);
   });

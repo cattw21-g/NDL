@@ -126,6 +126,14 @@ export default async function CountriesPage({ searchParams }: Props) {
             <p className="mt-2 text-sm sm:text-base text-zinc-400 max-w-2xl">
               Compare national demonlist power across the world. Filter by continent, explore national leaderboards, and discover each country&apos;s top victors.
             </p>
+            <div className="mt-4">
+              <Link
+                href="/map"
+                className="inline-flex items-center gap-2 rounded-lg border border-cyan-500/50 bg-cyan-500/20 px-4 py-2 text-xs font-black text-cyan-300 hover:bg-cyan-500/30 transition shadow-lg"
+              >
+                🌍 Open Interactive World Map &rarr;
+              </Link>
+            </div>
 
             {/* Quick Metrics */}
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-2xl">

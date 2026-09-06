@@ -18,6 +18,8 @@ import { notFound } from "next/navigation";
 
 import { CopyButton } from "@/components/copy-button";
 import { DiscordLinkCard } from "@/components/discord-link-card";
+import { PlayerAdvancedAnalytics } from "@/components/player-advanced-analytics";
+import { PlayerCompletionsList } from "@/components/player-completions-list";
 import { StatusBadge } from "@/components/status-badge";
 import {
   MetricTile,
@@ -39,12 +41,66 @@ import {
 import { getCountryMeta } from "@/lib/countries";
 import { absoluteSiteUrl } from "@/lib/site-url";
 
+import type { Metadata } from "next";
+
 export const dynamic = "force-dynamic";
-export const metadata = {
-  title: "Player Profile - Nerfed Demonlist",
-  description:
-    "View player standings, 100% completions, progress runs, and verified demons.",
-};
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ playerName: string }>;
+}): Promise<Metadata> {
+  const { playerName } = await params;
+  const player = await prisma.user.findFirst({
+    where: publicUserWhere({ playerName }),
+    select: {
+      displayName: true,
+      playerName: true,
+      countryCode: true,
+      subdivision: true,
+      records: {
+        where: publicRecordWhere({ progress: 100 }),
+        select: { id: true },
+      },
+    },
+  });
+
+  if (!player) {
+    return {
+      title: "Player Not Found — Nerfed Demonlist",
+      description: "This player profile could not be found on the Nerfed Demonlist.",
+    };
+  }
+
+  const country = player.countryCode ? getCountryMeta(player.countryCode) : null;
+  const location = country
+    ? player.subdivision
+      ? `${country.flag} ${player.subdivision}, ${country.name}`
+      : `${country.flag} ${country.name}`
+    : "Global";
+
+  const completionsCount = player.records.length;
+  const title = `${player.displayName} (${player.playerName}) | Nerfed Demonlist`;
+  const description = `${location} • ${completionsCount} Completed ${completionsCount === 1 ? "Demon" : "Demons"} • View full records, progress runs, and verified demons.`;
+  const pageUrl = absoluteSiteUrl(`/players/${player.playerName}`);
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: "Nerfed Demonlist",
+      type: "profile",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
+  };
+}
 
 export default async function PlayerProfilePage({
   params,
@@ -159,8 +215,34 @@ export default async function PlayerProfilePage({
   const legacyCompletions = fullCompletions.filter(
     (r) => r.level.status === "LEGACY" || (r.level.rank !== null && r.level.rank > 150),
   );
-  const createdDemonsCount = player.createdLevels.length;
   const verifiedDemonsCount = player.verifiedLevels.length;
+  const createdDemonsCount = player.createdLevels.length;
+  const serializedFullCompletions = fullCompletions.map((record) => ({
+    id: record.id,
+    level: {
+      id: record.level.id,
+      name: record.level.name,
+      slug: record.level.slug,
+      rank: record.level.rank,
+      status: record.level.status,
+    },
+    currentPoints: record.currentPoints,
+    progress: record.progress,
+    fps: record.fps,
+    cbfUsed: record.cbfUsed,
+    isVerifier: record.isVerifier,
+    videoUrl: record.videoUrl,
+    acceptedAt: record.acceptedAt.toISOString(),
+  }));
+  const fpsMap: Record<number, number> = {};
+  let cbfCount = 0;
+  for (const r of fullCompletions) {
+    fpsMap[r.fps] = (fpsMap[r.fps] || 0) + 1;
+    if (r.cbfUsed) cbfCount++;
+  }
+  const fpsStats = Object.entries(fpsMap)
+    .map(([fps, count]) => ({ fps: Number(fps), count }))
+    .sort((a, b) => b.count - a.count);
 
   const summary = globalRankIndex !== -1 ? globalLeaderboard[globalRankIndex] : null;
   const totalPoints = summary?.points ?? 0;
@@ -271,6 +353,20 @@ export default async function PlayerProfilePage({
               text={profileUrl}
               label="Share profile"
               copiedLabel="Link Copied!"
+            />
+            <PlayerAdvancedAnalytics
+              playerName={player.displayName}
+              totalPoints={totalPoints}
+              globalRank={globalRank}
+              mainListCount={mainListCompletions.length}
+              extendedListCount={extendedListCompletions.length}
+              legacyCount={legacyCompletions.length}
+              progressCount={progressRecords.length}
+              verifiedCount={verifiedDemonsCount}
+              createdCount={createdDemonsCount}
+              fpsStats={fpsStats}
+              cbfCount={cbfCount}
+              totalCompletions={fullCompletions.length}
             />
             {isOwnProfile ? (
               <>
@@ -398,78 +494,10 @@ export default async function PlayerProfilePage({
       {/* 4. MAIN CONTENT TABS & CARDS */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <main className="space-y-6">
-          {/* 100% COMPLETIONS LIST */}
-          <section className="space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-2 dark:border-slate-800">
-              <h2 className="flex items-center gap-2 text-xl font-black text-slate-950 dark:text-slate-50">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                100% Completions ({fullCompletions.length})
-              </h2>
-              <span className="text-xs font-bold text-slate-500">
-                {fullCompletions.reduce((sum, r) => sum + r.currentPoints, 0)} Total Points
-              </span>
-            </div>
-
-            {fullCompletions.length > 0 ? (
-              <div className="divide-y divide-slate-200 rounded-lg border border-slate-300 bg-white shadow-sm dark:divide-slate-800 dark:border-slate-700 dark:bg-slate-900">
-                {fullCompletions.map((record, index) => (
-                  <div
-                    key={record.id}
-                    className="grid gap-3 p-4 transition hover:bg-slate-50 sm:grid-cols-[3rem_minmax(0,1fr)_6rem_6rem_auto] sm:items-center dark:hover:bg-slate-850"
-                  >
-                    <span className="text-base font-black text-slate-400 tabular-nums">
-                      #{index + 1}
-                    </span>
-
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Link
-                          href={`/levels/${record.level.slug}`}
-                          className="text-base font-black text-slate-950 hover:underline dark:text-slate-50"
-                        >
-                          {record.level.name}
-                        </Link>
-                        {record.level.rank ? (
-                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-black text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                            #{record.level.rank}
-                          </span>
-                        ) : null}
-                        {record.isVerifier ? (
-                          <span className="rounded border border-amber-400 bg-amber-100 px-1.5 py-0.5 text-[10px] font-black uppercase text-amber-900 dark:border-amber-500/60 dark:bg-amber-900/50 dark:text-amber-200">
-                            Verifier
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {record.fps} FPS {record.cbfUsed ? "• CBF" : ""} • Accepted {formatDate(record.acceptedAt)}
-                      </p>
-                    </div>
-
-                    <span className="font-black text-emerald-700 tabular-nums sm:text-right dark:text-emerald-400">
-                      100%
-                    </span>
-
-                    <span className="text-right text-lg font-black text-cyan-800 tabular-nums dark:text-cyan-300">
-                      {record.currentPoints} pts
-                    </span>
-
-                    {record.videoUrl ? (
-                      <a
-                        href={record.videoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex min-h-8 items-center justify-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 sm:justify-self-end"
-                      >
-                        <Video className="h-3.5 w-3.5 text-slate-500" />
-                        Proof
-                      </a>
-                    ) : (
-                      <span />
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
+          {/* 100% COMPLETIONS LIST (INTERACTIVE SORT & FILTER) */}
+          {fullCompletions.length > 0 ? (
+            <PlayerCompletionsList completions={serializedFullCompletions} />
+          ) : (
               <SectionPanel className="p-8 text-center">
                 <Gamepad2 className="mx-auto h-10 w-10 text-slate-400" />
                 <h3 className="mt-3 text-base font-black text-slate-950 dark:text-slate-50">
@@ -488,7 +516,6 @@ export default async function PlayerProfilePage({
                 </div>
               </SectionPanel>
             )}
-          </section>
 
           {/* PROGRESS RUNS (<100%) */}
           {progressRecords.length > 0 ? (

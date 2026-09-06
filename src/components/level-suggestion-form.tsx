@@ -56,6 +56,12 @@ export function LevelSuggestionForm({
     null,
   );
   const values = state.values;
+  const [isOpenVerification, setIsOpenVerification] = useState(
+    values.isOpenVerification === "true" ||
+    values.isOpenVerification === "on" ||
+    values.verifier?.toLowerCase() === "open" ||
+    values.verifier?.toLowerCase() === "open verification",
+  );
   const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState(
     values.thumbnailUrl,
   );
@@ -231,48 +237,96 @@ export function LevelSuggestionForm({
               defaultValue={values.nerfCreator}
               errors={state.fieldErrors.nerfCreator}
             />
+            <div className="md:col-span-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 transition-colors">
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  name="isOpenVerification"
+                  value="true"
+                  checked={isOpenVerification}
+                  onChange={(e) => setIsOpenVerification(e.target.checked)}
+                  className="mt-0.5 h-5 w-5 rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-emerald-400 focus:ring-offset-zinc-950"
+                />
+                <div className="space-y-1">
+                  <span className="text-sm font-bold text-emerald-400">
+                    Open Verification (Unverified / Looking for Verifier)
+                  </span>
+                  <p className="text-xs text-zinc-300 dark:text-zinc-400 leading-relaxed">
+                    Check this if this nerfed demon is not verified yet and is waiting for a community verifier. You do <strong>not</strong> need a verification video—only a showcase link below is required!
+                  </p>
+                </div>
+              </label>
+            </div>
             <TextInput
               name="verifier"
-              label="Verifier"
-              help="The player who verified this nerfed demon."
-              placeholder="Verifier handle"
-              defaultValue={values.verifier}
+              label={isOpenVerification ? "Verifier (Open Verification)" : "Verifier"}
+              help={
+                isOpenVerification
+                  ? "Defaults to 'Open Verification' since this demon is waiting for a verifier."
+                  : "The player who verified this nerfed demon."
+              }
+              placeholder={isOpenVerification ? "Open Verification" : "Verifier handle"}
+              defaultValue={isOpenVerification ? (values.verifier || "Open Verification") : values.verifier}
+              required={!isOpenVerification}
               errors={state.fieldErrors.verifier}
             />
-            <TextInput
-              name="verifierPlayerName"
-              label="Verifier NDL username (optional)"
-              required={false}
-              help="If the verifier has an NDL account, enter their username to link their profile and award points directly."
-              placeholder="verifier_username"
-              defaultValue={values.verifierPlayerName}
-              errors={state.fieldErrors.verifierPlayerName}
-            />
+            {!isOpenVerification ? (
+              <TextInput
+                name="verifierPlayerName"
+                label="Verifier NDL username (optional)"
+                required={false}
+                help="If the verifier has an NDL account, enter their username to link their profile and award points directly."
+                placeholder="verifier_username"
+                defaultValue={values.verifierPlayerName}
+                errors={state.fieldErrors.verifierPlayerName}
+              />
+            ) : null}
           </div>
         </FormSection>
 
         <FormSection
           title="Verification Proof & Media"
-          description="A verification video link is required to prove the level was beaten legitimately."
+          description={
+            isOpenVerification
+              ? "For open verification levels, only a showcase video is required so players and staff can inspect the nerf."
+              : "A verification video link is required to prove the level was beaten legitimately."
+          }
         >
           <div className="grid gap-4 md:grid-cols-2">
-            <TextInput
-              name="verificationVideoUrl"
-              label="Verification video link"
-              help="Full video showing the verifier beating the level (YouTube/Twitch/Drive)."
-              type="url"
-              placeholder="https://youtu.be/..."
-              defaultValue={values.verificationVideoUrl}
-              required
-              errors={state.fieldErrors.verificationVideoUrl}
-            />
+            {!isOpenVerification ? (
+              <TextInput
+                name="verificationVideoUrl"
+                label="Verification video link"
+                help="Full video showing the verifier beating the level (YouTube/Twitch/Drive)."
+                type="url"
+                placeholder="https://youtu.be/..."
+                defaultValue={values.verificationVideoUrl}
+                required
+                errors={state.fieldErrors.verificationVideoUrl}
+              />
+            ) : (
+              <div className="rounded-lg border border-dashed border-emerald-500/40 bg-emerald-500/5 p-4 flex flex-col justify-center">
+                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                  Open Verification Mode
+                </span>
+                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                  Verification video is not required for open verification demons. Once approved, this level will be listed in the <strong>Waiting for Verifier</strong> list on the Upcoming page.
+                </p>
+                <input type="hidden" name="verificationVideoUrl" value="" />
+              </div>
+            )}
             <TextInput
               name="showcaseUrl"
               label="Showcase link"
-              help={fieldHelp.showcaseUrl}
+              help={
+                isOpenVerification
+                  ? "Showcase video link demonstrating the nerfed level and route."
+                  : fieldHelp.showcaseUrl
+              }
               type="url"
               placeholder="https://youtu.be/..."
               defaultValue={values.showcaseUrl}
+              required
               errors={state.fieldErrors.showcaseUrl}
             />
             <div className="md:col-span-2">

@@ -34,6 +34,7 @@ enum RecordStatus {
   ACCEPTED
   REJECTED
   NEEDS_CHANGES
+  UNDER_CONSIDERATION
 }
 
 enum LevelSuggestionStatus {
@@ -88,6 +89,7 @@ model User {
   discordUserId           String?                  @unique
   discordUsername         String?
   discordLinkedAt         DateTime?
+  isSubmissionLocked      Boolean                  @default(false)
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   sessions                Session[]
@@ -288,7 +290,7 @@ model LevelSuggestion {
   nerfCreator          String
   verifier             String
   verifierPlayerName   String?
-  verificationVideoUrl String
+  verificationVideoUrl String?
   showcaseUrl          String
   thumbnailUrl         String?
   versionNotes         String?

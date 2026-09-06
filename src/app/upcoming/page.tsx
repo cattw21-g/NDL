@@ -76,22 +76,24 @@ export default async function UpcomingPage() {
     })),
   ];
 
+  const isWaitingVerifier = (v?: string | null) => {
+    if (!v || v.trim() === "") return true;
+    const l = v.trim().toLowerCase();
+    return (
+      l === "open" ||
+      l === "open verification" ||
+      l === "unassigned" ||
+      l === "none" ||
+      l === "n/a"
+    );
+  };
+
   const currentlyVerifying = allItems.filter(
-    (item) =>
-      item.verifier &&
-      item.verifier.trim() !== "" &&
-      item.verifier.toLowerCase() !== "open" &&
-      item.verifier.toLowerCase() !== "unassigned" &&
-      item.verifier.toLowerCase() !== "none",
+    (item) => !isWaitingVerifier(item.verifier),
   );
 
   const waitingLevels = allItems.filter(
-    (item) =>
-      !item.verifier ||
-      item.verifier.trim() === "" ||
-      item.verifier.toLowerCase() === "open" ||
-      item.verifier.toLowerCase() === "unassigned" ||
-      item.verifier.toLowerCase() === "none",
+    (item) => isWaitingVerifier(item.verifier),
   );
 
   return (

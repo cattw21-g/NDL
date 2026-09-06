@@ -73,7 +73,7 @@ export type ReviewModerator = {
 };
 
 export type ReviewDecision = {
-  status: "ACCEPTED" | "REJECTED" | "NEEDS_CHANGES";
+  status: "ACCEPTED" | "REJECTED" | "NEEDS_CHANGES" | "UNDER_CONSIDERATION";
   moderatorNotes: string;
 };
 

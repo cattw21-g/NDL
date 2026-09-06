@@ -18,7 +18,7 @@ export type RecordStatusEmail = {
   to: string;
   playerName: string;
   levelName: string;
-  status: "ACCEPTED" | "REJECTED" | "NEEDS_CHANGES";
+  status: "ACCEPTED" | "REJECTED" | "NEEDS_CHANGES" | "UNDER_CONSIDERATION";
   progress: number;
   pointsAwarded?: number | null;
   moderatorNotes?: string | null;
@@ -294,7 +294,9 @@ export async function sendRecordStatusEmail(
       ? `Record Accepted: ${email.levelName} (${email.progress}%)`
       : email.status === "NEEDS_CHANGES"
         ? `Record Review: ${email.levelName} needs changes`
-        : `Record Rejected: ${email.levelName}`;
+        : email.status === "UNDER_CONSIDERATION"
+          ? `Record Under Consideration: ${email.levelName}`
+          : `Record Rejected: ${email.levelName}`;
 
   const message: Omit<TransactionalMailMessage, "from"> = {
     to: email.to,
@@ -347,7 +349,9 @@ export function recordStatusEmailText(email: RecordStatusEmail) {
       ? "Accepted"
       : email.status === "NEEDS_CHANGES"
         ? "Needs Changes"
-        : "Rejected";
+        : email.status === "UNDER_CONSIDERATION"
+          ? "Under Consideration"
+          : "Rejected";
 
   const lines = [
     "Nerfed Demonlist",
@@ -380,13 +384,17 @@ export function recordStatusEmailHtml(
       ? "#059669"
       : email.status === "NEEDS_CHANGES"
         ? "#d97706"
-        : "#dc2626";
+        : email.status === "UNDER_CONSIDERATION"
+          ? "#2563eb"
+          : "#dc2626";
   const statusLabel =
     email.status === "ACCEPTED"
       ? "Accepted"
       : email.status === "NEEDS_CHANGES"
         ? "Needs Changes"
-        : "Rejected";
+        : email.status === "UNDER_CONSIDERATION"
+          ? "Under Consideration"
+          : "Rejected";
 
   return `<!doctype html>
 <html>

@@ -4,6 +4,7 @@ const toneByStatus: Record<string, string> = {
   RANKED: "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-200",
   LEGACY: "border-cyan-300 bg-white text-cyan-800 dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-200",
   PENDING: "border-amber-300 bg-white text-amber-800 dark:border-amber-500/50 dark:bg-amber-950/40 dark:text-amber-200",
+  UNDER_CONSIDERATION: "border-purple-300 bg-white text-purple-800 dark:border-purple-500/50 dark:bg-purple-950/40 dark:text-purple-200",
   NEEDS_CHANGES: "border-orange-300 bg-white text-orange-800 dark:border-orange-500/50 dark:bg-orange-950/40 dark:text-orange-200",
   ACCEPTED: "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-200",
   APPROVED: "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-200",

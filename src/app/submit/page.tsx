@@ -82,6 +82,19 @@ export default async function SubmitPage({
         successMessage="Record submitted for review. Staff may request more proof."
       />
 
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-purple-500/30 bg-purple-500/10 p-4 text-sm">
+        <div className="text-zinc-200">
+          <span className="font-bold text-purple-300">Want to submit a new or unverified nerfed demon instead?</span>{" "}
+          To submit a new level candidate or open-verification demon, use the level suggestion form.
+        </div>
+        <Link
+          href="/suggest-level"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-purple-500 transition-colors"
+        >
+          Suggest a Level →
+        </Link>
+      </div>
+
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <SubmitRecordForm
           levels={levels.map((level) => ({

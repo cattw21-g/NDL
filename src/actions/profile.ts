@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -67,6 +67,8 @@ export async function updateProfileAction(formData: FormData): Promise<void> {
   const youtubeUrl = parseSocialUrl(formData.get("youtubeUrl"), "YouTube URL");
   const twitchUrl = parseSocialUrl(formData.get("twitchUrl"), "Twitch URL");
   const twitterUrl = parseSocialUrl(formData.get("twitterUrl"), "Twitter / X URL");
+  const rawLocked = formData.get("isSubmissionLocked");
+  const isSubmissionLocked = rawLocked === "true" || rawLocked === "on";
 
   await prisma.user.update({
     where: { id: user.id },
@@ -78,6 +80,7 @@ export async function updateProfileAction(formData: FormData): Promise<void> {
       youtubeUrl,
       twitchUrl,
       twitterUrl,
+      isSubmissionLocked,
     },
   });
 

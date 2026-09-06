@@ -147,7 +147,7 @@ export const submissionSchema = z
 
 export const reviewSchema = z.object({
   submissionId: z.string().min(1),
-  status: z.enum(["ACCEPTED", "REJECTED", "NEEDS_CHANGES"]),
+  status: z.enum(["ACCEPTED", "REJECTED", "NEEDS_CHANGES", "UNDER_CONSIDERATION"]),
   moderatorNotes: z
     .string()
     .trim()
@@ -156,29 +156,79 @@ export const reviewSchema = z.object({
     .default(""),
 });
 
-export const levelSuggestionSchema = z.object({
-  name: requiredText("Level name is required.", 120),
-  originalName: requiredText("Original level is required.", 120),
-  gdLevelId: z
-    .string({ error: "GD level ID must contain only numbers." })
-    .trim()
-    .regex(/^\d+$/, "GD level ID must contain only numbers.")
-    .max(32, "GD level ID must contain only numbers."),
-  publisher: requiredText("Publisher/host is required.", 80),
-  nerfCreator: requiredText("Nerf creator is required.", 80),
-  verifier: requiredText("Verifier is required.", 80),
-  verifierPlayerName: optionalText(80),
-  verificationVideoUrl: requiredHttpUrl(
-    "Verification video must be a valid http/https URL.",
-  ),
-  showcaseUrl: requiredHttpUrl("Showcase must be a valid http/https URL."),
-  thumbnailUrl: optionalThumbnailUrl,
-  versionNotes: optionalText(1000),
-  compatibilityNotes: requiredText(
-    "Explain how the nerf preserves original route/timing compatibility.",
-    1500,
-  ),
-});
+const optionalHttpUrl = (message: string) =>
+  z.preprocess(
+    emptyToUndefined,
+    z
+      .string({ error: message })
+      .trim()
+      .refine((value) => {
+        try {
+          const protocol = new URL(value).protocol;
+          return protocol === "http:" || protocol === "https:";
+        } catch {
+          return false;
+        }
+      }, message)
+      .optional(),
+  );
+
+export const levelSuggestionSchema = z
+  .object({
+    name: requiredText("Level name is required.", 120),
+    originalName: requiredText("Original level is required.", 120),
+    gdLevelId: z
+      .string({ error: "GD level ID must contain only numbers." })
+      .trim()
+      .regex(/^\d+$/, "GD level ID must contain only numbers.")
+      .max(32, "GD level ID must contain only numbers."),
+    publisher: requiredText("Publisher/host is required.", 80),
+    nerfCreator: requiredText("Nerf creator is required.", 80),
+    isOpenVerification: checkboxBoolean.default(false),
+    verifier: optionalText(80),
+    verifierPlayerName: optionalText(80),
+    verificationVideoUrl: optionalHttpUrl(
+      "Verification video must be a valid http/https URL.",
+    ),
+    showcaseUrl: requiredHttpUrl("Showcase must be a valid http/https URL."),
+    thumbnailUrl: optionalThumbnailUrl,
+    versionNotes: optionalText(1000),
+    compatibilityNotes: requiredText(
+      "Explain how the nerf preserves original route/timing compatibility.",
+      1500,
+    ),
+  })
+  .superRefine((data, ctx) => {
+    const isExplicitOpen = data.isOpenVerification === true;
+    const isVerifierOpen =
+      data.verifier &&
+      ["open", "open verification", "unassigned", "none", "n/a"].includes(
+        data.verifier.trim().toLowerCase(),
+      );
+    const isOpen = isExplicitOpen || isVerifierOpen;
+
+    if (!isOpen) {
+      if (!data.verifier || data.verifier.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Verifier is required (or mark as Open Verification if waiting for a verifier).",
+          path: ["verifier"],
+        });
+      }
+      if (
+        !data.verificationVideoUrl ||
+        data.verificationVideoUrl.trim() === ""
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Verification video link is required (or mark as Open Verification if waiting for a verifier).",
+          path: ["verificationVideoUrl"],
+        });
+      }
+    }
+  });
 
 export const levelSuggestionReviewSchema = z.object({
   suggestionId: z.string().min(1),

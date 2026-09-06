@@ -42,7 +42,12 @@ export async function addUpcomingLevelAction(formData: FormData) {
   const slug = `${baseSlug}-${Date.now().toString(36)}`;
 
   let verifierUserId: string | null = null;
-  if (verifier && verifier.toLowerCase() !== "open" && verifier.toLowerCase() !== "unassigned") {
+  const isVerifierWaiting =
+    !verifier ||
+    ["open", "open verification", "unassigned", "none", "n/a"].includes(
+      verifier.toLowerCase(),
+    );
+  if (verifier && !isVerifierWaiting) {
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
@@ -162,7 +167,12 @@ export async function assignVerifierAction(formData: FormData) {
   }
 
   let verifierUserId: string | null = null;
-  if (verifier && verifier.toLowerCase() !== "open" && verifier.toLowerCase() !== "unassigned") {
+  const isVerifierWaiting =
+    !verifier ||
+    ["open", "open verification", "unassigned", "none", "n/a"].includes(
+      verifier.toLowerCase(),
+    );
+  if (verifier && !isVerifierWaiting) {
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [

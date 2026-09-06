@@ -104,6 +104,88 @@ export async function submitRecordAction(
     });
   }
 
+  // --- AUTOMATED DUPLICATE-SUBMISSION DETECTION (v2.0.0 Feature #17) ---
+  const submittedProgress = upload.data.progress ?? 100;
+  const submittedVideoUrl = (upload.data.videoUrl ?? "").trim();
+
+  // 1. Check if user already has an accepted record with equal or higher progress
+  const existingAcceptedRecord = await prisma.record.findFirst({
+    where: {
+      playerId: user.id,
+      levelId: level.id,
+    },
+    select: {
+      id: true,
+      progress: true,
+    },
+  });
+
+  if (existingAcceptedRecord && existingAcceptedRecord.progress >= submittedProgress) {
+    await cleanupUploads(upload.uploadedPaths);
+    return createSubmissionFormErrorState(parsed.values, {
+      formErrors: [
+        existingAcceptedRecord.progress === 100
+          ? "Duplicate submission rejected: You already have an accepted 100% completion for this level."
+          : `Duplicate submission rejected: You already have an accepted record for this level with equal or greater progress (${existingAcceptedRecord.progress}%).`,
+      ],
+    });
+  }
+
+  // 2. Check if user already has an active pending submission for this level with equal or higher progress
+  const existingPendingSubmission = await prisma.recordSubmission.findFirst({
+    where: {
+      playerId: user.id,
+      levelId: level.id,
+      status: "PENDING",
+      progress: {
+        gte: submittedProgress,
+      },
+    },
+    select: {
+      id: true,
+      progress: true,
+    },
+  });
+
+  if (existingPendingSubmission) {
+    await cleanupUploads(upload.uploadedPaths);
+    return createSubmissionFormErrorState(parsed.values, {
+      formErrors: [
+        `Duplicate submission rejected: You already have an active pending submission for this level (${existingPendingSubmission.progress}%) awaiting moderator review.`,
+      ],
+    });
+  }
+
+  // 3. Check if this exact video proof URL has already been accepted or submitted elsewhere
+  if (submittedVideoUrl && !submittedVideoUrl.startsWith("/uploads/")) {
+    const [duplicateRecordVideo, duplicateSubmissionVideo] = await Promise.all([
+      prisma.record.findFirst({
+        where: {
+          videoUrl: { equals: submittedVideoUrl, mode: "insensitive" },
+        },
+        select: { id: true },
+      }),
+      prisma.recordSubmission.findFirst({
+        where: {
+          videoUrl: { equals: submittedVideoUrl, mode: "insensitive" },
+          status: { in: ["PENDING", "ACCEPTED"] },
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    if (duplicateRecordVideo || duplicateSubmissionVideo) {
+      await cleanupUploads(upload.uploadedPaths);
+      return createSubmissionFormErrorState(parsed.values, {
+        fieldErrors: {
+          videoUrl: [
+            "This video proof link has already been submitted for a record on the Demonlist.",
+          ],
+        },
+      });
+    }
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
       const submission = await tx.recordSubmission.create({

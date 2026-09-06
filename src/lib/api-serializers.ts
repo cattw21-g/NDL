@@ -87,7 +87,7 @@ type StaffLevelSuggestionInput = {
   nerfCreator: string;
   verifier: string;
   verifierPlayerName?: string | null;
-  verificationVideoUrl: string;
+  verificationVideoUrl?: string | null;
   showcaseUrl: string;
   thumbnailUrl: string | null;
   versionNotes: string | null;

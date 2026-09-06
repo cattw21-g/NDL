@@ -22,6 +22,16 @@ const footerColumns = [
       { href: "/level-suggestions", label: "Level Suggestions" },
     ],
   },
+  {
+    title: "Community & API",
+    links: [
+      { href: "/map", label: "World Map" },
+      { href: "/stats", label: "Stats Viewer" },
+      { href: "/staff", label: "Staff Directory" },
+      { href: "/api-docs", label: "Public REST API" },
+      { href: "/discord-bot", label: "Discord Bot" },
+    ],
+  },
 ] as const;
 
 export function SiteFooter({
