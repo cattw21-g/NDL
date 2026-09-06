@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { CheckCircle2, Sparkles, Zap } from "lucide-react";
 
 import { cx } from "@/components/ui";
@@ -175,11 +176,78 @@ const TAG_CONFIG: Record<
     text: "text-pink-800 dark:text-pink-300",
     border: "border-pink-300 dark:border-pink-700",
   },
+  MAP: {
+    label: "WORLD MAP",
+    bg: "bg-blue-100 dark:bg-blue-950/60",
+    text: "text-blue-800 dark:text-blue-300",
+    border: "border-blue-300 dark:border-blue-700",
+  },
+  SUBDIVISIONS: {
+    label: "SUBDIVISIONS",
+    bg: "bg-teal-100 dark:bg-teal-950/60",
+    text: "text-teal-800 dark:text-teal-300",
+    border: "border-teal-300 dark:border-teal-700",
+  },
+  FILTER: {
+    label: "REGION FILTER",
+    bg: "bg-lime-100 dark:bg-lime-950/60",
+    text: "text-lime-800 dark:text-lime-300",
+    border: "border-lime-300 dark:border-lime-700",
+  },
+  GEOLOCATION: {
+    label: "GEOLOCATION",
+    bg: "bg-sky-100 dark:bg-sky-950/60",
+    text: "text-sky-800 dark:text-sky-300",
+    border: "border-sky-300 dark:border-sky-700",
+  },
+  GUEST: {
+    label: "GUEST ACCESS",
+    bg: "bg-emerald-100 dark:bg-emerald-950/60",
+    text: "text-emerald-800 dark:text-emerald-300",
+    border: "border-emerald-300 dark:border-emerald-700",
+  },
+  VALIDATOR: {
+    label: "VALIDATOR",
+    bg: "bg-amber-100 dark:bg-amber-950/60",
+    text: "text-amber-800 dark:text-amber-300",
+    border: "border-amber-300 dark:border-amber-700",
+  },
+  PREVIEW: {
+    label: "POINTS PREVIEW",
+    bg: "bg-cyan-100 dark:bg-cyan-950/60",
+    text: "text-cyan-800 dark:text-cyan-300",
+    border: "border-cyan-300 dark:border-cyan-700",
+  },
+  CONSENSUS: {
+    label: "STATISTICS",
+    bg: "bg-purple-100 dark:bg-purple-950/60",
+    text: "text-purple-800 dark:text-purple-300",
+    border: "border-purple-300 dark:border-purple-700",
+  },
+  TIMEOUT: {
+    label: "AUTO-TIMEOUT",
+    bg: "bg-rose-100 dark:bg-rose-950/60",
+    text: "text-rose-800 dark:text-rose-300",
+    border: "border-rose-300 dark:border-rose-700",
+  },
+  VIEWER: {
+    label: "STATS VIEWER",
+    bg: "bg-yellow-100 dark:bg-yellow-950/60",
+    text: "text-yellow-800 dark:text-yellow-300",
+    border: "border-yellow-300 dark:border-yellow-700",
+  },
+  QUEUE: {
+    label: "QUEUE",
+    bg: "bg-orange-100 dark:bg-orange-950/60",
+    text: "text-orange-800 dark:text-orange-300",
+    border: "border-orange-300 dark:border-orange-700",
+  },
 };
 
 function renderFormattedInline(text: string): React.ReactNode {
-  // Parse **bold** text
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  // Matches **bold**, `code`, or [text](url)
+  const regex = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
+  const parts = text.split(regex);
   return parts.map((part, index) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
@@ -189,6 +257,30 @@ function renderFormattedInline(text: string): React.ReactNode {
         >
           {part.slice(2, -2)}
         </strong>
+      );
+    }
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <code
+          key={index}
+          className="rounded bg-slate-200 px-1.5 py-0.5 font-mono text-xs text-slate-900 dark:bg-slate-800 dark:text-slate-200"
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (linkMatch) {
+      const label = linkMatch[1];
+      const href = linkMatch[2];
+      return (
+        <Link
+          key={index}
+          href={href}
+          className="font-semibold text-cyan-600 underline decoration-cyan-500/50 hover:text-cyan-500 dark:text-cyan-400 dark:hover:text-cyan-300"
+        >
+          {label}
+        </Link>
       );
     }
     return part;

@@ -103,29 +103,33 @@ export const V1_5_ANNOUNCEMENT_POST = {
   slug: "nerfed-demonlist-v1-5-0-official-release",
   category: "ANNOUNCEMENT" as const,
   summary:
-    "Welcome to the official v1.5.0 release of Nerfed Demonlist! We’ve brought complete Pointercrate parity to the platform: Interactive World Map with State Subdivisions, Guest Submissions, Public Write API, Video Normalization, Opinion Statistics, Partial Points Previews, and much more.",
+    "Welcome to the official v1.5.0 release of Nerfed Demonlist! We’ve delivered complete Pointercrate parity: Interactive World Map with State Subdivisions, Guest Submissions, Public Read & Write REST API, Video Normalization, Opinion Statistics, Partial Points Previews, GD Download Counts, 72-Hour Timeouts, Central America Filters, and much more.",
   content: `## 🗺️ Geographic & International Rankings
-[NEW] **Interactive World Map**: Leaderboard activity is now displayed geographically right inside the [Countries](/countries) tab! Nations with registered players are shaded in vibrant blue based on total points, while the nation hosting the world's **#1 Top Player** is crowned in glowing golden yellow 👑.
-[FEATURE] **Interactive States & Subdivisions View**: Toggle between Countries and Subdivision view on the world map! Over 720 states, provinces, and territories (US states, Canadian provinces, Australian states, etc.) are drawn and independently interactive with hover tooltips and regional filtering.
+[MAP] **Interactive World Map**: Leaderboard activity is now displayed geographically right inside the [Countries](/countries) tab! Nations with registered players are shaded in vibrant blue based on total points, while the nation hosting the world's **#1 Top Player** is crowned in glowing golden yellow 👑.
+[SUBDIVISIONS] **States & Provinces Drawn Directly on the Map**: Toggle between Countries and Subdivision view on the world map! Over 720 states, provinces, and territories (US states, Canadian provinces, Australian states, etc.) are drawn and independently interactive with hover tooltips and regional filtering.
 [FILTER] **Central America Region Filter**: Added Central America to continent filters across the international leaderboard and [Stats](/stats) page, spotlighting victors across Costa Rica, Panama, Guatemala, Honduras, El Salvador, Nicaragua, and Belize.
 [GEOLOCATION] **One-Click IP Auto-Detection**: Select your nation instantly in [Settings](/settings) with the new **Auto-Detect from IP** button without scrolling through 250 nations.
 
-## ⚡ Guest Submissions & Authenticated Write API
-[NEW] **Guest Record Submissions**: You no longer need to create an account before submitting! Players can submit records directly on [/submit](/submit) by typing their Geometry Dash username.
+## ⚡ Guest Submissions & REST API Ecosystem
+[GUEST] **Guest Record Submissions**: You no longer need to create an account before submitting! Players can submit records directly on [/submit](/submit) by typing their Geometry Dash username.
 [SECURITY] **Submission Locking**: Protect your name and legacy! Verified account owners can enable **Submission Locking** in [Settings](/settings) to prevent unauthenticated guests from submitting runs under their name.
-[API] **Authenticated & Write REST API**: Developers and bot creators can now submit records programmatically via \`POST /api/public/records/submit\` using session Bearer tokens or guest payloads. Fully documented at [/api-docs](/api-docs).
-[VALIDATOR] **Automatic Video-Link Normalization**: The submission system automatically strips tracking parameters (\`si=\`, \`feature=\`, \`fbclid=\`, etc.) and canonicalizes YouTube Shorts, embeds, and mobile links into standard watch URLs.
+[API] **Authenticated & Write REST API**: Developers and bot creators can now submit records programmatically via \`POST /api/public/records/submit\` using session Bearer tokens or guest payloads.
+[DOCS] **Official Public REST API & Developer Portal**: Complete public GET/POST endpoints for demons, players, rankings, records, rules, and changelog with interactive documentation live at [/api-docs](/api-docs).
+[VALIDATOR] **Automatic Video-Link Validation & Normalization**: The submission system automatically strips tracking parameters (\`si=\`, \`feature=\`, \`fbclid=\`, \`utm_*\`) and canonicalizes YouTube Shorts, embeds, and mobile links into standard watch URLs, supporting YouTube, Twitch, Medal.tv, Bilibili, TikTok, and Streamable.
 
 ## 📊 Deep Level Analytics & Scoring Previews
 [PREVIEW] **Partial-Score Points Preview**: Level pages now display the exact leaderboard points awarded for 100% completions alongside minimum qualifying progress runs (e.g. 100%: 1000 pts | 50%+: 100 pts), with list tier guidelines and scoring breakdowns.
 [STATS] **In-Game GD Downloads & Likes**: Level pages now display live Geometry Dash download counts and like tallies synced directly from Geometry Dash servers.
-[CONSENSUS] **Advanced Difficulty-Opinion Statistics**: Pointercrate-parity victor opinion analysis! Level pages compute **Median Suggested Rank**, **Trimmed Mean** (outlier filtering), **Consensus Reliability Index** (confidence percentage), and **Placement Brackets** (e.g. #10 – #12).
+[CONSENSUS] **Advanced Difficulty-Opinion Statistics**: Pointercrate-parity victor opinion analysis! Level pages compute **Median Suggested Rank**, **Trimmed Mean** (discarding 15% extreme placement outliers), **Consensus Reliability Index** (confidence percentage), and **Placement Brackets** (e.g. #10 – #12).
+[VIEWER] **Advanced Stats Viewer**: Dedicated analytics suite at [/stats](/stats) to filter players, national representation, and list records by rank, country, and status.
 
-## 🛡️ Moderation & Workflow Automation
+## 🛡️ Moderation System & Community Tools
 [TIMEOUT] **72-Hour Evidence Request Deadline**: Submissions placed **Under Consideration** or **Needs Changes** now feature an automated 3-day (72-hour) countdown timer. Submissions with unprovided evidence are automatically archived to keep the review queue fast and responsive.
+[QUEUE] **Under Consideration (UC) Moderation Queue**: A dedicated review state for records undergoing deep verification, raw footage analysis, or click audio inspection.
 [CLAIM] **Player Profile Claiming**: Verify ownership of your Geometry Dash runner profile and connect it directly to your website account from any player page at [/players](/players).
 [SORT] **6-Way Completion Sorting**: Sort player profile completions alphabetically, by list rank, by points, or by date, complete with Main/Extended tier toggles and instant search.
 [BOT] **Official Discord Bot Integration**: Connect with the NDL Discord bot for real-time \`/top\`, \`/level\`, \`/player\`, \`/leaderboard\`, \`/rules\`, and \`/changelog\` queries, paired with 24/7 automated acceptance alerts. Check out [/discord-bot](/discord-bot) to invite the bot.
+[STAFF] **Public Staff Directory & Hierarchy**: Browse list editors, helper teams, and administrators with clear contact instructions at [/staff](/staff).
 
 ---
 
