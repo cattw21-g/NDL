@@ -566,3 +566,94 @@ export async function moveSuggestionToVerifyingAction(formData: FormData) {
   revalidatePath("/admin/upcoming");
   revalidatePath("/level-suggestions");
 }
+
+export async function updateUpcomingProgressAction(formData: FormData): Promise<void> {
+  const admin = await requireAdmin();
+
+  const id = String(formData.get("id") || "").trim();
+  const isSuggestion = String(formData.get("isSuggestion") || "").toLowerCase() === "true";
+  const progress = parseInt(String(formData.get("progress") || "0"), 10);
+
+  if (!id || isNaN(progress) || progress < 0 || progress > 100) {
+    throw new Error("Invalid level ID or progress percentage (must be between 0% and 100%).");
+  }
+
+  if (isSuggestion) {
+    const suggestion = await prisma.levelSuggestion.findUnique({
+      where: { id },
+    });
+    if (!suggestion) {
+      throw new Error("Upcoming suggestion not found.");
+    }
+
+    const currentNotes = suggestion.versionNotes || "";
+    let updatedNotes = currentNotes;
+    if (/\[Progress:\s*\d{1,3}%\]/i.test(updatedNotes)) {
+      updatedNotes = updatedNotes.replace(/\[Progress:\s*\d{1,3}%\]/i, `[Progress: ${progress}%]`);
+    } else {
+      updatedNotes = updatedNotes ? `${updatedNotes} [Progress: ${progress}%]` : `[Progress: ${progress}%]`;
+    }
+
+    await prisma.levelSuggestion.update({
+      where: { id },
+      data: {
+        versionNotes: updatedNotes,
+      },
+    });
+
+    await writeAuditLog(prisma, {
+      actor: {
+        id: admin.id,
+        playerName: admin.playerName,
+        displayName: admin.displayName,
+        role: admin.role,
+      },
+      action: "UPCOMING_PROGRESS_UPDATED",
+      entityType: "LevelSuggestion",
+      entityId: id,
+      entityLabel: `${suggestion.name} -> ${progress}%`,
+      note: `Verification progress set to ${progress}%`,
+    });
+  } else {
+    const level = await prisma.level.findUnique({
+      where: { id },
+    });
+    if (!level) {
+      throw new Error("Upcoming level not found.");
+    }
+
+    const currentNotes = level.versionNotes || "";
+    let updatedNotes = currentNotes;
+    if (/\[Progress:\s*\d{1,3}%\]/i.test(updatedNotes)) {
+      updatedNotes = updatedNotes.replace(/\[Progress:\s*\d{1,3}%\]/i, `[Progress: ${progress}%]`);
+    } else {
+      updatedNotes = updatedNotes ? `${updatedNotes} [Progress: ${progress}%]` : `[Progress: ${progress}%]`;
+    }
+
+    await prisma.level.update({
+      where: { id },
+      data: {
+        minimumProgress: progress,
+        versionNotes: updatedNotes,
+      },
+    });
+
+    await writeAuditLog(prisma, {
+      actor: {
+        id: admin.id,
+        playerName: admin.playerName,
+        displayName: admin.displayName,
+        role: admin.role,
+      },
+      action: "UPCOMING_PROGRESS_UPDATED",
+      entityType: "Level",
+      entityId: id,
+      entityLabel: `${level.name} -> ${progress}%`,
+      note: `Verification progress set to ${progress}%`,
+    });
+  }
+
+  revalidatePath("/upcoming");
+  revalidatePath("/admin/upcoming");
+}
+

@@ -12,6 +12,7 @@ import { CopyButton } from "@/components/copy-button";
 import { LevelVideoEmbed } from "@/components/level-video-embed";
 import { SafeThumbnail } from "@/components/safe-thumbnail";
 import { cx, SectionPanel, inputClass } from "@/components/ui";
+import { updateUpcomingProgressAction } from "@/actions/upcoming";
 
 export type UpcomingLevelItem = {
   id: string;
@@ -31,6 +32,7 @@ export type UpcomingLevelItem = {
   versionNotes?: string | null;
   isSuggestion?: boolean;
   submitterName?: string | null;
+  progress?: number;
 };
 
 export function UpcomingView({
@@ -84,7 +86,7 @@ export function UpcomingView({
               <p className="mt-1 text-xl font-bold text-amber-400">{currentlyVerifying.length}</p>
             </div>
             <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
-              <span className="text-xs text-zinc-400">Waiting for Verifier</span>
+              <span className="text-xs text-zinc-400">Open Verification</span>
               <p className="mt-1 text-xl font-bold text-emerald-400">{waitingLevels.length}</p>
             </div>
             <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
@@ -123,7 +125,7 @@ export function UpcomingView({
             )}
           >
             <Hourglass className="h-4 w-4 text-emerald-400" />
-            Waiting Levels ({waitingLevels.length})
+            Open Verification ({waitingLevels.length})
           </button>
         </div>
 
@@ -232,6 +234,40 @@ function UpcomingCard({
 }) {
   const hasVideo = Boolean(lvl.showcaseUrl || lvl.verificationVideoUrl);
   const [showVideo, setShowVideo] = useState(false);
+  const [currentProgress, setCurrentProgress] = useState(lvl.progress || 0);
+  const [isEditingProgress, setIsEditingProgress] = useState(false);
+  const [progressInput, setProgressInput] = useState(String(lvl.progress || 0));
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleSaveProgress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const val = parseInt(progressInput.trim(), 10);
+    if (isNaN(val) || val < 0 || val > 100) {
+      setErrorMsg("Must be 0-100");
+      return;
+    }
+    setIsSaving(true);
+    setErrorMsg(null);
+    try {
+      const formData = new FormData();
+      formData.set("id", lvl.id);
+      formData.set("isSuggestion", String(Boolean(lvl.isSuggestion)));
+      formData.set("progress", String(val));
+      await updateUpcomingProgressAction(formData);
+      setCurrentProgress(val);
+      setSaveSuccess(true);
+      setTimeout(() => {
+        setSaveSuccess(false);
+        setIsEditingProgress(false);
+      }, 1200);
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to update progress");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <SectionPanel className="group flex flex-col justify-between overflow-hidden p-5 transition hover:border-cyan-500/60 dark:hover:border-cyan-500/50">
@@ -262,10 +298,10 @@ function UpcomingCard({
                     "rounded px-2 py-0.5 text-[11px] font-black shadow-sm",
                     activeTab === "verifying"
                       ? "bg-amber-500 text-slate-950"
-                      : "bg-cyan-500 text-slate-950",
+                      : "bg-emerald-500 text-slate-950",
                   )}
                 >
-                  {activeTab === "verifying" ? "CURRENTLY VERIFYING" : "WAITING FOR VICTOR"}
+                  {activeTab === "verifying" ? "CURRENTLY VERIFYING" : "OPEN VERIFICATION"}
                 </span>
                 <span className="rounded bg-slate-900/80 px-2 py-0.5 text-[11px] font-black text-white backdrop-blur-sm">
                   {lvl.difficulty}
@@ -309,6 +345,78 @@ function UpcomingCard({
               className="text-xs font-mono"
             />
           ) : null}
+        </div>
+
+        {/* Verification Progress Box */}
+        <div className="rounded-md border border-slate-200 bg-slate-50/90 p-3 text-xs dark:border-slate-800 dark:bg-slate-950/50">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
+              <span className="text-amber-500">⚡</span>
+              <span>{activeTab === "verifying" ? "Verification Progress" : "Open Verification Progress"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-sm font-black text-amber-600 dark:text-amber-400">
+                {currentProgress}%
+              </span>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditingProgress(!isEditingProgress);
+                    setProgressInput(String(currentProgress));
+                    setErrorMsg(null);
+                  }}
+                  className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-bold text-slate-700 hover:border-amber-400 hover:text-amber-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-amber-500 dark:hover:text-amber-300"
+                  title="Change progress percentage"
+                >
+                  {isEditingProgress ? "Cancel" : "Change %"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-amber-500 via-emerald-500 to-teal-500 transition-all duration-500 shadow-sm"
+              style={{ width: `${Math.min(100, Math.max(0, currentProgress))}%` }}
+            />
+          </div>
+
+          {/* Admin Inline Form */}
+          {isAdmin && isEditingProgress && (
+            <form onSubmit={handleSaveProgress} className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-2.5 dark:border-slate-800">
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Set Percentage:</span>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={progressInput}
+                onChange={(e) => setProgressInput(e.target.value)}
+                className="w-18 rounded border border-slate-300 bg-white px-2 py-1 text-center font-mono text-xs font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                placeholder="0-100"
+                autoFocus
+              />
+              <span className="text-xs font-bold text-slate-400">%</span>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="rounded bg-amber-600 px-3 py-1 text-xs font-black text-white hover:bg-amber-700 disabled:opacity-50 transition"
+              >
+                {isSaving ? "Saving..." : "Save"}
+              </button>
+              {saveSuccess && (
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 animate-pulse">
+                  ✓ Saved!
+                </span>
+              )}
+              {errorMsg && (
+                <span className="text-xs font-bold text-red-600 dark:text-red-400">
+                  {errorMsg}
+                </span>
+              )}
+            </form>
+          )}
         </div>
 
         {/* Info Box */}

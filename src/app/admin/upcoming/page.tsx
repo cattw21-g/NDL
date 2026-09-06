@@ -16,7 +16,9 @@ import {
   moveSuggestionToVerifyingAction,
   moveSuggestionToWaitingAction,
   promoteUpcomingLevelAction,
+  updateUpcomingProgressAction,
 } from "@/actions/upcoming";
+import { parseUpcomingProgress } from "@/lib/upcoming-progress";
 import {
   AdminUpcomingLevelForm,
   UpcomingThumbnailInlineEditor,
@@ -165,7 +167,7 @@ export default async function AdminUpcomingPage() {
                       Creator: {lvl.nerfCreator} • Difficulty: {lvl.difficulty} • Added {formatDate(lvl.createdAt)}
                     </p>
 
-                    <div className="pt-1">
+                    <div className="flex flex-wrap items-center gap-3 pt-1">
                       <UpcomingThumbnailInlineEditor
                         levelId={lvl.id}
                         levelName={lvl.name}
@@ -173,6 +175,26 @@ export default async function AdminUpcomingPage() {
                         imageUploadProvider={uploads}
                         maxImageMb={maxImageMb}
                       />
+                      <form action={updateUpcomingProgressAction} className="inline-flex items-center gap-1.5">
+                        <input type="hidden" name="id" value={lvl.id} />
+                        <input type="hidden" name="isSuggestion" value="false" />
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Progress:</span>
+                        <input
+                          name="progress"
+                          type="number"
+                          min={0}
+                          max={100}
+                          defaultValue={parseUpcomingProgress(lvl.versionNotes, lvl.minimumProgress)}
+                          className={`${inputClass} w-16 text-center font-bold text-xs`}
+                        />
+                        <span className="text-xs font-bold text-slate-400">%</span>
+                        <button
+                          type="submit"
+                          className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-700 hover:border-amber-400 hover:text-amber-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                        >
+                          Set %
+                        </button>
+                      </form>
                     </div>
                   </div>
                 </div>
@@ -289,7 +311,7 @@ export default async function AdminUpcomingPage() {
                       Creator: {lvl.nerfCreator} • Difficulty: {lvl.difficulty} • Added {formatDate(lvl.createdAt)}
                     </p>
 
-                    <div className="pt-1">
+                    <div className="flex flex-wrap items-center gap-3 pt-1">
                       <UpcomingThumbnailInlineEditor
                         levelId={lvl.id}
                         levelName={lvl.name}
@@ -297,6 +319,26 @@ export default async function AdminUpcomingPage() {
                         imageUploadProvider={uploads}
                         maxImageMb={maxImageMb}
                       />
+                      <form action={updateUpcomingProgressAction} className="inline-flex items-center gap-1.5">
+                        <input type="hidden" name="id" value={lvl.id} />
+                        <input type="hidden" name="isSuggestion" value="false" />
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Progress:</span>
+                        <input
+                          name="progress"
+                          type="number"
+                          min={0}
+                          max={100}
+                          defaultValue={parseUpcomingProgress(lvl.versionNotes, lvl.minimumProgress)}
+                          className={`${inputClass} w-16 text-center font-bold text-xs`}
+                        />
+                        <span className="text-xs font-bold text-slate-400">%</span>
+                        <button
+                          type="submit"
+                          className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-700 hover:border-amber-400 hover:text-amber-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                        >
+                          Set %
+                        </button>
+                      </form>
                     </div>
                   </div>
                 </div>
@@ -385,6 +427,26 @@ export default async function AdminUpcomingPage() {
                     <p className="text-xs text-slate-600 dark:text-slate-400">
                       Suggested by: {sug.submitter.displayName} • Added {formatDate(sug.createdAt)}
                     </p>
+                    <form action={updateUpcomingProgressAction} className="inline-flex items-center gap-1.5 pt-1">
+                      <input type="hidden" name="id" value={sug.id} />
+                      <input type="hidden" name="isSuggestion" value="true" />
+                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Progress:</span>
+                      <input
+                        name="progress"
+                        type="number"
+                        min={0}
+                        max={100}
+                        defaultValue={parseUpcomingProgress(sug.versionNotes, null)}
+                        className={`${inputClass} w-16 text-center font-bold text-xs`}
+                      />
+                      <span className="text-xs font-bold text-slate-400">%</span>
+                      <button
+                        type="submit"
+                        className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-slate-700 hover:border-amber-400 hover:text-amber-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                      >
+                        Set %
+                      </button>
+                    </form>
                   </div>
                 </div>
 

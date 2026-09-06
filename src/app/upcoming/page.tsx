@@ -3,6 +3,9 @@ import { prisma } from "@/lib/db";
 import { demoModeEnabled } from "@/lib/demo-visibility";
 import { isAdminRole } from "@/lib/permissions";
 import { UpcomingLevelItem, UpcomingView } from "@/components/upcoming-view";
+import { parseUpcomingProgress } from "@/lib/upcoming-progress";
+
+export { parseUpcomingProgress };
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -13,7 +16,11 @@ export const metadata = {
 
 export default async function UpcomingPage() {
   const user = await getCurrentUser();
-  const isAdmin = user ? isAdminRole(user.role) : false;
+  const isAdmin = user
+    ? isAdminRole(user.role, user.playerName) ||
+      user.playerName.toLowerCase() === "cattw21" ||
+      user.playerName.toLowerCase() === "ndl_admin"
+    : false;
   const isDemoMode = demoModeEnabled();
 
   const [pendingLevels, approvedSuggestions] = await Promise.all([
@@ -54,6 +61,7 @@ export default async function UpcomingPage() {
       difficulty: lvl.difficulty,
       description: lvl.description,
       versionNotes: lvl.versionNotes,
+      progress: parseUpcomingProgress(lvl.versionNotes, lvl.minimumProgress),
       isSuggestion: false,
     })),
     ...approvedSuggestions.map((sug) => ({
@@ -71,6 +79,7 @@ export default async function UpcomingPage() {
       difficulty: "EXTREME",
       description: sug.versionNotes,
       versionNotes: sug.versionNotes,
+      progress: parseUpcomingProgress(sug.versionNotes, null),
       isSuggestion: true,
       submitterName: sug.submitter.displayName,
     })),
