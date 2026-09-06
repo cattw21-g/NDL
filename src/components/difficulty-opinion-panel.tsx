@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Scale, ThumbsUp, ChevronDown, Check, Star, ShieldCheck } from "lucide-react";
+import { Scale, ThumbsUp, ChevronDown, Check, Star, ShieldCheck, BarChart3 } from "lucide-react";
 import { SectionPanel } from "@/components/ui";
+import { analyzeDifficultyOpinions } from "@/lib/difficulty-analysis";
 
 type Opinion = {
   playerName: string;
@@ -34,9 +35,10 @@ export function DifficultyOpinionPanel({
   const [notes, setNotes] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  const avgRank = opinions.length > 0
-    ? (opinions.reduce((sum, o) => sum + o.suggestedRank, 0) / opinions.length).toFixed(1)
-    : currentRank ? currentRank.toString() : "N/A";
+  const stats = analyzeDifficultyOpinions(opinions.map((o) => o.suggestedRank));
+  const avgRank = stats.mean !== null ? stats.mean.toString() : currentRank ? currentRank.toString() : "N/A";
+  const medianRank = stats.median !== null ? stats.median.toString() : currentRank ? currentRank.toString() : "N/A";
+  const trimmedMeanRank = stats.trimmedMean !== null ? stats.trimmedMean.toString() : avgRank;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -62,7 +64,7 @@ export function DifficultyOpinionPanel({
               Victor Difficulty Opinions & Consensus
             </h3>
             <p className="text-xs text-zinc-400">
-              Community placement ratings submitted by verified victors of {levelName}.
+              Pointercrate-parity statistical analysis and community placement evaluations for {levelName}.
             </p>
           </div>
         </div>
@@ -76,8 +78,8 @@ export function DifficultyOpinionPanel({
         </button>
       </div>
 
-      {/* Consensus Metrics Summary */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {/* Advanced Statistical Metrics Summary */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
           <p className="text-[11px] font-bold text-zinc-400 uppercase">Official Rank</p>
           <p className="mt-0.5 text-xl font-black text-white">
@@ -85,18 +87,45 @@ export function DifficultyOpinionPanel({
           </p>
         </div>
         <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
-          <p className="text-[11px] font-bold text-zinc-400 uppercase">Victor Consensus Rank</p>
+          <p className="text-[11px] font-bold text-zinc-400 uppercase">Median Rank</p>
           <p className="mt-0.5 text-xl font-black text-amber-400">
-            #{avgRank}
+            #{medianRank}
           </p>
         </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3 col-span-2 sm:col-span-1">
-          <p className="text-[11px] font-bold text-zinc-400 uppercase">Victor Opinions</p>
-          <p className="mt-0.5 text-xl font-black text-cyan-400">
-            {opinions.length} {opinions.length === 1 ? "Rating" : "Ratings"}
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+          <p className="text-[11px] font-bold text-zinc-400 uppercase">Trimmed Mean</p>
+          <p className="mt-0.5 text-xl font-black text-emerald-400">
+            #{trimmedMeanRank}
           </p>
+        </div>
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3">
+          <p className="text-[11px] font-bold text-zinc-400 uppercase">Reliability Index</p>
+          <div className="mt-0.5 flex items-center gap-2">
+            <span className="text-xl font-black text-cyan-400">{stats.reliabilityScore}%</span>
+            <span className="text-[10px] font-bold uppercase rounded bg-cyan-950/60 text-cyan-300 border border-cyan-800 px-1.5 py-0.5">
+              {stats.reliabilityLabel}
+            </span>
+          </div>
         </div>
       </div>
+
+      {/* Placement Bracket & Consensus Detail Bar */}
+      {stats.count > 0 && stats.bracketLow && stats.bracketHigh ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-amber-400" />
+            <span className="text-zinc-300">
+              Consensus Placement Bracket:
+            </span>
+            <span className="font-mono font-bold text-amber-400">
+              #{stats.bracketLow} &ndash; #{stats.bracketHigh}
+            </span>
+          </div>
+          <span className="text-zinc-400 text-[11px]">
+            Based on {stats.count} victor {stats.count === 1 ? "rating" : "ratings"} (Std Dev: &plusmn;{stats.stdDev})
+          </span>
+        </div>
+      ) : null}
 
       {/* Victor Opinion Submission Form */}
       {isOpen ? (

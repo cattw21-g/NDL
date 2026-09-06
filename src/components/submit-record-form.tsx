@@ -22,6 +22,8 @@ import {
 const invalidClass =
   "border-red-500 focus:border-red-600 focus:ring-red-200 dark:border-red-400 dark:focus:border-red-300 dark:focus:ring-red-500/30";
 
+import Link from "next/link";
+
 type SubmitLevelOption = {
   id: string;
   rank: number | null;
@@ -32,12 +34,14 @@ type SubmitLevelOption = {
 };
 
 export function SubmitRecordForm({
+  user,
   levels,
   imageUploadsEnabled,
   mp4UploadsEnabled,
   maxImageMb,
   maxVideoMb,
 }: {
+  user?: { id: string; playerName: string; displayName: string } | null;
   levels: SubmitLevelOption[];
   imageUploadsEnabled: boolean;
   mp4UploadsEnabled: boolean;
@@ -70,6 +74,60 @@ export function SubmitRecordForm({
           ) : null}
         </div>
       ) : null}
+
+      {/* Guest vs Claimed Player Header Card */}
+      {user ? (
+        <div className="flex items-center justify-between rounded-xl border border-cyan-500/30 bg-cyan-950/20 p-4 text-xs">
+          <div>
+            <span className="font-bold text-zinc-400">Submitting as:</span>{" "}
+            <span className="font-black text-cyan-400 text-sm">{user.displayName}</span>{" "}
+            <span className="text-zinc-400">(@{user.playerName})</span>
+          </div>
+          <span className="rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-bold text-cyan-300">
+            ✓ Logged In
+          </span>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🌐</span>
+              <div>
+                <h3 className="text-sm font-black text-white">Guest Record Submission</h3>
+                <p className="text-xs text-zinc-300">
+                  No account required. Enter your Geometry Dash username below.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/login"
+              className="rounded-md border border-amber-500/50 bg-amber-500/20 px-3 py-1 text-xs font-bold text-amber-200 hover:bg-amber-500/30 transition"
+            >
+              Log in to account
+            </Link>
+          </div>
+          <div>
+            <label className="text-xs font-bold text-zinc-200 block mb-1">
+              Player Name / Geometry Dash Username <span className="text-rose-400">*</span>
+            </label>
+            <input
+              type="text"
+              name="playerName"
+              required
+              defaultValue={values.playerName}
+              placeholder="e.g. Zoink, Doggie, Trick"
+              className={cx(inputClass, state.fieldErrors.playerName ? invalidClass : "")}
+            />
+            {state.fieldErrors.playerName ? (
+              <p className="mt-1 text-xs text-rose-400">{state.fieldErrors.playerName[0]}</p>
+            ) : (
+              <p className="mt-1 text-[11px] text-zinc-400">
+                If your player profile is claimed, submissions will verify against your profile locking settings.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <SectionPanel className="grid gap-4 p-4">
         <div className="rounded-md border border-cyan-300 bg-cyan-50 p-3 text-sm leading-6 text-cyan-950 dark:border-cyan-500/50 dark:bg-cyan-950/30 dark:text-cyan-100">

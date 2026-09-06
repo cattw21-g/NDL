@@ -5,6 +5,7 @@ import { formDataToObject, submissionSchema } from "./validation";
 export const SUBMISSION_FORM_SUMMARY = "Fix the highlighted fields below.";
 
 export const submissionFormFields = [
+  "playerName",
   "levelId",
   "progress",
   "videoUrl",
@@ -54,6 +55,7 @@ export type SubmissionFormValidationResult =
     };
 
 export const emptySubmissionFormValues: SubmissionFormValues = {
+  playerName: "",
   levelId: "",
   progress: "100",
   videoUrl: "",

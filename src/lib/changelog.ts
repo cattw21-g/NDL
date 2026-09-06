@@ -103,36 +103,29 @@ export const V1_5_ANNOUNCEMENT_POST = {
   slug: "nerfed-demonlist-v1-5-0-official-release",
   category: "ANNOUNCEMENT" as const,
   summary:
-    "Welcome to the official v1.5.0 release of Nerfed Demonlist! We’ve completely upgraded the platform with the Interactive World Map on Countries, official Public REST API, State & Province rankings, Player Profile Claiming, Submission Locking, Advanced Stats Viewer, and more.",
-  content: `## 🗺️ Live Now: Interactive World Map & Regional Rankings
-[NEW] **Interactive World Map**: Leaderboard activity is now displayed geographically right inside the [Countries](/countries) tab! Nations with registered players are shaded in vibrant blue based on total points, while the nation hosting the world's **#1 Top Player** is crowned in glowing golden yellow 👑. Click any country to instantly view its national roster and top victors.
-[FEATURE] **State & Province Rankings**: Competition goes deeper than country level! Explore regional leaderboards for subdivisions like US States (California, Texas, Florida, etc.), German States (Bavaria, NRW, Berlin), and provinces across the globe.
-[PROFILE] **Player Geolocation**: Associate your approximate home region or state with your player profile in [Settings](/settings) to appear on the world map and climb regional leaderboards.
+    "Welcome to the official v1.5.0 release of Nerfed Demonlist! We’ve brought complete Pointercrate parity to the platform: Interactive World Map with State Subdivisions, Guest Submissions, Public Write API, Video Normalization, Opinion Statistics, Partial Points Previews, and much more.",
+  content: `## 🗺️ Geographic & International Rankings
+[NEW] **Interactive World Map**: Leaderboard activity is now displayed geographically right inside the [Countries](/countries) tab! Nations with registered players are shaded in vibrant blue based on total points, while the nation hosting the world's **#1 Top Player** is crowned in glowing golden yellow 👑.
+[FEATURE] **Interactive States & Subdivisions View**: Toggle between Countries and Subdivision view on the world map! Over 720 states, provinces, and territories (US states, Canadian provinces, Australian states, etc.) are drawn and independently interactive with hover tooltips and regional filtering.
+[FILTER] **Central America Region Filter**: Added Central America to continent filters across the international leaderboard and [Stats](/stats) page, spotlighting victors across Costa Rica, Panama, Guatemala, Honduras, El Salvador, Nicaragua, and Belize.
+[GEOLOCATION] **One-Click IP Auto-Detection**: Select your nation instantly in [Settings](/settings) with the new **Auto-Detect from IP** button without scrolling through 250 nations.
 
-## ⚡ Official Public REST API & Developer Ecosystem
-[API] **Public Developer API**: Build Discord bots, external leaderboards, or community dashboards using our official REST API at [/api/public](/api/public) without scraping HTML. Retrieve ranked demons, player stats, submissions, and list records.
-[DOCS] **Interactive Documentation**: Full API endpoint references, response schemas, and query parameters are documented at [/api-docs](/api-docs).
-[BOT] **Official Discord Bot Integration**: Connect with the NDL Discord bot for real-time \`/top\`, \`/level\`, \`/player\`, \`/leaderboard\`, \`/rules\`, and \`/changelog\` queries, paired with 24/7 automated acceptance alerts. Check out [/discord-bot](/discord-bot) to invite the bot.
+## ⚡ Guest Submissions & Authenticated Write API
+[NEW] **Guest Record Submissions**: You no longer need to create an account before submitting! Players can submit records directly on [/submit](/submit) by typing their Geometry Dash username.
+[SECURITY] **Submission Locking**: Protect your name and legacy! Verified account owners can enable **Submission Locking** in [Settings](/settings) to prevent unauthenticated guests from submitting runs under their name.
+[API] **Authenticated & Write REST API**: Developers and bot creators can now submit records programmatically via \`POST /api/public/records/submit\` using session Bearer tokens or guest payloads. Fully documented at [/api-docs](/api-docs).
+[VALIDATOR] **Automatic Video-Link Normalization**: The submission system automatically strips tracking parameters (\`si=\`, \`feature=\`, \`fbclid=\`, etc.) and canonicalizes YouTube Shorts, embeds, and mobile links into standard watch URLs.
 
-## 👤 Player Claiming, Security & Profile Customization
+## 📊 Deep Level Analytics & Scoring Previews
+[PREVIEW] **Partial-Score Points Preview**: Level pages now display the exact leaderboard points awarded for 100% completions alongside minimum qualifying progress runs (e.g. 100%: 1000 pts | 50%+: 100 pts), with list tier guidelines and scoring breakdowns.
+[STATS] **In-Game GD Downloads & Likes**: Level pages now display live Geometry Dash download counts and like tallies synced directly from Geometry Dash servers.
+[CONSENSUS] **Advanced Difficulty-Opinion Statistics**: Pointercrate-parity victor opinion analysis! Level pages compute **Median Suggested Rank**, **Trimmed Mean** (outlier filtering), **Consensus Reliability Index** (confidence percentage), and **Placement Brackets** (e.g. #10 – #12).
+
+## 🛡️ Moderation & Workflow Automation
+[TIMEOUT] **72-Hour Evidence Request Deadline**: Submissions placed **Under Consideration** or **Needs Changes** now feature an automated 3-day (72-hour) countdown timer. Submissions with unprovided evidence are automatically archived to keep the review queue fast and responsive.
 [CLAIM] **Player Profile Claiming**: Verify ownership of your Geometry Dash runner profile and connect it directly to your website account from any player page at [/players](/players).
-[SECURITY] **Player Submission Locking**: Protect your name and legacy! Once claimed, lock submissions in [Settings](/settings) to ensure future records under your player name can only be submitted while logged into your verified account.
-[SORT] **6-Way Completion Sorting**: Customize how completed demons appear on player profiles—sort alphabetically, by list rank, by points, or by date, complete with Main/Extended tier toggles and instant search.
-[AUTH] **Google OAuth Login**: Sign in or link your account with Google alongside standard credentials at [/login](/login).
-[RECORDS] **Manual Record Removal & Restoration**: Manage your active list presence with self-service record unlisting and reinstatement controls.
-
-## 📊 Advanced Stats Viewer & Demon Metadata
-[STATS] **Advanced Stats Viewer**: Explore in-depth analytics at [/stats](/stats), featuring dedicated search tools for player points, hardest demons, Main/Extended completions, verifications, and creator accomplishments.
-[METADATA] **Multiple Creator Credits**: Megacollabs and team projects now properly credit all creators, layout designers, and decorators with direct links on level detail pages.
-[RATINGS] **Victors Difficulty Opinion System**: Verified victors can submit formal difficulty ratings and placement opinions directly on level pages to help staff calibrate list positions.
-[INTEGRATION] **Automatic GD Server Integration**: Fast automated metadata fetching directly from Geometry Dash servers to sync level IDs, song IDs, descriptions, and downloads.
-
-## 🛡️ Moderation System & Platform Upgrades
-[MOD] **Under Consideration (UC) Queue**: A dedicated review state for records undergoing deep verification, raw footage analysis, or click audio inspection.
-[ANTISPAM] **Automatic Duplicate-Submission Detection**: System-level duplicate detection stops duplicate pending submissions before they enter the moderator queue.
-[I18N] **Multi-Language Interface**: Experience the entire NDL interface in your preferred language via the header language selector.
-[STAFF] **Public Staff Directory & Roles**: Browse list editors, helper teams, and administrators with clear contact instructions at [/staff](/staff).
-[SOCIAL] **Rich Discord & OpenGraph Embeds**: Level links, player profiles, and records now generate high-resolution Discord cards with thumbnails, demon points, and rankings.
+[SORT] **6-Way Completion Sorting**: Sort player profile completions alphabetically, by list rank, by points, or by date, complete with Main/Extended tier toggles and instant search.
+[BOT] **Official Discord Bot Integration**: Connect with the NDL Discord bot for real-time \`/top\`, \`/level\`, \`/player\`, \`/leaderboard\`, \`/rules\`, and \`/changelog\` queries, paired with 24/7 automated acceptance alerts. Check out [/discord-bot](/discord-bot) to invite the bot.
 
 ---
 

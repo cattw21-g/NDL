@@ -13,6 +13,7 @@ import {
 import { requireUser } from "@/lib/auth";
 import { getAllCountries } from "@/lib/countries";
 import { prisma } from "@/lib/db";
+import { CountrySelectWithDetect } from "@/components/country-select-detect";
 
 export const dynamic = "force-dynamic";
 
@@ -70,20 +71,11 @@ export default async function SettingsPage({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <FieldLabel label="Represented Country">
-              <select
-                name="countryCode"
-                defaultValue={user.countryCode ?? ""}
-                className={inputClass}
-              >
-                <option value="">🌐 None / Hidden</option>
-                {allCountries.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.flag} {c.name} ({c.continent})
-                  </option>
-                ))}
-              </select>
-            </FieldLabel>
+            <CountrySelectWithDetect
+              initialCode={user.countryCode}
+              countries={allCountries}
+              inputClass={inputClass}
+            />
 
             <FieldLabel label="State / Province / Region (Optional)">
               <input

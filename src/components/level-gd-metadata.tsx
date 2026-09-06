@@ -10,6 +10,8 @@ type Props = {
   inGameDifficulty?: string | null;
   copyPassword?: string | null;
   minimumProgress?: number | null;
+  downloads?: number | null;
+  likes?: number | null;
 };
 
 export function LevelGdMetadata({
@@ -24,6 +26,8 @@ export function LevelGdMetadata({
   inGameDifficulty,
   copyPassword,
   minimumProgress = 50,
+  downloads,
+  likes,
 }: Props) {
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-sm">
@@ -74,6 +78,22 @@ export function LevelGdMetadata({
           <p className="text-xs font-medium text-zinc-400">Copy / Password</p>
           <p className="mt-1 text-sm font-bold text-amber-400">
             {copyPassword || "Free Copy"}
+          </p>
+        </div>
+
+        {/* GD Downloads */}
+        <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/60 p-3">
+          <p className="text-xs font-medium text-zinc-400">GD Downloads</p>
+          <p className="mt-1 text-sm font-bold text-cyan-400">
+            {typeof downloads === "number" && downloads > 0 ? downloads.toLocaleString() : "Synced in GD"}
+          </p>
+        </div>
+
+        {/* GD Likes */}
+        <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/60 p-3">
+          <p className="text-xs font-medium text-zinc-400">GD Likes</p>
+          <p className="mt-1 text-sm font-bold text-emerald-400">
+            {typeof likes === "number" && likes > 0 ? likes.toLocaleString() : "Synced in GD"}
           </p>
         </div>
       </div>

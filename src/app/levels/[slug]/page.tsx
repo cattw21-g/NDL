@@ -35,7 +35,12 @@ import {
   publicRecordWhere,
 } from "@/lib/demo-visibility";
 import { formatDate, formatDateTime, statusLabel } from "@/lib/format";
-import { calculateCurrentLevelPoints } from "@/lib/points";
+import {
+  calculateCurrentLevelPoints,
+  calculateRecordPoints,
+  getLevelTier,
+} from "@/lib/points";
+import { fetchGdLevelMetadata } from "@/lib/gd-api";
 import { absoluteSiteUrl } from "@/lib/site-url";
 
 import type { Metadata } from "next";
@@ -189,6 +194,18 @@ export default async function LevelPage({
 
   const isDemo = demoModeEnabled() && (level.isDemo || level.name.includes("[DEMO]"));
   const currentLevelPoints = calculateCurrentLevelPoints(level);
+  const tier = getLevelTier(level.rank, level.status);
+  const minProgressRequirement = level.minimumProgress ?? 50;
+  const minProgressPoints = calculateRecordPoints({
+    levelRank: level.rank,
+    status: level.status,
+    progress: minProgressRequirement,
+    requirement: minProgressRequirement,
+  });
+
+  // Attempt to fetch live GD metadata (downloads, likes)
+  const gdMetadata = await fetchGdLevelMetadata(level.gdLevelId).catch(() => null);
+
   const description = level.description.trim() || "No description provided.";
   const versionNotes =
     level.versionNotes?.trim() || "No version notes provided.";
@@ -251,9 +268,13 @@ export default async function LevelPage({
               Nerfed version of{" "}
               <span className="font-bold">{level.originalName}</span>.
             </p>
-            <div className="mt-5 grid gap-2 sm:grid-cols-3">
+            <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <Metric label="Current rank" value={rankLabel} />
               <Metric label="100% Points" value={`${currentLevelPoints} pts`} />
+              <Metric
+                label={`Qualifying (${minProgressRequirement}%+)`}
+                value={tier === "MAIN" ? `${minProgressPoints} pts` : "100% only"}
+              />
               <Metric label="Status" value={statusLabel(level.status)} />
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
@@ -414,16 +435,18 @@ export default async function LevelPage({
 
           <LevelGdMetadata
             gdLevelId={level.gdLevelId}
-            songName={level.songName}
-            songArtist={level.songArtist}
-            songId={level.songId}
+            songName={level.songName || gdMetadata?.songName}
+            songArtist={level.songArtist || gdMetadata?.songArtist}
+            songId={level.songId || gdMetadata?.songId}
             songLink={level.songLink}
-            levelLength={level.levelLength}
-            objectCount={level.objectCount}
-            gameVersion={level.gameVersion}
-            inGameDifficulty={level.inGameDifficulty}
-            copyPassword={level.copyPassword}
+            levelLength={level.levelLength || gdMetadata?.length}
+            objectCount={level.objectCount ?? gdMetadata?.objects}
+            gameVersion={level.gameVersion || gdMetadata?.gameVersion}
+            inGameDifficulty={level.inGameDifficulty || gdMetadata?.difficulty}
+            copyPassword={level.copyPassword || gdMetadata?.copyPassword}
             minimumProgress={level.minimumProgress}
+            downloads={gdMetadata?.downloads}
+            likes={gdMetadata?.likes}
           />
 
           <DifficultyOpinionPanel
@@ -571,6 +594,18 @@ export default async function LevelPage({
               {progressRecords.length > 0 ? (
                 progressRecords.map((record, index) => {
                   const rawFootageOnFile = Boolean(record.rawFootageUrl);
+                  const awarded = record.pointsAwarded;
+                  const progressPoints =
+                    awarded > 0
+                      ? `${awarded} pts`
+                      : tier === "MAIN"
+                        ? `${calculateRecordPoints({
+                            levelRank: level.rank,
+                            status: level.status,
+                            progress: record.progress ?? 0,
+                            requirement: minProgressRequirement,
+                          })} pts`
+                        : "0 pts (100% req)";
 
                   return (
                     <div
@@ -597,8 +632,8 @@ export default async function LevelPage({
                       <span className="font-black text-cyan-700 tabular-nums dark:text-cyan-300 md:text-right">
                         {record.progress}%
                       </span>
-                      <span className="text-sm font-semibold text-slate-400 tabular-nums dark:text-slate-500 md:text-right">
-                        0 pts (progress)
+                      <span className="text-sm font-bold text-slate-700 tabular-nums dark:text-slate-300 md:text-right">
+                        {progressPoints}
                       </span>
                       <span className="flex flex-wrap gap-1.5 md:justify-end">
                         <MiniProofPill>{record.fps} FPS</MiniProofPill>
@@ -632,6 +667,36 @@ export default async function LevelPage({
         </div>
 
         <aside className="space-y-3">
+          <SectionPanel className="p-4">
+            <div className="flex items-center gap-2 border-b border-slate-300 pb-3 font-black text-slate-950 dark:border-slate-700 dark:text-slate-50">
+              <span className="text-amber-500">🏆</span>
+              Points & Scoring
+            </div>
+            <div className="mt-3 space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
+              <div className="flex justify-between items-center rounded-md bg-slate-100 dark:bg-slate-950/60 p-2.5">
+                <span className="font-bold">100% Victory:</span>
+                <span className="font-mono font-black text-cyan-600 dark:text-cyan-400">{currentLevelPoints} pts</span>
+              </div>
+              <div className="flex justify-between items-center rounded-md bg-slate-100 dark:bg-slate-950/60 p-2.5">
+                <span className="font-bold">Qualifying ({minProgressRequirement}%+):</span>
+                <span className="font-mono font-black text-amber-600 dark:text-amber-400">
+                  {tier === "MAIN" ? `${minProgressPoints} pts` : "0 pts (100% req)"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center rounded-md bg-slate-100 dark:bg-slate-950/60 p-2.5">
+                <span className="font-bold">List Tier:</span>
+                <span className="font-bold text-slate-950 dark:text-slate-100">
+                  {tier === "MAIN" ? "Main List (#1 - #75)" : tier === "EXTENDED" ? "Extended List (#76 - #150)" : "Legacy List"}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal pt-1">
+                {tier === "MAIN"
+                  ? `Main List levels award points for progress from ${minProgressRequirement}% up to 99%.`
+                  : "Extended and Legacy levels only award leaderboard points for 100% completions."}
+              </p>
+            </div>
+          </SectionPanel>
+
           <SectionPanel className="p-4">
             <div className="flex items-center gap-2 border-b border-slate-300 pb-3 font-black text-slate-950 dark:border-slate-700 dark:text-slate-50">
               <ShieldCheck className="h-5 w-5 text-cyan-700 dark:text-cyan-300" />

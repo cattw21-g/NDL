@@ -14,7 +14,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { publicLevelWhere, publicRecordWhere } from "@/lib/demo-visibility";
 import { calculateCurrentLevelPoints, calculateLeaderboard, calculateCountryLeaderboard } from "@/lib/points";
-import { getCountryMeta } from "@/lib/countries";
+import { getCountryMeta, CONTINENTS } from "@/lib/countries";
 import { PageHeader, SectionPanel, MetricTile } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -174,6 +174,16 @@ export default async function StatsPage() {
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
+  const regionalStats = CONTINENTS.map((region) => {
+    const regionalPlayers = playerLeaderboard.filter((p) => {
+      const code = userCountryMap.get(p.playerId);
+      const meta = code ? getCountryMeta(code) : null;
+      return meta?.continent === region;
+    });
+    const points = regionalPlayers.reduce((sum, p) => sum + p.points, 0);
+    return { region, points, players: regionalPlayers.length };
+  });
+
   return (
     <div className="space-y-8">
       {/* Header Banner */}
@@ -270,6 +280,36 @@ export default async function StatsPage() {
           </div>
         </SectionPanel>
       </div>
+
+      {/* Regional Activity & Geographic Filter (Pointercrate Style) */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+          <div className="flex items-center gap-2">
+            <Globe className="h-5 w-5 text-blue-400" />
+            <h2 className="text-xl font-extrabold text-white">Geographic & Regional Activity</h2>
+          </div>
+          <Link
+            href="/countries"
+            className="text-xs font-bold text-cyan-400 hover:underline"
+          >
+            Explore Interactive World Map &rarr;
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+          {regionalStats.map((r) => (
+            <Link
+              key={r.region}
+              href={`/countries?continent=${encodeURIComponent(r.region)}`}
+              className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3.5 transition hover:border-zinc-700 hover:bg-zinc-850"
+            >
+              <p className="text-xs font-bold text-zinc-400 truncate">{r.region}</p>
+              <p className="mt-1 text-base font-black text-white">{r.points.toLocaleString()} pts</p>
+              <p className="text-[11px] text-zinc-500">{r.players} {r.players === 1 ? "player" : "players"}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* Top Players Leaderboard Snapshot */}
       <section className="space-y-4">

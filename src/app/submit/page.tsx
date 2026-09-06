@@ -4,7 +4,7 @@ import Link from "next/link";
 import { PageMessage } from "@/components/message";
 import { SubmitRecordForm } from "@/components/submit-record-form";
 import { SectionPanel } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { publicLevelWhere } from "@/lib/demo-visibility";
 import {
@@ -27,7 +27,7 @@ export default async function SubmitPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const user = await requireUser();
+  const user = await getCurrentUser();
   const [params, rankedLevels, userUpcomingLevels] = await Promise.all([
     searchParams,
     prisma.level.findMany({
@@ -38,17 +38,19 @@ export default async function SubmitPage({
       }),
       orderBy: [{ rank: { sort: "asc", nulls: "last" } }, { name: "asc" }],
     }),
-    prisma.level.findMany({
-      where: {
-        status: "PENDING",
-        OR: [
-          { verifierUserId: user.id },
-          { verifier: { equals: user.playerName, mode: "insensitive" } },
-          { verifier: { equals: user.displayName, mode: "insensitive" } },
-        ],
-      },
-      orderBy: { name: "asc" },
-    }),
+    user
+      ? prisma.level.findMany({
+          where: {
+            status: "PENDING",
+            OR: [
+              { verifierUserId: user.id },
+              { verifier: { equals: user.playerName, mode: "insensitive" } },
+              { verifier: { equals: user.displayName, mode: "insensitive" } },
+            ],
+          },
+          orderBy: { name: "asc" },
+        })
+      : Promise.resolve([]),
   ]);
 
   const levels = [
@@ -97,6 +99,7 @@ export default async function SubmitPage({
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <SubmitRecordForm
+          user={user ? { id: user.id, playerName: user.playerName, displayName: user.displayName } : null}
           levels={levels.map((level) => ({
             id: level.id,
             rank: level.rank,

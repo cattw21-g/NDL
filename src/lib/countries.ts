@@ -1,10 +1,21 @@
 export type Continent =
   | "Europe"
   | "North America"
+  | "Central America"
   | "South America"
   | "Asia"
   | "Oceania"
   | "Africa";
+
+export const CONTINENTS: Continent[] = [
+  "Europe",
+  "North America",
+  "Central America",
+  "South America",
+  "Asia",
+  "Oceania",
+  "Africa",
+];
 
 export type CountryMeta = {
   code: string; // ISO 3166-1 alpha-2
@@ -63,6 +74,13 @@ export const COUNTRIES: Record<string, CountryMeta> = {
   TR: { code: "TR", name: "Turkey", flag: "🇹🇷", continent: "Europe" },
   ZA: { code: "ZA", name: "South Africa", flag: "🇿🇦", continent: "Africa" },
   EG: { code: "EG", name: "Egypt", flag: "🇪🇬", continent: "Africa" },
+  CR: { code: "CR", name: "Costa Rica", flag: "🇨🇷", continent: "Central America" },
+  PA: { code: "PA", name: "Panama", flag: "🇵🇦", continent: "Central America" },
+  GT: { code: "GT", name: "Guatemala", flag: "🇬🇹", continent: "Central America" },
+  HN: { code: "HN", name: "Honduras", flag: "🇭🇳", continent: "Central America" },
+  SV: { code: "SV", name: "El Salvador", flag: "🇸🇻", continent: "Central America" },
+  NI: { code: "NI", name: "Nicaragua", flag: "🇳🇮", continent: "Central America" },
+  BZ: { code: "BZ", name: "Belize", flag: "🇧🇿", continent: "Central America" },
 };
 
 export function getCountryMeta(code: string | null | undefined): CountryMeta | null {

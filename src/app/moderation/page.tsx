@@ -37,6 +37,10 @@ import {
 } from "@/lib/moderation-queue";
 import { isAdminRole } from "@/lib/permissions";
 import { calculateCurrentLevelPoints } from "@/lib/points";
+import {
+  autoExpireOverdueSubmissions,
+  getEvidenceTimeoutRemaining,
+} from "@/lib/submission-workflow";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -51,6 +55,7 @@ export default async function ModerationPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const moderator = await requireModerator();
+  await autoExpireOverdueSubmissions(prisma);
   const params = await searchParams;
   const filters = parseModerationFilters(params);
   const [
@@ -690,6 +695,11 @@ function RecordReviewCard({
     submission.status === "NEEDS_CHANGES" ||
     submission.status === "UNDER_CONSIDERATION";
 
+  const deadline = getEvidenceTimeoutRemaining(
+    submission.status,
+    submission.reviewedAt,
+  );
+
   return (
     <SectionPanel className="overflow-hidden">
       <div className="border-b border-slate-300 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-950/60">
@@ -703,7 +713,20 @@ function RecordReviewCard({
               {" - "}submitted {formatDateTime(submission.submittedAt)}
             </p>
           </div>
-          <StatusBadge value={submission.status} />
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge value={submission.status} />
+            {deadline && (
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-black ${
+                  deadline.isExpired
+                    ? "border border-rose-500/40 bg-rose-500/10 text-rose-400"
+                    : "border border-amber-500/40 bg-amber-500/10 text-amber-300"
+                }`}
+              >
+                ⏳ {deadline.label}
+              </span>
+            )}
+          </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <ProofLink href={submission.videoUrl} label="Video" />

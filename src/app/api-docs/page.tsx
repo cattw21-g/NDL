@@ -91,6 +91,21 @@ const endpoints = [
     params: [],
     exampleUrl: "https://www.nerfeddemonlist.net/api/public/rules",
   },
+  {
+    path: "/api/public/records/submit",
+    method: "POST",
+    description: "Submit a new demon completion or progress record programmatically. Supports session token Bearer authentication or guest submissions.",
+    params: [
+      { name: "levelId / levelSlug", type: "string", description: "Target level ID or URL slug (required)" },
+      { name: "playerName", type: "string", description: "Player GD username (required if unauthenticated)" },
+      { name: "progress", type: "number", description: "Percentage reached (1–100, default 100)" },
+      { name: "videoUrl", type: "string", description: "Proof link (YouTube, Twitch, Medal, etc.)" },
+      { name: "rawFootageUrl", type: "string", description: "Raw unedited footage link (optional)" },
+      { name: "fps", type: "number", description: "Framerate during play (default 360)" },
+      { name: "cbfUsed", type: "boolean", description: "Whether Click Between Frames was used" },
+    ],
+    exampleUrl: "https://www.nerfeddemonlist.net/api/public/records",
+  },
 ];
 
 export default function ApiDocsPage() {

@@ -206,3 +206,87 @@ export async function applySubmissionReview(
     note: decision.moderatorNotes,
   });
 }
+
+export const EVIDENCE_TIMEOUT_MS = 3 * 24 * 60 * 60 * 1000; // 72 hours (3 days)
+
+export interface EvidenceTimeoutInfo {
+  isExpired: boolean;
+  hoursRemaining: number;
+  label: string;
+}
+
+/**
+ * Computes remaining evidence submission deadline for Under Consideration and Needs Changes submissions.
+ */
+export function getEvidenceTimeoutRemaining(
+  status: string,
+  reviewedAt: Date | string | null | undefined,
+  now = new Date(),
+): EvidenceTimeoutInfo | null {
+  if (status !== RecordStatus.UNDER_CONSIDERATION && status !== RecordStatus.NEEDS_CHANGES) {
+    return null;
+  }
+
+  if (!reviewedAt) {
+    return {
+      isExpired: false,
+      hoursRemaining: 72,
+      label: "72h deadline active",
+    };
+  }
+
+  const reviewTime = new Date(reviewedAt).getTime();
+  const elapsed = now.getTime() - reviewTime;
+  const remainingMs = EVIDENCE_TIMEOUT_MS - elapsed;
+
+  if (remainingMs <= 0) {
+    return {
+      isExpired: true,
+      hoursRemaining: 0,
+      label: "Deadline Expired",
+    };
+  }
+
+  const hoursRemaining = Math.ceil(remainingMs / (60 * 60 * 1000));
+  const days = Math.floor(hoursRemaining / 24);
+  const hours = hoursRemaining % 24;
+
+  const label = days > 0 ? `${days}d ${hours}h left` : `${hours}h left`;
+
+  return {
+    isExpired: false,
+    hoursRemaining,
+    label,
+  };
+}
+
+/**
+ * Automatically transitions overdue Under Consideration / Needs Changes submissions to REJECTED.
+ */
+export async function autoExpireOverdueSubmissions(prismaClient: any): Promise<number> {
+  const cutoff = new Date(Date.now() - EVIDENCE_TIMEOUT_MS);
+  const overdue = await prismaClient.recordSubmission.findMany({
+    where: {
+      status: { in: [RecordStatus.UNDER_CONSIDERATION, RecordStatus.NEEDS_CHANGES] },
+      reviewedAt: { lt: cutoff },
+    },
+    select: { id: true },
+  });
+
+  if (!overdue || overdue.length === 0) {
+    return 0;
+  }
+
+  await prismaClient.recordSubmission.updateMany({
+    where: {
+      id: { in: overdue.map((s: any) => s.id) },
+    },
+    data: {
+      status: RecordStatus.REJECTED,
+      moderatorNotes: "Automatically closed due to evidence request timeout (3 days elapsed without required proof update).",
+    },
+  });
+
+  return overdue.length;
+}
+

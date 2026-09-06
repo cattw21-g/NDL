@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 
 import { ModerationActionType } from "@/generated/prisma/enums";
-import { requireModerator, requireUser } from "@/lib/auth";
+import { getCurrentUser, requireModerator } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { normalizeVideoUrl } from "@/lib/video-validation";
 import {
   checkRateLimit,
   userRateLimitKey,
@@ -47,17 +49,85 @@ export async function submitRecordAction(
   _prevState: SubmissionFormState,
   formData: FormData,
 ): Promise<SubmissionFormState> {
-  const user = await requireUser();
+  const sessionUser = await getCurrentUser();
   const parsed = validateSubmissionFormSubmission(formData);
 
   if (!parsed.success) {
     return parsed.state;
   }
 
+  // Determine submitting player (session user or guest)
+  let effectiveUser: { id: string; playerName: string; displayName: string };
+  const guestRawName = String(formData.get("playerName") || "").trim();
+
+  if (sessionUser) {
+    effectiveUser = sessionUser;
+  } else {
+    // Guest submission
+    if (!guestRawName || guestRawName.length < 2) {
+      return createSubmissionFormErrorState(parsed.values, {
+        fieldErrors: {
+          playerName: ["Please enter your player name / Geometry Dash username."],
+        },
+      });
+    }
+
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { playerName: { equals: guestRawName, mode: "insensitive" } },
+          { displayName: { equals: guestRawName, mode: "insensitive" } },
+        ],
+      },
+    });
+
+    if (existingUser) {
+      if (existingUser.isSubmissionLocked) {
+        return createSubmissionFormErrorState(parsed.values, {
+          formErrors: [
+            `Submissions for "${existingUser.displayName}" (@${existingUser.playerName}) are locked by the claimed account owner. Please log in to your account to submit records.`,
+          ],
+        });
+      }
+      effectiveUser = existingUser;
+    } else {
+      const cleanHandle =
+        guestRawName.toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 30) ||
+        `player_${Date.now()}`;
+      let uniqueHandle = cleanHandle;
+      let counter = 1;
+      while (await prisma.user.findUnique({ where: { playerName: uniqueHandle } })) {
+        uniqueHandle = `${cleanHandle}_${counter++}`;
+      }
+
+      effectiveUser = await prisma.user.create({
+        data: {
+          email: `${uniqueHandle}_guest@nerfeddemonlist.local`,
+          emailVerifiedAt: null,
+          passwordHash: "UNCLAIMED_GUEST_ACCOUNT",
+          playerName: uniqueHandle,
+          displayName: guestRawName,
+          role: "PLAYER",
+        },
+      });
+    }
+  }
+
+  // Rate Limiting
+  const headerList = await headers();
+  const clientIp =
+    headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    headerList.get("cf-connecting-ip") ||
+    "guest-client";
+
+  const rateLimitKey = sessionUser
+    ? userRateLimitKey(sessionUser.id)
+    : `guest:${clientIp}`;
+
   const rateLimit = await checkRateLimit(
     prisma,
     "record-submission",
-    userRateLimitKey(user.id),
+    rateLimitKey,
   );
 
   if (!rateLimit.allowed) {
@@ -82,9 +152,9 @@ export async function submitRecordAction(
 
   const isAssignedVerifier =
     level.status === "PENDING" &&
-    (level.verifierUserId === user.id ||
-      level.verifier?.toLowerCase() === user.displayName?.toLowerCase() ||
-      level.verifier?.toLowerCase() === user.playerName?.toLowerCase());
+    (level.verifierUserId === effectiveUser.id ||
+      level.verifier?.toLowerCase() === effectiveUser.displayName?.toLowerCase() ||
+      level.verifier?.toLowerCase() === effectiveUser.playerName?.toLowerCase());
 
   if (level.status !== "RANKED" && level.status !== "LEGACY" && !isAssignedVerifier) {
     return createSubmissionFormErrorState(parsed.values, {
@@ -104,14 +174,20 @@ export async function submitRecordAction(
     });
   }
 
-  // --- AUTOMATED DUPLICATE-SUBMISSION DETECTION (v1.5.0 Feature #17) ---
-  const submittedProgress = upload.data.progress ?? 100;
-  const submittedVideoUrl = (upload.data.videoUrl ?? "").trim();
+  // Automatic Video-Link Normalization (Feature 3)
+  const rawVideoUrl = (upload.data.videoUrl ?? "").trim();
+  const normalizedVideo = normalizeVideoUrl(rawVideoUrl);
+  if (normalizedVideo.isValid) {
+    upload.data.videoUrl = normalizedVideo.normalizedUrl;
+  }
 
-  // 1. Check if user already has an accepted record with equal or higher progress
+  // Duplicate submission detection
+  const submittedProgress = upload.data.progress ?? 100;
+  const submittedVideoUrl = upload.data.videoUrl;
+
   const existingAcceptedRecord = await prisma.record.findFirst({
     where: {
-      playerId: user.id,
+      playerId: effectiveUser.id,
       levelId: level.id,
     },
     select: {
@@ -131,50 +207,42 @@ export async function submitRecordAction(
     });
   }
 
-  // 2. Check if user already has an active pending submission for this level with equal or higher progress
   const existingPendingSubmission = await prisma.recordSubmission.findFirst({
     where: {
-      playerId: user.id,
+      playerId: effectiveUser.id,
       levelId: level.id,
-      status: "PENDING",
-      progress: {
-        gte: submittedProgress,
-      },
+      status: { in: ["PENDING", "UNDER_CONSIDERATION", "NEEDS_CHANGES"] },
+      progress: { gte: submittedProgress },
     },
-    select: {
-      id: true,
-      progress: true,
-    },
+    select: { id: true, status: true, progress: true },
   });
 
   if (existingPendingSubmission) {
     await cleanupUploads(upload.uploadedPaths);
     return createSubmissionFormErrorState(parsed.values, {
       formErrors: [
-        `Duplicate submission rejected: You already have an active pending submission for this level (${existingPendingSubmission.progress}%) awaiting moderator review.`,
+        `You already have a submission in review (${existingPendingSubmission.status}) with ${existingPendingSubmission.progress}% progress. Wait for it to be processed before submitting another equal or lower run.`,
       ],
     });
   }
 
-  // 3. Check if this exact video proof URL has already been accepted or submitted elsewhere
-  if (submittedVideoUrl && !submittedVideoUrl.startsWith("/uploads/")) {
-    const [duplicateRecordVideo, duplicateSubmissionVideo] = await Promise.all([
-      prisma.record.findFirst({
-        where: {
-          videoUrl: { equals: submittedVideoUrl, mode: "insensitive" },
-        },
-        select: { id: true },
-      }),
-      prisma.recordSubmission.findFirst({
-        where: {
-          videoUrl: { equals: submittedVideoUrl, mode: "insensitive" },
-          status: { in: ["PENDING", "ACCEPTED"] },
-        },
-        select: { id: true },
-      }),
-    ]);
+  if (submittedVideoUrl && submittedVideoUrl.startsWith("http")) {
+    const existingVideoRecord = await prisma.record.findFirst({
+      where: {
+        videoUrl: { equals: submittedVideoUrl, mode: "insensitive" },
+      },
+      select: { id: true },
+    });
 
-    if (duplicateRecordVideo || duplicateSubmissionVideo) {
+    const existingVideoSubmission = await prisma.recordSubmission.findFirst({
+      where: {
+        videoUrl: { equals: submittedVideoUrl, mode: "insensitive" },
+        status: { in: ["PENDING", "UNDER_CONSIDERATION"] },
+      },
+      select: { id: true },
+    });
+
+    if (existingVideoRecord || existingVideoSubmission) {
       await cleanupUploads(upload.uploadedPaths);
       return createSubmissionFormErrorState(parsed.values, {
         fieldErrors: {
@@ -189,16 +257,16 @@ export async function submitRecordAction(
   try {
     await prisma.$transaction(async (tx) => {
       const submission = await tx.recordSubmission.create({
-        data: buildSubmissionCreateData(user.id, upload.data),
+        data: buildSubmissionCreateData(effectiveUser.id, upload.data),
       });
 
       await tx.moderationAction.create({
         data: {
-          actorId: user.id,
+          actorId: effectiveUser.id,
           type: ModerationActionType.SUBMISSION_CREATED,
           targetType: "RecordSubmission",
           targetId: submission.id,
-          summary: `${user.displayName} submitted a record for ${level.name}.`,
+          summary: `${effectiveUser.displayName} submitted a record for ${level.name}.`,
         },
       });
     });
@@ -210,8 +278,8 @@ export async function submitRecordAction(
   }
 
   await notifyNewSubmission({
-    playerName: user.displayName,
-    playerHandle: user.playerName,
+    playerName: effectiveUser.displayName,
+    playerHandle: effectiveUser.playerName,
     levelName: level.name,
     levelSlug: level.slug,
     levelRank: level.rank,
@@ -224,11 +292,16 @@ export async function submitRecordAction(
   revalidatePath(`/levels/${level.slug}`);
   revalidatePath("/");
   revalidatePath("/players");
-  revalidatePath(`/players/${user.playerName}`);
+  revalidatePath(`/players/${effectiveUser.playerName}`);
   revalidatePath("/submissions");
   revalidatePath("/moderation");
   revalidatePath("/admin");
-  redirect("/submissions?created=1");
+
+  if (sessionUser) {
+    redirect("/submissions?created=1");
+  } else {
+    redirect(`/levels/${level.slug}?submitted=1`);
+  }
 }
 
 async function applySubmissionUploads(

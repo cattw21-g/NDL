@@ -45,7 +45,7 @@ describe("submission review transitions and user level status banner", () => {
     const actionsSource = source("actions/submissions.ts");
 
     expect(actionsSource).toContain("revalidatePath(`/levels/${level.slug}`)");
-    expect(actionsSource).toContain("revalidatePath(`/players/${user.playerName}`)");
+    expect(actionsSource).toContain("revalidatePath(`/players/${effectiveUser.playerName}`)");
     expect(actionsSource).toContain("revalidatePath(\"/submissions\")");
   });
 });

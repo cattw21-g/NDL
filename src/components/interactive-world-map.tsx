@@ -27,6 +27,28 @@ type Props = {
   selectedCountryCode?: string | null;
 };
 
+const SUBDIVISION_NAMES: Record<string, string> = {
+  // US States
+  AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
+  CO: "Colorado", CT: "Connecticut", DE: "Delaware", FL: "Florida", GA: "Georgia",
+  HI: "Hawaii", ID: "Idaho", IL: "Illinois", IN: "Indiana", IA: "Iowa",
+  KS: "Kansas", KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland",
+  MA: "Massachusetts", MI: "Michigan", MN: "Minnesota", MS: "Mississippi", MO: "Missouri",
+  MT: "Montana", NE: "Nebraska", NV: "Nevada", NH: "New Hampshire", NJ: "New Jersey",
+  NM: "New Mexico", NY: "New York", NC: "North Carolina", ND: "North Dakota", OH: "Ohio",
+  OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
+  SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont",
+  VA: "Virginia", WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming",
+  DC: "Washington D.C.",
+  // Canada Provinces
+  AB: "Alberta", BC: "British Columbia", MB: "Manitoba", NB: "New Brunswick",
+  NL: "Newfoundland and Labrador", NS: "Nova Scotia", ON: "Ontario", PE: "Prince Edward Island",
+  QC: "Quebec", SK: "Saskatchewan", YT: "Yukon", NT: "Northwest Territories", NU: "Nunavut",
+  // Australia
+  NSW: "New South Wales", QLD: "Queensland", SA: "South Australia", TAS: "Tasmania",
+  VIC: "Victoria", WA_AU: "Western Australia", ACT: "Australian Capital Territory", NT_AU: "Northern Territory",
+};
+
 export function InteractiveWorldMap({ countryData, onSelectCountry, selectedCountryCode }: Props) {
   const router = useRouter();
   const mapMountRef = useRef<HTMLDivElement>(null);
@@ -217,8 +239,24 @@ export function InteractiveWorldMap({ countryData, onSelectCountry, selectedCoun
       `);
     }
 
+    // Individual Subdivisions & States Mode
+    if (viewMode === "individual") {
+      rules.push(`
+        #ndl-world-map-svg path[id*="-"] {
+          stroke: #52525b !important;
+          stroke-width: 0.6px !important;
+        }
+        #ndl-world-map-svg path[id*="-"]:hover {
+          fill: #f59e0b !important;
+          stroke: #ffffff !important;
+          stroke-width: 1.25px !important;
+          filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.9)) !important;
+        }
+      `);
+    }
+
     styleEl.textContent = rules.join("\n");
-  }, [svgLoaded, countryData, maxPoints, selectedCountryCode]);
+  }, [svgLoaded, countryData, maxPoints, selectedCountryCode, viewMode]);
 
   // 3. Pointer event handlers
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
@@ -229,11 +267,19 @@ export function InteractiveWorldMap({ countryData, onSelectCountry, selectedCoun
     panStartRef.current = { ...pan };
 
     const target = e.target as Element | null;
-    const countryEl = target?.closest("g.land, g.island, g.land-with-states");
-    clickedCountryIdRef.current =
-      countryEl && countryEl.id && countryEl.id.length === 2
-        ? countryEl.id.toUpperCase()
-        : null;
+    const targetEl = target as HTMLElement | null;
+    const targetId = targetEl?.id || "";
+
+    if (viewMode === "individual" && targetId.includes("-") && targetId.length >= 4) {
+      const [cCode] = targetId.split("-");
+      clickedCountryIdRef.current = cCode.toUpperCase();
+    } else {
+      const countryEl = target?.closest("g.land, g.island, g.land-with-states");
+      clickedCountryIdRef.current =
+        countryEl && countryEl.id && countryEl.id.length === 2
+          ? countryEl.id.toUpperCase()
+          : null;
+    }
 
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -260,8 +306,26 @@ export function InteractiveWorldMap({ countryData, onSelectCountry, selectedCoun
       return;
     }
 
-    // Hover detection strictly for 2-letter country groups (never continent)
     const target = e.target as Element | null;
+    const targetEl = target as HTMLElement | null;
+    const targetId = targetEl?.id || "";
+
+    // If in subdivision mode and hovering an individual state/province (e.g. US-CA)
+    if (viewMode === "individual" && targetId.includes("-") && targetId.length >= 4) {
+      const [cCode, sCode] = targetId.split("-");
+      const cUpper = cCode.toUpperCase();
+      const sUpper = sCode.toUpperCase();
+      const meta = COUNTRIES[cUpper];
+      const data = dataMap.get(cUpper);
+      const subName = SUBDIVISION_NAMES[sUpper] || sUpper;
+
+      setHoveredCountry(data || null);
+      setHoveredName(`${subName} (${meta?.name || cUpper})`);
+      setHoveredFlag(meta?.flag || "🏛️");
+      return;
+    }
+
+    // Standard hover detection strictly for 2-letter country groups (never continent)
     const countryEl = target?.closest("g.land, g.island, g.land-with-states");
     if (countryEl && countryEl.id && countryEl.id.length === 2) {
       const code = countryEl.id.toUpperCase();
@@ -330,29 +394,29 @@ export function InteractiveWorldMap({ countryData, onSelectCountry, selectedCoun
     <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl">
       {/* Top Controls Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800/80 bg-zinc-900/60 px-5 py-3">
-        {/* Toggle Mode: Individual / Nations */}
+        {/* Toggle Mode: Countries / States & Subdivisions */}
         <div className="flex items-center rounded-lg border border-zinc-800 bg-zinc-950/80 p-1 text-xs font-bold">
           <button
             type="button"
-            onClick={() => setViewMode("individual")}
-            className={`rounded-md px-3 py-1 transition ${
-              viewMode === "individual"
-                ? "bg-zinc-800 text-white shadow-sm"
-                : "text-zinc-400 hover:text-white"
-            }`}
-          >
-            Individual
-          </button>
-          <button
-            type="button"
             onClick={() => setViewMode("nations")}
-            className={`rounded-md px-3 py-1 transition ${
+            className={`rounded-md px-3 py-1 text-xs transition ${
               viewMode === "nations"
                 ? "bg-cyan-600 text-white shadow-sm font-black"
                 : "text-zinc-400 hover:text-white"
             }`}
           >
-            Nations
+            🌐 Countries
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("individual")}
+            className={`rounded-md px-3 py-1 text-xs transition ${
+              viewMode === "individual"
+                ? "bg-cyan-600 text-white shadow-sm font-black"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            🏛️ States & Subdivisions
           </button>
         </div>
 

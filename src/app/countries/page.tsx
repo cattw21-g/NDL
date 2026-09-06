@@ -24,6 +24,7 @@ const CONTINENTS: Array<Continent | "All"> = [
   "All",
   "Europe",
   "North America",
+  "Central America",
   "South America",
   "Asia",
   "Oceania",
