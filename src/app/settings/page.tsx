@@ -194,7 +194,7 @@ export default async function SettingsPage({
           </div>
         </SectionPanel>
 
-        {/* Account Security & Submission Locking (v2.0.0 Features #7 & #8) */}
+        {/* Account Security & Submission Locking (v1.5.0 Features #7 & #8) */}
         <SectionPanel className="space-y-5 p-6 border-cyan-500/30">
           <div className="flex items-center gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
             <div className="rounded bg-cyan-500/10 p-1.5 text-cyan-500">
