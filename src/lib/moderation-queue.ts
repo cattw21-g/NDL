@@ -4,6 +4,7 @@ export const moderationQueueStatuses = ["PENDING", "NEEDS_CHANGES"] as const;
 
 export const recordModerationStatuses = [
   "PENDING",
+  "UNDER_CONSIDERATION",
   "NEEDS_CHANGES",
   "ACCEPTED",
   "REJECTED",

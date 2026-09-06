@@ -12,6 +12,7 @@ import {
   Trophy,
   User,
   Video,
+  Lock,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -19,6 +20,7 @@ import { notFound } from "next/navigation";
 import { CopyButton } from "@/components/copy-button";
 import { DiscordLinkCard } from "@/components/discord-link-card";
 import { PlayerAdvancedAnalytics } from "@/components/player-advanced-analytics";
+import { PlayerClaimModal } from "@/components/player-claim-modal";
 import { PlayerCompletionsList } from "@/components/player-completions-list";
 import { StatusBadge } from "@/components/status-badge";
 import {
@@ -321,6 +323,16 @@ export default async function PlayerProfilePage({
                 )}
 
                 <StatusBadge value={player.role} />
+
+                {player.isSubmissionLocked ? (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full border border-purple-400 bg-purple-50 px-2.5 py-0.5 text-xs font-bold text-purple-900 dark:border-purple-500/50 dark:bg-purple-950/60 dark:text-purple-300"
+                    title="Submissions for this player are locked to prevent impersonation."
+                  >
+                    <Lock className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                    Submissions Locked
+                  </span>
+                ) : null}
               </div>
 
               <div className="mt-2 flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-500">
@@ -368,6 +380,15 @@ export default async function PlayerProfilePage({
               cbfCount={cbfCount}
               totalCompletions={fullCompletions.length}
             />
+            {!isOwnProfile ? (
+              <PlayerClaimModal
+                playerName={player.playerName}
+                displayName={player.displayName}
+                isClaimed={Boolean(player.discordUsername || player.discordUserId || !player.isDemo)}
+                isSubmissionLocked={player.isSubmissionLocked}
+                isLoggedIn={Boolean(viewer)}
+              />
+            ) : null}
             {isOwnProfile ? (
               <>
                 <Link

@@ -359,6 +359,7 @@ function RecordFilterForm({ filters }: { filters: ModerationFilters }) {
             >
               <option value="">Open queue</option>
               <option value="PENDING">Pending</option>
+              <option value="UNDER_CONSIDERATION">Under Consideration</option>
               <option value="NEEDS_CHANGES">Needs changes</option>
               <option value="ACCEPTED">Accepted</option>
               <option value="REJECTED">Rejected</option>
