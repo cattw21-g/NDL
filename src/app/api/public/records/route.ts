@@ -138,6 +138,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate progress requirements (Pointercrate parity & 30% floor)
+    const progressNum = Math.round(Number(progress) || 100);
+    if (progressNum < 30) {
+      return NextResponse.json(
+        { error: "Progress submissions must be at least 30% (or 100% for completions)." },
+        { status: 400 },
+      );
+    }
+
+    if (progressNum < 100) {
+      const { getLevelTier } = await import("@/lib/points");
+      const tier = getLevelTier(level.rank, level.status);
+      if (tier !== "MAIN") {
+        return NextResponse.json(
+          {
+            error:
+              "Extended List (#76–#150) and Legacy levels only accept 100% completions. Progress records are only accepted for Main List demons.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const req = level.minimumProgress ?? 50;
+      if (progressNum < req) {
+        return NextResponse.json(
+          {
+            error: `Progress submissions for '${level.name}' must be at least ${req}% (the level's minimum requirement).`,
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     // Validate video URL
     if (!videoUrl || typeof videoUrl !== "string") {
       return NextResponse.json(
@@ -229,7 +262,7 @@ export async function POST(request: NextRequest) {
 
     const submissionData = buildSubmissionCreateData(effectivePlayer.id, {
       levelId: level.id,
-      progress: Math.min(100, Math.max(1, Number(progress) || 100)),
+      progress: progressNum,
       videoUrl: normalized.normalizedUrl,
       rawFootageUrl: rawFootageUrl || undefined,
       proofImageUrl: undefined,

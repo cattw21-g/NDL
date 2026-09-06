@@ -106,6 +106,7 @@ export default async function SubmitPage({
             name: level.name,
             verifier: level.verifier,
             status: level.status,
+            minimumProgress: level.minimumProgress ?? 50,
             points: calculateCurrentLevelPoints(level),
           }))}
           imageUploadsEnabled={imageUploadsEnabled}
@@ -126,6 +127,7 @@ export default async function SubmitPage({
               <li>Separate mic/click track proof is required for high-ranked levels.</li>
               <li>Raw footage is required for high-ranked records.</li>
               <li>FPS overlay, CPS counter, and endscreen must be visible.</li>
+              <li>Progress runs must be at least 30% and meet demon requirement (Extended & Legacy require 100%).</li>
               <li>Macros and replay bots are strictly banned.</li>
             </ul>
             <div className="mt-4 rounded-lg border border-sky-500/30 bg-sky-500/10 p-3 text-xs font-semibold text-sky-400">

@@ -31,7 +31,7 @@ import {
 } from "@/lib/discord-notify";
 import { syncAllLinkedDiscordUsers } from "@/lib/discord-role-sync";
 import { sendRecordStatusEmail } from "@/lib/email";
-import { calculateCurrentLevelPoints } from "@/lib/points";
+import { calculateCurrentLevelPoints, getLevelTier } from "@/lib/points";
 import { absoluteSiteUrl } from "@/lib/site-url";
 import type { StructuredSubmissionProof } from "@/lib/submission-proof";
 import {
@@ -164,6 +164,42 @@ export async function submitRecordAction(
     });
   }
 
+  // Minimum progress validation (Pointercrate parity & 30% floor)
+  const submittedProgress = parsed.data.progress ?? 100;
+  if (submittedProgress < 100) {
+    if (submittedProgress < 30) {
+      return createSubmissionFormErrorState(parsed.values, {
+        fieldErrors: {
+          progress: ["Progress submissions must be at least 30%."],
+        },
+      });
+    }
+
+    if (level.status !== "PENDING") {
+      const tier = getLevelTier(level.rank, level.status);
+      if (tier !== "MAIN") {
+        return createSubmissionFormErrorState(parsed.values, {
+          fieldErrors: {
+            progress: [
+              "Extended List (#76–#150) and Legacy levels only accept 100% completions. Progress records are only accepted for Main List demons.",
+            ],
+          },
+        });
+      }
+
+      const req = level.minimumProgress ?? 50;
+      if (submittedProgress < req) {
+        return createSubmissionFormErrorState(parsed.values, {
+          fieldErrors: {
+            progress: [
+              `Progress submissions for "${level.name}" must be at least ${req}% (the level's minimum requirement).`,
+            ],
+          },
+        });
+      }
+    }
+  }
+
   const upload = await applySubmissionUploads(formData, parsed.data, level.name);
 
   if (!upload.ok) {
@@ -182,7 +218,6 @@ export async function submitRecordAction(
   }
 
   // Duplicate submission detection
-  const submittedProgress = upload.data.progress ?? 100;
   const submittedVideoUrl = upload.data.videoUrl;
 
   const existingAcceptedRecord = await prisma.record.findFirst({

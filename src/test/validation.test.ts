@@ -151,6 +151,49 @@ describe("submission validation", () => {
 
     expect(parsed.success).toBe(false);
   });
+
+  it("enforces minimum 30% progress for progress runs", () => {
+    const below30 = submissionSchema.safeParse({
+      levelId: "level",
+      progress: "29",
+      videoUrl: "https://example.com/video",
+      fps: "240",
+      inputDevice: "Keyboard space key",
+    });
+    expect(below30.success).toBe(false);
+    if (!below30.success) {
+      expect(below30.error.flatten().fieldErrors.progress).toContain(
+        "Progress must be at least 30% (or 100% for full completions).",
+      );
+    }
+
+    const at30 = submissionSchema.safeParse({
+      levelId: "level",
+      progress: "30",
+      videoUrl: "https://example.com/video",
+      fps: "240",
+      inputDevice: "Keyboard space key",
+    });
+    expect(at30.success).toBe(true);
+
+    const completion = submissionSchema.safeParse({
+      levelId: "level",
+      progress: "100",
+      videoUrl: "https://example.com/video",
+      fps: "240",
+      inputDevice: "Keyboard space key",
+    });
+    expect(completion.success).toBe(true);
+
+    const over100 = submissionSchema.safeParse({
+      levelId: "level",
+      progress: "101",
+      videoUrl: "https://example.com/video",
+      fps: "240",
+      inputDevice: "Keyboard space key",
+    });
+    expect(over100.success).toBe(false);
+  });
 });
 
 describe("password reset validation", () => {

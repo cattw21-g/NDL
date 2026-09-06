@@ -105,9 +105,9 @@ export const submissionSchema = z
   .object({
     levelId: z.string().min(1),
     progress: z.coerce
-      .number({ error: "Enter a progress percentage between 1 and 100." })
+      .number({ error: "Enter a progress percentage between 30 and 100." })
       .int("Progress must be a whole percentage.")
-      .min(1, "Progress must be at least 1%.")
+      .min(30, "Progress must be at least 30% (or 100% for full completions).")
       .max(100, "Progress cannot exceed 100%.")
       .default(100),
     videoUrl: proofResourceUrl,

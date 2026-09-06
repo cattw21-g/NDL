@@ -30,6 +30,7 @@ type SubmitLevelOption = {
   name: string;
   verifier: string;
   status: string;
+  minimumProgress?: number | null;
   points: number;
 };
 
@@ -141,52 +142,81 @@ export function SubmitRecordForm({
           </ul>
         </div>
 
-        <FormSection
-          title="Level & Run Progress"
-          description="Select the completed level and specify your exact completion percentage (1% – 100%)."
-        >
-          <div className="grid gap-4 md:grid-cols-2">
-            <SelectField
-              name="levelId"
-              label="Level"
-              defaultValue={values.levelId}
-              onChange={(value) => setSelectedLevelId(value)}
-              errors={state.fieldErrors.levelId}
+        {(() => {
+          const isMainList = selectedLevel && selectedLevel.status === "RANKED" && (selectedLevel.rank === null || selectedLevel.rank <= 75);
+          const isExtendedOrLegacy = selectedLevel && (selectedLevel.status === "LEGACY" || (selectedLevel.rank !== null && selectedLevel.rank > 75));
+          const isPendingUpcoming = selectedLevel && selectedLevel.status === "PENDING";
+          const demonReq = selectedLevel?.minimumProgress ?? 50;
+          const minProgressInput = isExtendedOrLegacy ? 100 : isMainList ? demonReq : 30;
+          const progressHelpText = isExtendedOrLegacy
+            ? "Extended List (#76–#150) and Legacy levels only accept 100% completions."
+            : isMainList
+              ? `100% completions award full points (${selectedLevel?.points} pts). Qualifying progress runs must be at least ${demonReq}% to earn points and be accepted.`
+              : isPendingUpcoming
+                ? "Assigned verifiers can submit verification progress runs (minimum 30%) or 100% completion."
+                : "Completions award full points. Progress runs must be at least 30% and meet the level's requirement (typically 50%).";
+
+          return (
+            <FormSection
+              title="Level & Run Progress"
+              description="Select the completed level and specify your run percentage (completions or qualifying progress)."
             >
-              <option value="">Choose a ranked NDL level</option>
-              {levels.map((level) => (
-                <option key={level.id} value={level.id}>
-                  {level.rank ? `#${level.rank} ` : ""}
-                  {level.name}
-                </option>
-              ))}
-            </SelectField>
+              <div className="grid gap-4 md:grid-cols-2">
+                <SelectField
+                  name="levelId"
+                  label="Level"
+                  defaultValue={values.levelId}
+                  onChange={(value) => setSelectedLevelId(value)}
+                  errors={state.fieldErrors.levelId}
+                >
+                  <option value="">Choose a ranked NDL level</option>
+                  {levels.map((level) => (
+                    <option key={level.id} value={level.id}>
+                      {level.rank ? `#${level.rank} ` : ""}
+                      {level.name}
+                    </option>
+                  ))}
+                </SelectField>
 
-            <TextInput
-              name="progress"
-              label="Run Progress (%)"
-              type="number"
-              min={1}
-              max={100}
-              defaultValue={values.progress || "100"}
-              placeholder="100"
-              help="100% records award ranking points. Progress runs (e.g. 20%, 70%) are tracked on the level page."
-              required
-              errors={state.fieldErrors.progress}
-            />
-          </div>
+                <TextInput
+                  name="progress"
+                  label="Run Progress (%)"
+                  type="number"
+                  min={minProgressInput}
+                  max={100}
+                  defaultValue={values.progress || "100"}
+                  placeholder="100"
+                  help={progressHelpText}
+                  required
+                  errors={state.fieldErrors.progress}
+                />
+              </div>
 
-          {selectedLevel ? (
-            <div className="grid gap-2 rounded-md border border-slate-300 bg-slate-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-950/60 sm:grid-cols-3">
-              <PreviewFact
-                label="Rank"
-                value={selectedLevel.rank ? `#${selectedLevel.rank}` : selectedLevel.status}
-              />
-              <PreviewFact label="Max 100% Points" value={`${selectedLevel.points} pts`} />
-              <PreviewFact label="Verifier" value={selectedLevel.verifier} />
-            </div>
-          ) : null}
-        </FormSection>
+              {selectedLevel ? (
+                <div className="grid gap-2 rounded-md border border-slate-300 bg-slate-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-950/60 sm:grid-cols-2 lg:grid-cols-4">
+                  <PreviewFact
+                    label="Rank"
+                    value={selectedLevel.rank ? `#${selectedLevel.rank}` : selectedLevel.status}
+                  />
+                  <PreviewFact label="Max 100% Points" value={`${selectedLevel.points} pts`} />
+                  <PreviewFact
+                    label="Qualifying Req"
+                    value={
+                      isExtendedOrLegacy
+                        ? "100% (Completions only)"
+                        : isMainList
+                          ? `${demonReq}% minimum`
+                          : isPendingUpcoming
+                            ? "30% (Verification)"
+                            : `${demonReq}%`
+                    }
+                  />
+                  <PreviewFact label="Verifier" value={selectedLevel.verifier} />
+                </div>
+              ) : null}
+            </FormSection>
+          );
+        })()}
 
         <FormSection
           title="Proof links"

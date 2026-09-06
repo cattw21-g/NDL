@@ -78,6 +78,10 @@ const rulesContent = `## General policy
 
 ## Submissions and review
 - Submitters should provide working links, accurate credits, and enough detail for staff to reproduce the review decision.
+- 100% completions are eligible for ranking points on all ranked and legacy levels.
+- Progress runs (< 100%) are only accepted for Main List demons (#1–#75), provided they meet or exceed the demon's specific minimum requirement (typically 50%, with an absolute floor of 30%).
+- Extended List demons (#76–#150) and Legacy demons require 100% completions; progress records are not accepted, matching Pointercrate list standards.
+- Progress submissions below 30% are strictly invalid and rejected platform-wide.
 - Staff may accept, reject, or mark a record or suggestion as needs changes.
 - Broken links, missing proof, unclear versions, bad audio, suspicious footage, or rule violations can delay or prevent acceptance.
 - Private submission details, staff notes, and private proof links stay off public pages.
