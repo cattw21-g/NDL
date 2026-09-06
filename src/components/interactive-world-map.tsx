@@ -13,6 +13,7 @@ export type CountryPointData = {
   rank: number;
   totalPoints: number;
   playersCount: number;
+  hasTopPlayer?: boolean;
   topPlayer?: {
     playerName: string;
     displayName: string;
@@ -29,6 +30,7 @@ type Props = {
 export function InteractiveWorldMap({ countryData, onSelectCountry, selectedCountryCode }: Props) {
   const router = useRouter();
   const mapMountRef = useRef<HTMLDivElement>(null);
+  const clickedCountryIdRef = useRef<string | null>(null);
   const [svgLoaded, setSvgLoaded] = useState(false);
   const [svgError, setSvgError] = useState<string | null>(null);
   const [hoveredCountry, setHoveredCountry] = useState<CountryPointData | null>(null);
@@ -138,36 +140,69 @@ export function InteractiveWorldMap({ countryData, onSelectCountry, selectedCoun
         cursor: pointer !important;
         transition: fill 0.15s ease, filter 0.15s ease;
       }
-      #ndl-world-map-svg g[id]:hover path, #ndl-world-map-svg g[id]:hover polygon {
-        fill: #38bdf8 !important;
-        filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.6)) !important;
+      /* Hover ONLY individual country groups (never continent groups) */
+      #ndl-world-map-svg g.land:hover path,
+      #ndl-world-map-svg g.island:hover path,
+      #ndl-world-map-svg g.land-with-states:hover path,
+      #ndl-world-map-svg g.land:hover polygon,
+      #ndl-world-map-svg g.island:hover polygon,
+      #ndl-world-map-svg g.land-with-states:hover polygon {
+        fill: #3f3f46 !important;
+        stroke: #52525b !important;
       }
     `);
 
-    // Blue shades for registered countries based on score
+    // Country styling rules
     for (const c of countryData) {
       if (c.playersCount <= 0 && c.totalPoints <= 0) continue;
       const codeLower = c.code.toLowerCase();
-      const ratio = c.totalPoints / maxPoints;
 
-      let fillColor = "#38bdf8"; // Light sky blue
-      let strokeColor = "#0284c7";
+      if (c.hasTopPlayer) {
+        // GOLDEN YELLOW for the nation with the Top 1 Player!
+        rules.push(`
+          #ndl-world-map-svg g#${codeLower} path,
+          #ndl-world-map-svg g#${codeLower} polygon {
+            fill: #facc15 !important;
+            stroke: #ca8a04 !important;
+            stroke-width: 1.25px !important;
+            filter: drop-shadow(0 0 6px rgba(234, 179, 8, 0.75)) !important;
+          }
+          #ndl-world-map-svg g#${codeLower}:hover path,
+          #ndl-world-map-svg g#${codeLower}:hover polygon {
+            fill: #fde047 !important;
+            stroke: #eab308 !important;
+            stroke-width: 1.5px !important;
+            filter: drop-shadow(0 0 12px rgba(250, 204, 21, 1)) !important;
+          }
+        `);
+      } else {
+        // BLUE SHADES for other registered countries based on score
+        const ratio = c.totalPoints / maxPoints;
+        let fillColor = "#38bdf8"; // Light sky blue
+        let strokeColor = "#0284c7";
 
-      if (ratio > 0.5) {
-        fillColor = "#0284c7"; // Deep rich blue
-        strokeColor = "#0369a1";
-      } else if (ratio > 0.15) {
-        fillColor = "#0ea5e9"; // Vibrant blue
-        strokeColor = "#0284c7";
-      }
-
-      rules.push(`
-        #ndl-world-map-svg g#${codeLower} path, #ndl-world-map-svg g#${codeLower} polygon {
-          fill: ${fillColor} !important;
-          stroke: ${strokeColor} !important;
-          stroke-width: 1px !important;
+        if (ratio > 0.5) {
+          fillColor = "#0284c7"; // Deep rich blue
+          strokeColor = "#0369a1";
+        } else if (ratio > 0.15) {
+          fillColor = "#0ea5e9"; // Vibrant blue
+          strokeColor = "#0284c7";
         }
-      `);
+
+        rules.push(`
+          #ndl-world-map-svg g#${codeLower} path,
+          #ndl-world-map-svg g#${codeLower} polygon {
+            fill: ${fillColor} !important;
+            stroke: ${strokeColor} !important;
+            stroke-width: 1px !important;
+          }
+          #ndl-world-map-svg g#${codeLower}:hover path,
+          #ndl-world-map-svg g#${codeLower}:hover polygon {
+            fill: #67e8f9 !important;
+            filter: drop-shadow(0 0 10px rgba(14, 165, 233, 0.85)) !important;
+          }
+        `);
+      }
     }
 
     // Selected country glow
@@ -175,10 +210,9 @@ export function InteractiveWorldMap({ countryData, onSelectCountry, selectedCoun
       const sel = selectedCountryCode.toLowerCase();
       rules.push(`
         #ndl-world-map-svg g#${sel} path, #ndl-world-map-svg g#${sel} polygon {
-          fill: #38bdf8 !important;
           stroke: #ffffff !important;
-          stroke-width: 1.5px !important;
-          filter: drop-shadow(0 0 10px #38bdf8) !important;
+          stroke-width: 2px !important;
+          filter: drop-shadow(0 0 12px #38bdf8) !important;
         }
       `);
     }
@@ -193,6 +227,14 @@ export function InteractiveWorldMap({ countryData, onSelectCountry, selectedCoun
     hasMovedRef.current = false;
     dragStartRef.current = { x: e.clientX, y: e.clientY };
     panStartRef.current = { ...pan };
+
+    const target = e.target as Element | null;
+    const countryEl = target?.closest("g.land, g.island, g.land-with-states");
+    clickedCountryIdRef.current =
+      countryEl && countryEl.id && countryEl.id.length === 2
+        ? countryEl.id.toUpperCase()
+        : null;
+
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {}
@@ -218,11 +260,11 @@ export function InteractiveWorldMap({ countryData, onSelectCountry, selectedCoun
       return;
     }
 
-    // Hover detection
+    // Hover detection strictly for 2-letter country groups (never continent)
     const target = e.target as Element | null;
-    const group = target?.closest("g[id]");
-    if (group && group.id && group.id.length === 2) {
-      const code = group.id.toUpperCase();
+    const countryEl = target?.closest("g.land, g.island, g.land-with-states");
+    if (countryEl && countryEl.id && countryEl.id.length === 2) {
+      const code = countryEl.id.toUpperCase();
       const meta = COUNTRIES[code];
       const data = dataMap.get(code);
 
@@ -254,16 +296,12 @@ export function InteractiveWorldMap({ countryData, onSelectCountry, selectedCoun
     } catch {}
 
     // Treat as click if mouse didn't drag
-    if (!hasMovedRef.current) {
-      const target = document.elementFromPoint(e.clientX, e.clientY);
-      const group = target?.closest("g[id]");
-      if (group && group.id && group.id.length === 2) {
-        const code = group.id.toUpperCase();
-        if (onSelectCountry) {
-          onSelectCountry(code);
-        } else {
-          router.push(`/countries/${code.toLowerCase()}`);
-        }
+    if (!hasMovedRef.current && clickedCountryIdRef.current) {
+      const code = clickedCountryIdRef.current;
+      if (onSelectCountry) {
+        onSelectCountry(code);
+      } else {
+        router.push(`/countries/${code.toLowerCase()}`);
       }
     }
   }
@@ -321,12 +359,12 @@ export function InteractiveWorldMap({ countryData, onSelectCountry, selectedCoun
         {/* Legend */}
         <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-zinc-400">
           <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm bg-[#0284c7] shadow-sm" />
-            <span className="text-zinc-300">Top Points</span>
+            <span className="h-3 w-3 rounded-sm bg-[#facc15] shadow-md shadow-yellow-500/40 border border-amber-500" />
+            <span className="text-yellow-400 font-bold">Top 1 Player</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm bg-[#38bdf8] shadow-sm" />
-            <span className="text-zinc-300">Registered Players</span>
+            <span className="h-3 w-3 rounded-sm bg-[#0284c7] shadow-sm" />
+            <span className="text-zinc-300">Registered</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-3 w-3 rounded-sm bg-[#27272a] border border-zinc-700" />
@@ -414,9 +452,15 @@ export function InteractiveWorldMap({ countryData, onSelectCountry, selectedCoun
               <span className="text-base">{hoveredFlag}</span>
               <span className="truncate">{hoveredName}</span>
               {hoveredCountry ? (
-                <span className="ml-auto font-mono text-[11px] font-bold text-amber-400">
-                  #{hoveredCountry.rank}
-                </span>
+                hoveredCountry.hasTopPlayer ? (
+                  <span className="ml-auto rounded bg-yellow-400/20 px-1.5 py-0.5 text-[10px] font-black text-yellow-300 border border-yellow-400/50 shadow-sm shadow-yellow-500/30">
+                    👑 Top 1 Player
+                  </span>
+                ) : (
+                  <span className="ml-auto font-mono text-[11px] font-bold text-amber-400">
+                    #{hoveredCountry.rank}
+                  </span>
+                )
               ) : null}
             </div>
 

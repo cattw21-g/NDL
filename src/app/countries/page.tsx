@@ -116,23 +116,30 @@ export default async function CountriesPage({ searchParams }: Props) {
   const totalPoints = allCountryRows.reduce((sum, c) => sum + c.points, 0);
   const totalCountries = allCountryRows.length;
 
-  const mapCountryData = allCountryRows.map((c, i) => ({
-    code: c.countryCode,
-    name: c.countryName,
-    flag: c.flag,
-    continent: c.continent as Continent,
-    rank: i + 1,
-    totalPoints: c.points,
-    playersCount: c.playersCount,
-    topPlayer:
-      c.topPlayerName && c.topPlayerName !== "N/A"
-        ? {
-            playerName: c.topPlayerHandle,
-            displayName: c.topPlayerName,
-            points: c.topPlayerPoints,
-          }
-        : undefined,
-  }));
+  const top1Player = playerRows[0];
+  const top1CountryCode = top1Player ? playerCountries.get(top1Player.playerId)?.countryCode : null;
+
+  const mapCountryData = allCountryRows.map((c, i) => {
+    const isTop1Player = top1CountryCode ? c.countryCode === top1CountryCode : i === 0;
+    return {
+      code: c.countryCode,
+      name: c.countryName,
+      flag: c.flag,
+      continent: c.continent as Continent,
+      rank: i + 1,
+      totalPoints: c.points,
+      playersCount: c.playersCount,
+      hasTopPlayer: isTop1Player,
+      topPlayer:
+        c.topPlayerName && c.topPlayerName !== "N/A"
+          ? {
+              playerName: c.topPlayerHandle,
+              displayName: c.topPlayerName,
+              points: c.topPlayerPoints,
+            }
+          : undefined,
+    };
+  });
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
