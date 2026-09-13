@@ -43,6 +43,7 @@ import {
   notifyRecordAccepted,
 } from "@/lib/discord-notify";
 import { syncAllLinkedDiscordUsers } from "@/lib/discord-role-sync";
+import { cleanupOrphanBlobs } from "@/lib/blob-cleanup";
 import { absoluteSiteUrl } from "@/lib/site-url";
 import { slugify } from "@/lib/slug";
 import {
@@ -1571,5 +1572,31 @@ export async function deleteAdminRecordAction(formData: FormData) {
   revalidatePath("/players");
   revalidatePath(`/players/${record.player.playerName}`);
   revalidatePath("/admin/records");
-  revalidatePath("/admin/records");
 }
+
+export async function cleanupUnusedBlobsAction() {
+  const admin = await requireAdmin();
+
+  const summary = await cleanupOrphanBlobs();
+
+  await writeAuditLog(prisma, {
+    actor: {
+      id: admin.id,
+      playerName: admin.playerName,
+      displayName: admin.displayName,
+      role: admin.role,
+    },
+    action: "SYSTEM_MAINTENANCE",
+    entityType: "BlobStore",
+    entityId: "store_cleanup",
+    entityLabel: "Vercel Blob Garbage Collection",
+    note: `Cleaned up ${summary.deletedBlobs} unused blobs, freed ${(summary.freedBytes / 1024 / 1024).toFixed(2)} MB (${summary.usedBlobs} active blobs in use).`,
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/levels");
+  revalidatePath("/admin/upcoming");
+
+  return summary;
+}
+

@@ -8,9 +8,10 @@ import {
   useRef,
   useState,
 } from "react";
-import { ImagePlus, Plus, UploadCloud } from "lucide-react";
+import { ImagePlus, Plus, UploadCloud, Trash2, RefreshCw, Check } from "lucide-react";
 
 import { addUpcomingLevelAction, updateUpcomingThumbnailAction } from "@/actions/upcoming";
+import { cleanupUnusedBlobsAction } from "@/actions/admin";
 import { SafeThumbnail } from "@/components/safe-thumbnail";
 import { inputClass } from "@/components/ui";
 import {
@@ -452,3 +453,72 @@ export function UpcomingThumbnailInlineEditor({
     </div>
   );
 }
+
+export function AdminBlobCleanupButton() {
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
+
+  async function handleCleanup() {
+    if (!confirm("Are you sure you want to scan and delete all unused/orphaned blobs from Vercel Blob storage?")) {
+      return;
+    }
+    setRunning(true);
+    setResult(null);
+    try {
+      const res = await cleanupUnusedBlobsAction();
+      setResult({
+        success: true,
+        message: res.deletedBlobs > 0
+          ? `Deleted ${res.deletedBlobs} unused image(s) (${(res.freedBytes / 1024 / 1024).toFixed(2)} MB freed)!`
+          : `All images are in use! 0 orphaned images found.`,
+      });
+    } catch (err: unknown) {
+      setResult({
+        success: false,
+        message: err instanceof Error ? err.message : "Cleanup failed",
+      });
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <button
+        type="button"
+        onClick={handleCleanup}
+        disabled={running}
+        className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-black text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+      >
+        {running ? (
+          <>
+            <RefreshCw className="h-3.5 w-3.5 animate-spin text-cyan-600 dark:text-cyan-400" />
+            <span>Scanning & Cleaning Blobs...</span>
+          </>
+        ) : (
+          <>
+            <Trash2 className="h-3.5 w-3.5 text-red-500" />
+            <span>Clean Unused Images</span>
+          </>
+        )}
+      </button>
+
+      {result ? (
+        <span
+          className={`inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-bold ${
+            result.success
+              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              : "bg-red-500/10 text-red-600 dark:text-red-400"
+          }`}
+        >
+          {result.success ? <Check className="h-3 w-3" /> : null}
+          {result.message}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+

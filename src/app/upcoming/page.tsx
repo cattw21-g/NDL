@@ -4,6 +4,7 @@ import { demoModeEnabled } from "@/lib/demo-visibility";
 import { isAdminRole } from "@/lib/permissions";
 import { UpcomingLevelItem, UpcomingView } from "@/components/upcoming-view";
 import { parseUpcomingProgress } from "@/lib/upcoming-progress";
+import { FALLBACK_THUMBNAIL_SRC } from "@/lib/media";
 
 export { parseUpcomingProgress };
 
@@ -75,7 +76,7 @@ export default async function UpcomingPage() {
       verifier: sug.verifier,
       showcaseUrl: sug.showcaseUrl,
       verificationVideoUrl: sug.verificationVideoUrl,
-      thumbnailUrl: sug.thumbnailUrl || "/thumbnails/fallback.png",
+      thumbnailUrl: sug.thumbnailUrl || FALLBACK_THUMBNAIL_SRC,
       difficulty: "EXTREME",
       description: sug.versionNotes,
       versionNotes: sug.versionNotes,

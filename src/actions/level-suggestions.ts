@@ -7,6 +7,7 @@ import { ModerationActionType } from "@/generated/prisma/enums";
 import { writeAuditLog } from "@/lib/audit-log";
 import { requireAdmin, requireModerator, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { deleteBlobSafely, isVercelBlobUrl } from "@/lib/blob-cleanup";
 import {
   createLevelSuggestionFormErrorState,
   type LevelSuggestionFormState,
@@ -230,6 +231,23 @@ export async function reviewLevelSuggestionAction(formData: FormData) {
     }).catch(() => {
       // Ignore background email delivery error
     });
+  }
+
+  if (
+    parsed.data.status === "REJECTED" &&
+    suggestion.thumbnailUrl &&
+    isVercelBlobUrl(suggestion.thumbnailUrl)
+  ) {
+    const countL = await prisma.level.count({ where: { thumbnailUrl: suggestion.thumbnailUrl } });
+    const countS = await prisma.levelSuggestion.count({
+      where: {
+        thumbnailUrl: suggestion.thumbnailUrl,
+        status: { not: "REJECTED" },
+      },
+    });
+    if (countL === 0 && countS === 0) {
+      await deleteBlobSafely(suggestion.thumbnailUrl);
+    }
   }
 
   revalidatePath("/moderation");

@@ -21,6 +21,7 @@ import {
 import { parseUpcomingProgress } from "@/lib/upcoming-progress";
 import {
   AdminUpcomingLevelForm,
+  AdminBlobCleanupButton,
   UpcomingThumbnailInlineEditor,
 } from "@/components/admin-upcoming-form";
 import { SafeThumbnail } from "@/components/safe-thumbnail";
@@ -28,6 +29,7 @@ import { Eyebrow, MetricTile, SectionPanel, inputClass } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/format";
+import { FALLBACK_THUMBNAIL_SRC } from "@/lib/media";
 import {
   imageUploadProvider,
   maxImageUploadBytes,
@@ -101,10 +103,13 @@ export default async function AdminUpcomingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <MetricTile label="Verifying" value={currentlyVerifying.length} tone="amber" />
-            <MetricTile label="Waiting" value={waitingLevels.length} tone="cyan" />
-            <MetricTile label="Suggestions" value={approvedSuggestions.length} tone="emerald" />
+          <div className="flex flex-col items-end gap-3">
+            <div className="grid grid-cols-3 gap-2">
+              <MetricTile label="Verifying" value={currentlyVerifying.length} tone="amber" />
+              <MetricTile label="Waiting" value={waitingLevels.length} tone="cyan" />
+              <MetricTile label="Suggestions" value={approvedSuggestions.length} tone="emerald" />
+            </div>
+            <AdminBlobCleanupButton />
           </div>
         </div>
       </section>
@@ -401,7 +406,7 @@ export default async function AdminUpcomingPage() {
                   {/* Suggestion Thumbnail */}
                   <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950 sm:w-36">
                     <SafeThumbnail
-                      src={sug.thumbnailUrl || "/thumbnails/fallback.png"}
+                      src={sug.thumbnailUrl || FALLBACK_THUMBNAIL_SRC}
                       alt={sug.name}
                       className="h-full w-full object-cover"
                     />

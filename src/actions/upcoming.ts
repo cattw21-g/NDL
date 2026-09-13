@@ -11,6 +11,7 @@ import { updateLevelWithRank } from "@/lib/level-ranking";
 import { calculateLevelPoints } from "@/lib/points";
 import { notifyLevelRanked, notifyUpcomingDemonAdded } from "@/lib/discord-notify";
 import { syncAllLinkedDiscordUsers } from "@/lib/discord-role-sync";
+import { deleteBlobSafely, isVercelBlobUrl } from "@/lib/blob-cleanup";
 import { slugify } from "@/lib/slug";
 
 export async function addUpcomingLevelAction(formData: FormData) {
@@ -129,12 +130,27 @@ export async function updateUpcomingThumbnailAction(formData: FormData) {
     throw new Error("Level not found.");
   }
 
+  const oldThumbnailUrl = level.thumbnailUrl;
+
   await prisma.level.update({
     where: { id: levelId },
     data: {
       thumbnailUrl: thumbnailUrl || FALLBACK_THUMBNAIL_SRC,
     },
   });
+
+  if (
+    oldThumbnailUrl &&
+    oldThumbnailUrl !== thumbnailUrl &&
+    isVercelBlobUrl(oldThumbnailUrl)
+  ) {
+    const stillUsed =
+      (await prisma.level.count({ where: { thumbnailUrl: oldThumbnailUrl } })) +
+      (await prisma.levelSuggestion.count({ where: { thumbnailUrl: oldThumbnailUrl } }));
+    if (stillUsed === 0) {
+      await deleteBlobSafely(oldThumbnailUrl);
+    }
+  }
 
   await writeAuditLog(prisma, {
     actor: {
@@ -357,6 +373,14 @@ export async function deleteUpcomingLevelAction(formData: FormData) {
     where: { id: levelId },
   });
 
+  if (level.thumbnailUrl && isVercelBlobUrl(level.thumbnailUrl)) {
+    const countL = await prisma.level.count({ where: { thumbnailUrl: level.thumbnailUrl } });
+    const countS = await prisma.levelSuggestion.count({ where: { thumbnailUrl: level.thumbnailUrl } });
+    if (countL === 0 && countS === 0) {
+      await deleteBlobSafely(level.thumbnailUrl);
+    }
+  }
+
   await writeAuditLog(prisma, {
     actor: {
       id: admin.id,
@@ -394,6 +418,14 @@ export async function deleteUpcomingSuggestionAction(formData: FormData) {
   await prisma.levelSuggestion.delete({
     where: { id: suggestionId },
   });
+
+  if (suggestion.thumbnailUrl && isVercelBlobUrl(suggestion.thumbnailUrl)) {
+    const countL = await prisma.level.count({ where: { thumbnailUrl: suggestion.thumbnailUrl } });
+    const countS = await prisma.levelSuggestion.count({ where: { thumbnailUrl: suggestion.thumbnailUrl } });
+    if (countL === 0 && countS === 0) {
+      await deleteBlobSafely(suggestion.thumbnailUrl);
+    }
+  }
 
   await writeAuditLog(prisma, {
     actor: {
