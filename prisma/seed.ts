@@ -163,6 +163,26 @@ We appreciate your patience and understanding while we work on everything behind
 More updates will be shared soon, so stay tuned!`,
 };
 
+const tripReviewPausePost = {
+  title: "Records & Suggestions Update: Review Pause (13/09 – 20/09)",
+  slug: "records-suggestions-pause-september-2026",
+  category: ChangelogCategory.MODERATION_NOTE,
+  summary:
+    "I'm going on a trip for a week, so record submissions and level suggestions won't be reviewed until 20/09/26. Submissions will remain open and queued up in the meantime!",
+  content: `Hey everyone!
+
+Quick heads-up: I'm going to be away on a trip for a week starting today, so I won't be able to review any record submissions or level suggestions on the website until **20/09/26** (September 20th).
+
+### What you need to know:
+- **Submissions remain open**: You can still play, practice, and submit your records and level suggestions normally.
+- **Queue stays safe**: All submitted runs and level suggestions will stay safely saved in the queue while I'm away.
+- **Catch-up upon return**: As soon as I get back on September 20th, I'll go through the entire backlog and review everything.
+
+Thanks for your patience and understanding, keep having fun, and good luck beating levels on NDL!
+
+*— cattw21*`,
+};
+
 async function seedRules(version: string) {
   const existingRules = await prisma.rulesDocument.findFirst({
     where: {
@@ -255,6 +275,30 @@ async function seedLaunchPost() {
     },
   });
 
+  await prisma.changelogPost.upsert({
+    where: {
+      slug: tripReviewPausePost.slug,
+    },
+    update: {
+      title: tripReviewPausePost.title,
+      category: tripReviewPausePost.category,
+      summary: tripReviewPausePost.summary,
+      content: tripReviewPausePost.content,
+      isPublished: true,
+      isPinned: true,
+      isDemo: false,
+      archivedAt: null,
+      publishedAt: new Date("2026-09-13T19:00:00.000Z"),
+    },
+    create: {
+      ...tripReviewPausePost,
+      isPublished: true,
+      isPinned: true,
+      isDemo: false,
+      publishedAt: new Date("2026-09-13T19:00:00.000Z"),
+    },
+  });
+
   return prisma.changelogPost.upsert({
     where: {
       slug: rcUpdatePost.slug,
@@ -265,7 +309,7 @@ async function seedLaunchPost() {
       summary: rcUpdatePost.summary,
       content: rcUpdatePost.content,
       isPublished: true,
-      isPinned: true,
+      isPinned: false,
       isDemo: false,
       archivedAt: null,
       publishedAt: new Date("2026-08-21T21:20:00.000Z"),

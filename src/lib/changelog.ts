@@ -138,7 +138,42 @@ We put a ton of hard work into getting everything ready for this release. Enjoy 
 *— cattw21 & NDL Staff*`,
 };
 
+export const REVIEW_PAUSE_SEPT_2026_POST = {
+  title: "Records & Suggestions Update: Review Pause (13/09 – 20/09)",
+  slug: "records-suggestions-pause-september-2026",
+  category: "MODERATION_NOTE" as const,
+  summary:
+    "I'm going on a trip for a week, so record submissions and level suggestions won't be reviewed until 20/09/26. Submissions will remain open and queued up in the meantime!",
+  content: `Hey everyone!
+
+Quick heads-up: I'm going to be away on a trip for a week starting today, so I won't be able to review any record submissions or level suggestions on the website until **20/09/26** (September 20th).
+
+### What you need to know:
+- **Submissions remain open**: You can still play, practice, and submit your records and level suggestions normally.
+- **Queue stays safe**: All submitted runs and level suggestions will stay safely saved in the queue while I'm away.
+- **Catch-up upon return**: As soon as I get back on September 20th, I'll go through the entire backlog and review everything.
+
+Thanks for your patience and understanding, keep having fun, and good luck beating levels on NDL!
+
+*— cattw21*`,
+};
+
 export const DEFAULT_POSTS = [
+  {
+    id: "records-suggestions-pause-september-2026",
+    title: REVIEW_PAUSE_SEPT_2026_POST.title,
+    slug: REVIEW_PAUSE_SEPT_2026_POST.slug,
+    category: REVIEW_PAUSE_SEPT_2026_POST.category,
+    summary: REVIEW_PAUSE_SEPT_2026_POST.summary,
+    content: REVIEW_PAUSE_SEPT_2026_POST.content,
+    isPinned: true,
+    isPublished: true,
+    isDemo: false,
+    publishedAt: new Date("2026-09-13T19:00:00.000Z"),
+    updatedAt: new Date("2026-09-13T19:00:00.000Z"),
+    archivedAt: null,
+    author: { displayName: "cattw21" },
+  },
   {
     id: "nerfed-demonlist-v1-5-0-official-release",
     title: V1_5_ANNOUNCEMENT_POST.title,
@@ -146,7 +181,7 @@ export const DEFAULT_POSTS = [
     category: V1_5_ANNOUNCEMENT_POST.category,
     summary: V1_5_ANNOUNCEMENT_POST.summary,
     content: V1_5_ANNOUNCEMENT_POST.content,
-    isPinned: true,
+    isPinned: false,
     isPublished: true,
     isDemo: false,
     publishedAt: new Date("2026-09-06T11:00:00.000Z"),
