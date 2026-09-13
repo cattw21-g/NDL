@@ -88,3 +88,42 @@ export function safeThumbnailSrc(
 
   return trimmed;
 }
+
+const UPCOMING_LOCAL_THUMBNAILS: Record<string, string> = {
+  nerfbath: "/thumbnails/nerfbath.jpg",
+  sakupencircles: "/thumbnails/sakupen-circles-v.jpg",
+  lockedtidalheaven: "/thumbnails/locked-tidal-heaven.jpg",
+  solarflare: "/thumbnails/solar-flare-ii.jpg",
+  silentclubstep: "/thumbnails/silent-clubstep-nerf.jpg",
+};
+
+export function resolveUpcomingThumbnail(
+  slug?: string | null,
+  name?: string | null,
+  showcaseUrl?: string | null,
+  thumbnailUrl?: string | null,
+): string {
+  const cleanKey = ((name || "") + " " + (slug || "")).toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const [key, path] of Object.entries(UPCOMING_LOCAL_THUMBNAILS)) {
+    if (cleanKey.includes(key)) {
+      return path;
+    }
+  }
+
+  if (thumbnailUrl && thumbnailUrl.trim() && !thumbnailUrl.includes("blob.vercel-storage.com")) {
+    return thumbnailUrl.trim();
+  }
+
+  if (showcaseUrl) {
+    const ytMatch =
+      showcaseUrl.match(
+        /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|live\/|watch\?.*v=))([\w-]{11})/i,
+      ) || showcaseUrl.match(/[?&]v=([\w-]{11})/i);
+    if (ytMatch) {
+      return `https://i.ytimg.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+    }
+  }
+
+  return thumbnailUrl?.trim() || FALLBACK_THUMBNAIL_SRC;
+}
+

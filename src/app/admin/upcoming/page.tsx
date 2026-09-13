@@ -29,7 +29,7 @@ import { Eyebrow, MetricTile, SectionPanel, inputClass } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/format";
-import { FALLBACK_THUMBNAIL_SRC } from "@/lib/media";
+import { FALLBACK_THUMBNAIL_SRC, resolveUpcomingThumbnail } from "@/lib/media";
 import {
   imageUploadProvider,
   maxImageUploadBytes,
@@ -145,7 +145,12 @@ export default async function AdminUpcomingPage() {
                   {/* Level Thumbnail */}
                   <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950 sm:w-36">
                     <SafeThumbnail
-                      src={lvl.thumbnailUrl}
+                      src={resolveUpcomingThumbnail(
+                        lvl.slug,
+                        lvl.name,
+                        lvl.showcaseUrl || lvl.verificationVideoUrl,
+                        lvl.thumbnailUrl,
+                      )}
                       alt={lvl.name}
                       className="h-full w-full object-cover"
                     />
@@ -289,7 +294,12 @@ export default async function AdminUpcomingPage() {
                   {/* Level Thumbnail */}
                   <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950 sm:w-36">
                     <SafeThumbnail
-                      src={lvl.thumbnailUrl}
+                      src={resolveUpcomingThumbnail(
+                        lvl.slug,
+                        lvl.name,
+                        lvl.showcaseUrl || lvl.verificationVideoUrl,
+                        lvl.thumbnailUrl,
+                      )}
                       alt={lvl.name}
                       className="h-full w-full object-cover"
                     />
@@ -406,7 +416,12 @@ export default async function AdminUpcomingPage() {
                   {/* Suggestion Thumbnail */}
                   <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950 sm:w-36">
                     <SafeThumbnail
-                      src={sug.thumbnailUrl || FALLBACK_THUMBNAIL_SRC}
+                      src={resolveUpcomingThumbnail(
+                        sug.originalName,
+                        sug.name,
+                        sug.showcaseUrl || sug.verificationVideoUrl,
+                        sug.thumbnailUrl,
+                      )}
                       alt={sug.name}
                       className="h-full w-full object-cover"
                     />

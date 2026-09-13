@@ -11,19 +11,33 @@ export function SafeThumbnail({
   alt,
   className,
   allowObjectUrl = false,
+  fallbackSrc,
 }: {
   src: string | null | undefined;
   alt: string;
   className?: string;
   allowObjectUrl?: boolean;
+  fallbackSrc?: string | null;
 }) {
   const initialSrc = useMemo(
     () => safeThumbnailSrc(src, { allowObjectUrl }),
     [allowObjectUrl, src],
   );
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
+
+  const fallback = useMemo(() => {
+    if (fallbackSrc) {
+      return safeThumbnailSrc(fallbackSrc, { allowObjectUrl });
+    }
+    return FALLBACK_THUMBNAIL_SRC;
+  }, [allowObjectUrl, fallbackSrc]);
+
   const imageSrc =
-    failedSrc === initialSrc ? FALLBACK_THUMBNAIL_SRC : initialSrc;
+    failedSrc === initialSrc
+      ? fallback
+      : failedSrc === fallback
+        ? FALLBACK_THUMBNAIL_SRC
+        : initialSrc;
 
   return (
     <img
@@ -32,7 +46,13 @@ export function SafeThumbnail({
       loading="lazy"
       decoding="async"
       className={className}
-      onError={() => setFailedSrc(initialSrc)}
+      onError={() => {
+        if (failedSrc !== initialSrc) {
+          setFailedSrc(initialSrc);
+        } else {
+          setFailedSrc(fallback);
+        }
+      }}
     />
   );
 }

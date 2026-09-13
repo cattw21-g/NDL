@@ -143,7 +143,7 @@ export const REVIEW_PAUSE_SEPT_2026_POST = {
   slug: "records-suggestions-pause-september-2026",
   category: "MODERATION_NOTE" as const,
   summary:
-    "I'm going on a trip for a week, so record submissions and level suggestions won't be reviewed until 20/09/26. Submissions will remain open and queued up in the meantime!",
+    "I'm going on a trip for a week, so record submissions and level suggestions won't be reviewed until 20/09/26. Submissions will remain open and queued up in the meantime! And no, I will not make anyone mod while I'm gone.",
   content: `Hey everyone!
 
 Quick heads-up: I'm going to be away on a trip for a week starting today, so I won't be able to review any record submissions or level suggestions on the website until **20/09/26** (September 20th).
@@ -151,6 +151,7 @@ Quick heads-up: I'm going to be away on a trip for a week starting today, so I w
 ### What you need to know:
 - **Submissions remain open**: You can still play, practice, and submit your records and level suggestions normally.
 - **Queue stays safe**: All submitted runs and level suggestions will stay safely saved in the queue while I'm away.
+- **No temporary mods**: And no, I will not make anyone mod while I'm gone (because I'm sure people will ask "can I be mod so I can manage it while you're away" lol, the answer is no). Everything will just wait until I get back.
 - **Catch-up upon return**: As soon as I get back on September 20th, I'll go through the entire backlog and review everything.
 
 Thanks for your patience and understanding, keep having fun, and good luck beating levels on NDL!

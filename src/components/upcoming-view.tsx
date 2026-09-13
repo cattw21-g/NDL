@@ -286,6 +286,14 @@ function UpcomingCard({
             <>
               <SafeThumbnail
                 src={lvl.thumbnailUrl}
+                fallbackSrc={
+                  (() => {
+                    const url = lvl.showcaseUrl || lvl.verificationVideoUrl;
+                    if (!url) return null;
+                    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|live\/|watch\?.*v=))([\w-]{11})/i) || url.match(/[?&]v=([\w-]{11})/i);
+                    return m ? `https://i.ytimg.com/vi/${m[1]}/hqdefault.jpg` : null;
+                  })()
+                }
                 alt={`${lvl.name} thumbnail`}
                 className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
               />

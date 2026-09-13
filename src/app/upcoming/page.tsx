@@ -4,7 +4,7 @@ import { demoModeEnabled } from "@/lib/demo-visibility";
 import { isAdminRole } from "@/lib/permissions";
 import { UpcomingLevelItem, UpcomingView } from "@/components/upcoming-view";
 import { parseUpcomingProgress } from "@/lib/upcoming-progress";
-import { FALLBACK_THUMBNAIL_SRC } from "@/lib/media";
+import { FALLBACK_THUMBNAIL_SRC, resolveUpcomingThumbnail } from "@/lib/media";
 
 export { parseUpcomingProgress };
 
@@ -58,7 +58,12 @@ export default async function UpcomingPage() {
       verifierUserId: lvl.verifierUserId,
       showcaseUrl: lvl.showcaseUrl,
       verificationVideoUrl: lvl.verificationVideoUrl,
-      thumbnailUrl: lvl.thumbnailUrl,
+      thumbnailUrl: resolveUpcomingThumbnail(
+        lvl.slug,
+        lvl.name,
+        lvl.showcaseUrl || lvl.verificationVideoUrl,
+        lvl.thumbnailUrl,
+      ),
       difficulty: lvl.difficulty,
       description: lvl.description,
       versionNotes: lvl.versionNotes,
@@ -76,7 +81,12 @@ export default async function UpcomingPage() {
       verifier: sug.verifier,
       showcaseUrl: sug.showcaseUrl,
       verificationVideoUrl: sug.verificationVideoUrl,
-      thumbnailUrl: sug.thumbnailUrl || FALLBACK_THUMBNAIL_SRC,
+      thumbnailUrl: resolveUpcomingThumbnail(
+        sug.originalName,
+        sug.name,
+        sug.showcaseUrl || sug.verificationVideoUrl,
+        sug.thumbnailUrl,
+      ),
       difficulty: "EXTREME",
       description: sug.versionNotes,
       versionNotes: sug.versionNotes,
