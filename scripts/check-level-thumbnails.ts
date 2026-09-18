@@ -1,37 +1,33 @@
-import "dotenv/config";
-import fs from "fs";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../src/generated/prisma/client";
+import { list, get, getDownloadUrl } from "@vercel/blob";
 
-const envLatest = fs.existsSync(".env.vercel-latest")
-  ? fs.readFileSync(".env.vercel-latest", "utf8")
-  : "";
-const dbMatch = envLatest.match(/DATABASE_URL=['"]?([^'"\r\n]+)/);
-const connectionString = dbMatch ? dbMatch[1] : process.env.DATABASE_URL;
-
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+const token = "vercel_blob_rw_IeaNErnEyKfJpb32_iZCAl22t7z4vQQPLqU8InQ7I6sVDws";
 
 async function main() {
-  const levels = await prisma.level.findMany({
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      thumbnailUrl: true,
-      showcaseUrl: true,
-      status: true,
-    },
-    orderBy: { createdAt: "asc" },
-  });
+  const res = await list({ token });
+  const b = res.blobs[0];
+  console.log("Blob:", b.pathname, b.url);
 
-  console.log(`Total levels in DB: ${levels.length}`);
-  for (const l of levels) {
-    console.log(`[${l.status}] ${l.name} (${l.slug}):`);
-    console.log(`   thumbnailUrl: ${l.thumbnailUrl}`);
-    console.log(`   showcaseUrl:  ${l.showcaseUrl}`);
+  try {
+    const dlUrl = await getDownloadUrl(b.url);
+    console.log("getDownloadUrl result:", dlUrl);
+    const r = await fetch(dlUrl);
+    console.log("fetch dlUrl status:", r.status);
+  } catch (err: any) {
+    console.log("getDownloadUrl error:", err?.message);
   }
 
-  await prisma.$disconnect();
+  try {
+    const result: any = await get(b.url, { access: "public" });
+    console.log("get result keys:", Object.keys(result || {}));
+    if (result && result.body) {
+      console.log("Got body stream! Reading...");
+      const buf = Buffer.from(await result.arrayBuffer());
+      console.log("Successfully downloaded bytes:", buf.length);
+    }
+  } catch (err: any) {
+    console.log("get error:", err?.message);
+  }
 }
 
 main().catch(console.error);
+
