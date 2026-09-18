@@ -19,6 +19,8 @@ import {
 } from "@/lib/demo-visibility";
 import { formatDate } from "@/lib/format";
 import { calculateCurrentLevelPoints } from "@/lib/points";
+import { FALLBACK_RANKED_LEVELS } from "@/lib/fallback-levels";
+import { resolveLevelThumbnail } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -29,8 +31,14 @@ export const metadata = {
 
 export default async function Home() {
   const isDemoMode = demoModeEnabled();
-  const [levels, pendingCount, acceptedCount, latestRecords, latestPost] =
-    await Promise.all([
+  let levels: any[] = [];
+  let pendingCount = 0;
+  let acceptedCount = 0;
+  let latestRecords: any[] = [];
+  let latestPost: any = null;
+
+  try {
+    const results = await Promise.all([
       prisma.level.findMany({
         where: publicLevelWhere({
           status: {
@@ -77,6 +85,28 @@ export default async function Home() {
         orderBy: [{ isPinned: "desc" }, { publishedAt: "desc" }],
       }),
     ]);
+
+    levels = results[0];
+    pendingCount = results[1];
+    acceptedCount = results[2];
+    latestRecords = results[3];
+    latestPost = results[4];
+  } catch (err) {
+    console.warn("Database unavailable, falling back to static level data:", err);
+    levels = FALLBACK_RANKED_LEVELS.map((lvl) => ({
+      ...lvl,
+      _count: { records: lvl.recordCount },
+    }));
+    acceptedCount = 24;
+    pendingCount = 1;
+  }
+
+  if (levels.length === 0) {
+    levels = FALLBACK_RANKED_LEVELS.map((lvl) => ({
+      ...lvl,
+      _count: { records: lvl.recordCount },
+    }));
+  }
 
   const rankedCount = levels.filter((level) => level.status === "RANKED").length;
   const legacyCount = levels.filter((level) => level.status === "LEGACY").length;
@@ -128,7 +158,12 @@ export default async function Home() {
               publisher: level.publisher,
               nerfCreator: level.nerfCreator,
               verifier: level.verifier,
-              thumbnailUrl: level.thumbnailUrl,
+              thumbnailUrl: resolveLevelThumbnail(
+                level.slug,
+                level.name,
+                level.showcaseUrl,
+                level.thumbnailUrl,
+              ),
               status: level.status,
               difficulty: level.difficulty,
               points: calculateCurrentLevelPoints(level),

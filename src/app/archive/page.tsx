@@ -1,7 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import { getListStateAtDate } from "@/lib/time-machine";
 import { ArchiveDatePicker, type ArchivePreset } from "@/components/archive-date-picker";
+import { SafeThumbnail } from "@/components/safe-thumbnail";
+import { resolveLevelThumbnail } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
 
@@ -183,17 +184,13 @@ export default async function ArchivePage({ searchParams }: Props) {
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-800 text-sm font-bold text-zinc-200 border border-zinc-700">
                       #{lvl.rank ?? "—"}
                     </span>
-                    {lvl.thumbnailUrl && (
-                      <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded-md border border-zinc-800">
-                        <Image
-                          src={lvl.thumbnailUrl}
-                          alt={lvl.name}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
-                      </div>
-                    )}
+                    <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded-md border border-zinc-800">
+                      <SafeThumbnail
+                        src={resolveLevelThumbnail(lvl.slug, lvl.name, lvl.showcaseUrl, lvl.thumbnailUrl)}
+                        alt={lvl.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
                     <div className="min-w-0">
                       <Link
                         href={`/levels/${lvl.slug}`}

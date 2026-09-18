@@ -4,6 +4,7 @@ import { ArrowRight, Clock, CheckCircle2, AlertCircle, XCircle, X } from "lucide
 import Link from "next/link";
 
 import { SafeThumbnail } from "@/components/safe-thumbnail";
+import { resolveLevelThumbnail } from "@/lib/media";
 import { StatusBadge } from "@/components/status-badge";
 import { cx, PointsPill, RankBadge } from "@/components/ui";
 import type { UserLevelSubmissionInfo } from "@/lib/use-user-submissions";
@@ -98,7 +99,7 @@ export function LevelCard({
             className="relative block aspect-video w-full overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950"
           >
             <SafeThumbnail
-              src={level.thumbnailUrl}
+              src={resolveLevelThumbnail(level.slug, level.name, undefined, level.thumbnailUrl)}
               alt={`${level.name} thumbnail`}
               className="block h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
             />

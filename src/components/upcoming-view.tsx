@@ -13,6 +13,7 @@ import { LevelVideoEmbed } from "@/components/level-video-embed";
 import { SafeThumbnail } from "@/components/safe-thumbnail";
 import { cx, SectionPanel, inputClass } from "@/components/ui";
 import { updateUpcomingProgressAction } from "@/actions/upcoming";
+import { resolveLevelThumbnail } from "@/lib/media";
 
 export type UpcomingLevelItem = {
   id: string;
@@ -285,7 +286,7 @@ function UpcomingCard({
           ) : (
             <>
               <SafeThumbnail
-                src={lvl.thumbnailUrl}
+                src={resolveLevelThumbnail(lvl.slug, lvl.name, lvl.showcaseUrl || lvl.verificationVideoUrl, lvl.thumbnailUrl)}
                 fallbackSrc={
                   (() => {
                     const url = lvl.showcaseUrl || lvl.verificationVideoUrl;

@@ -42,6 +42,8 @@ import {
 } from "@/lib/points";
 import { fetchGdLevelMetadata } from "@/lib/gd-api";
 import { absoluteSiteUrl } from "@/lib/site-url";
+import { resolveLevelThumbnail } from "@/lib/media";
+import { FALLBACK_RANKED_LEVELS } from "@/lib/fallback-levels";
 
 import type { Metadata } from "next";
 
@@ -53,20 +55,30 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const level = await prisma.level.findFirst({
-    where: publicLevelWhere({ slug }),
-    select: {
-      name: true,
-      rank: true,
-      status: true,
-      points: true,
-      difficulty: true,
-      thumbnailUrl: true,
-      verifier: true,
-      nerfCreator: true,
-      description: true,
-    },
-  });
+  let level: any = null;
+  try {
+    level = await prisma.level.findFirst({
+      where: publicLevelWhere({ slug }),
+      select: {
+        name: true,
+        rank: true,
+        status: true,
+        points: true,
+        difficulty: true,
+        thumbnailUrl: true,
+        verifier: true,
+        nerfCreator: true,
+        description: true,
+        showcaseUrl: true,
+      },
+    });
+  } catch {
+    level = FALLBACK_RANKED_LEVELS.find((l) => l.slug === slug);
+  }
+
+  if (!level) {
+    level = FALLBACK_RANKED_LEVELS.find((l) => l.slug === slug);
+  }
 
   if (!level) {
     return {
@@ -84,9 +96,10 @@ export async function generateMetadata({
   const title = `${rankLabel} - ${level.name} | Nerfed Demonlist`;
   const description = `${computedPoints} Points • Difficulty: ${level.difficulty} • Nerfed by: ${level.nerfCreator} • Verified by: ${level.verifier}`;
   const pageUrl = absoluteSiteUrl(`/levels/${slug}`);
-  const imageUrl = level.thumbnailUrl?.startsWith("http")
-    ? level.thumbnailUrl
-    : absoluteSiteUrl(level.thumbnailUrl || "/logo.png");
+  const resolvedThumbnail = resolveLevelThumbnail(slug, level.name, level.showcaseUrl, level.thumbnailUrl);
+  const imageUrl = resolvedThumbnail.startsWith("http")
+    ? resolvedThumbnail
+    : absoluteSiteUrl(resolvedThumbnail);
 
   return {
     title,
@@ -121,72 +134,96 @@ export default async function LevelPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const level = await prisma.level.findFirst({
-    where: publicLevelWhere({
-      slug,
-    }),
-    include: {
-      verifierUser: {
-        select: {
-          id: true,
-          displayName: true,
-          playerName: true,
-        },
-      },
-      records: {
-        where: publicRecordWhere(),
-        select: {
-          id: true,
-          progress: true,
-          isVerifier: true,
-          videoUrl: true,
-          rawFootageUrl: true,
-          fps: true,
-          cbfUsed: true,
-          acceptedAt: true,
-          pointsAwarded: true,
-          player: {
-            select: {
-              id: true,
-              displayName: true,
-              playerName: true,
-            },
-          },
-          submission: {
-            select: {
-              submittedAt: true,
-            },
+  let level: any = null;
+
+  try {
+    level = await prisma.level.findFirst({
+      where: publicLevelWhere({
+        slug,
+      }),
+      include: {
+        verifierUser: {
+          select: {
+            id: true,
+            displayName: true,
+            playerName: true,
           },
         },
-        orderBy: [
-          { isVerifier: "desc" },
-          { progress: "desc" },
-          { acceptedAt: "asc" },
-        ],
-      },
-      history: {
-        select: {
-          id: true,
-          action: true,
-          notes: true,
-          createdAt: true,
-          actor: {
-            select: {
-              displayName: true,
+        records: {
+          where: publicRecordWhere(),
+          select: {
+            id: true,
+            progress: true,
+            isVerifier: true,
+            videoUrl: true,
+            rawFootageUrl: true,
+            fps: true,
+            cbfUsed: true,
+            acceptedAt: true,
+            pointsAwarded: true,
+            player: {
+              select: {
+                id: true,
+                displayName: true,
+                playerName: true,
+              },
+            },
+            submission: {
+              select: {
+                submittedAt: true,
+              },
             },
           },
+          orderBy: [
+            { isVerifier: "desc" },
+            { progress: "desc" },
+            { acceptedAt: "asc" },
+          ],
         },
-        orderBy: {
-          createdAt: "desc",
+        history: {
+          select: {
+            id: true,
+            action: true,
+            notes: true,
+            createdAt: true,
+            actor: {
+              select: {
+                displayName: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
+        positionSnapshots: {
+          orderBy: {
+            recordedAt: "desc",
+          },
         },
       },
-      positionSnapshots: {
-        orderBy: {
-          recordedAt: "desc",
-        },
-      },
-    },
-  });
+    });
+  } catch (err) {
+    console.error("Database query failed in level page, using fallback:", err);
+  }
+
+  if (!level) {
+    const fallback = FALLBACK_RANKED_LEVELS.find((l) => l.slug === slug);
+    if (fallback) {
+      level = {
+        ...fallback,
+        minimumProgress: 50,
+        versionNotes: "",
+        verificationVideoUrl: fallback.showcaseUrl || "",
+        showcaseVideoId: "",
+        isDemo: false,
+        verifierUser: null,
+        records: [],
+        history: [],
+        positionSnapshots: [],
+      };
+    }
+  }
 
   if (!level) {
     notFound();
@@ -211,13 +248,13 @@ export default async function LevelPage({
     level.versionNotes?.trim() || "No version notes provided.";
   const rankLabel = level.rank ? `#${level.rank}` : "Unranked";
 
-  const victors = level.records.filter((r) => (r.progress ?? 100) === 100);
-  const progressRecords = level.records
-    .filter((r) => (r.progress ?? 100) < 100)
+  const victors = (level.records || []).filter((r: any) => (r.progress ?? 100) === 100);
+  const progressRecords = (level.records || [])
+    .filter((r: any) => (r.progress ?? 100) < 100)
     .sort(
-      (a, b) =>
+      (a: any, b: any) =>
         (b.progress ?? 0) - (a.progress ?? 0) ||
-        a.acceptedAt.getTime() - b.acceptedAt.getTime(),
+        new Date(a.acceptedAt).getTime() - new Date(b.acceptedAt).getTime(),
     );
 
   return (
@@ -239,7 +276,7 @@ export default async function LevelPage({
         <div className="grid gap-0 lg:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.65fr)]">
           <div className="relative aspect-video overflow-hidden border-b border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950 lg:min-h-[24rem] lg:border-b-0 lg:border-r">
             <SafeThumbnail
-              src={level.thumbnailUrl}
+              src={resolveLevelThumbnail(level.slug, level.name, level.showcaseUrl, level.thumbnailUrl)}
               alt={`${level.name} thumbnail`}
               className="h-full w-full object-contain"
             />
@@ -490,7 +527,7 @@ export default async function LevelPage({
                 <span className="text-right">Video</span>
               </div>
               {victors.length > 0 ? (
-                victors.map((record, index) => {
+                victors.map((record: any, index: number) => {
                   const rawFootageOnFile = Boolean(record.rawFootageUrl);
                   const isVerifier = Boolean(record.isVerifier);
 
@@ -596,7 +633,7 @@ export default async function LevelPage({
                 <span className="text-right">Video</span>
               </div>
               {progressRecords.length > 0 ? (
-                progressRecords.map((record, index) => {
+                progressRecords.map((record: any, index: number) => {
                   const rawFootageOnFile = Boolean(record.rawFootageUrl);
                   const awarded = record.pointsAwarded;
                   const progressPoints =
@@ -740,8 +777,8 @@ export default async function LevelPage({
               Update history
             </div>
             <div className="mt-3 space-y-3">
-              {level.history.length > 0 ? (
-                level.history.map((entry) => (
+              {(level.history || []).length > 0 ? (
+                (level.history || []).map((entry: any) => (
                   <div key={entry.id} className="border-l border-cyan-300 pl-3 dark:border-cyan-500">
                     <div className="font-black text-slate-950 dark:text-slate-100">
                       {entry.action}

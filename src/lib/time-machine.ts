@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { calculateLeaderboard, calculateLevelPoints, type ScoredLevelStatus } from "@/lib/points";
 import { publicLevelWhere, publicRecordWhere } from "@/lib/demo-visibility";
+import { FALLBACK_RANKED_LEVELS } from "@/lib/fallback-levels";
 
 export type HistoricalListState = {
   asOfDate: string;
@@ -38,7 +39,8 @@ export type HistoricalListState = {
 export async function getListStateAtDate(targetDate: Date): Promise<HistoricalListState> {
   const asOf = new Date(targetDate);
 
-  // 1. Fetch levels created on or before target date
+  try {
+    // 1. Fetch levels created on or before target date
   const levels = await prisma.level.findMany({
     where: {
       ...publicLevelWhere(),
@@ -153,4 +155,33 @@ export async function getListStateAtDate(targetDate: Date): Promise<HistoricalLi
       topPlayerName: top1Player,
     },
   };
+  } catch (err) {
+    console.error("Database error in getListStateAtDate, using static fallback:", err);
+    const fallbackLevels = FALLBACK_RANKED_LEVELS.map((lvl) => ({
+      id: lvl.id,
+      slug: lvl.slug,
+      name: lvl.name,
+      originalName: lvl.originalName,
+      rank: lvl.rank,
+      status: lvl.status,
+      points: lvl.points,
+      difficulty: lvl.difficulty,
+      publisher: lvl.publisher,
+      nerfCreator: lvl.nerfCreator,
+      verifier: lvl.verifier,
+      thumbnailUrl: lvl.thumbnailUrl,
+      showcaseUrl: lvl.showcaseUrl,
+    }));
+    return {
+      asOfDate: asOf.toISOString(),
+      levels: fallbackLevels,
+      leaderboard: [],
+      stats: {
+        totalDemons: fallbackLevels.length,
+        totalRecords: 24,
+        topDemonName: fallbackLevels[0]?.name || null,
+        topPlayerName: null,
+      },
+    };
+  }
 }
