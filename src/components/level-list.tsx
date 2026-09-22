@@ -9,7 +9,7 @@ import { useUserSubmissions } from "@/lib/use-user-submissions";
 
 type SortMode = "rank" | "points" | "records" | "name";
 type TabMode = "MAIN" | "EXTENDED" | "LEGACY" | "ALL";
-type TierFilter = "ALL" | "TOP_10" | "TOP_50" | "EXTREME" | "INSANE";
+type TierFilter = "ALL" | "TOP_10" | "TOP_50";
 
 const tabs: Array<{ value: TabMode; label: string }> = [
   { value: "MAIN", label: "Main List (#1–75)" },
@@ -22,8 +22,6 @@ const tierChips: Array<{ value: TierFilter; label: string }> = [
   { value: "ALL", label: "All Tiers" },
   { value: "TOP_10", label: "Top 10" },
   { value: "TOP_50", label: "Top 50" },
-  { value: "EXTREME", label: "Extreme Nerfed" },
-  { value: "INSANE", label: "Insane Nerfed" },
 ];
 
 export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
@@ -62,10 +60,6 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
           matchesTier = level.rank !== null && level.rank <= 10;
         } else if (tier === "TOP_50") {
           matchesTier = level.rank !== null && level.rank <= 50;
-        } else if (tier === "EXTREME") {
-          matchesTier = level.difficulty === "EXTREME_NERFED";
-        } else if (tier === "INSANE") {
-          matchesTier = level.difficulty === "INSANE_NERFED";
         }
 
         const haystack = [
@@ -147,10 +141,10 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
           </label>
         </div>
 
-        {/* Difficulty Quick Filter Chips */}
+        {/* Tier Quick Filter Chips */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-200 bg-zinc-50/60 px-3 py-2 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-bold text-zinc-500 mr-1">Difficulty:</span>
+            <span className="font-bold text-zinc-500 mr-1">Tier:</span>
             {tierChips.map((chip) => (
               <button
                 key={chip.value}

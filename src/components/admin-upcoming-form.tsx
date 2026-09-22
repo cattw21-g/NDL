@@ -198,11 +198,11 @@ export function AdminUpcomingLevelForm({
               defaultValue="EXTREME"
               className={`${inputClass} mt-1 w-full font-semibold`}
             >
-              <option value="EXTREME">Extreme Nerfed</option>
-              <option value="MYTHIC">Mythic Nerfed</option>
-              <option value="ADVANCED">Advanced Nerfed</option>
-              <option value="ENTRY">Entry Nerfed</option>
-              <option value="ASCENT">Ascent Nerfed</option>
+              <option value="EXTREME">Extreme Demon</option>
+              <option value="MYTHIC">Mythic Demon</option>
+              <option value="ADVANCED">Advanced Demon</option>
+              <option value="ENTRY">Entry Extreme</option>
+              <option value="ASCENT">Ascent Tier</option>
             </select>
           </label>
 
