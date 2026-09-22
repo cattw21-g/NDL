@@ -1,7 +1,6 @@
 import {
   Award,
   Calendar,
-  CheckCircle2,
   Crown,
   Flame,
   Gamepad2,
@@ -53,19 +52,31 @@ export async function generateMetadata({
   params: Promise<{ playerName: string }>;
 }): Promise<Metadata> {
   const { playerName } = await params;
-  const player = await prisma.user.findFirst({
-    where: publicUserWhere({ playerName }),
-    select: {
-      displayName: true,
-      playerName: true,
-      countryCode: true,
-      subdivision: true,
-      records: {
-        where: publicRecordWhere({ progress: 100 }),
-        select: { id: true },
+  let player: {
+    displayName: string;
+    playerName: string;
+    countryCode: string | null;
+    subdivision: string | null;
+    records: Array<{ id: string }>;
+  } | null = null;
+
+  try {
+    player = await prisma.user.findFirst({
+      where: publicUserWhere({ playerName }),
+      select: {
+        displayName: true,
+        playerName: true,
+        countryCode: true,
+        subdivision: true,
+        records: {
+          where: publicRecordWhere({ progress: 100 }),
+          select: { id: true },
+        },
       },
-    },
-  });
+    });
+  } catch (err) {
+    console.error("Database query failed in player metadata:", err);
+  }
 
   if (!player) {
     return {
@@ -104,13 +115,8 @@ export async function generateMetadata({
   };
 }
 
-export default async function PlayerProfilePage({
-  params,
-}: {
-  params: Promise<{ playerName: string }>;
-}) {
-  const { playerName } = await params;
-  const [viewer, player, allRecords] = await Promise.all([
+async function getPlayerPageData(playerName: string) {
+  return Promise.all([
     getCurrentUser(),
     prisma.user.findFirst({
       where: publicUserWhere({
@@ -172,6 +178,23 @@ export default async function PlayerProfilePage({
       },
     }),
   ]);
+}
+
+export default async function PlayerProfilePage({
+  params,
+}: {
+  params: Promise<{ playerName: string }>;
+}) {
+  const { playerName } = await params;
+  let data: Awaited<ReturnType<typeof getPlayerPageData>> | null = null;
+
+  try {
+    data = await getPlayerPageData(playerName);
+  } catch (err) {
+    console.error("Database query failed in player profile page:", err);
+  }
+
+  const [viewer, player, allRecords] = data ?? [null, null, []];
 
   if (!player) {
     notFound();

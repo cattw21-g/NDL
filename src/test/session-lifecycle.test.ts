@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 process.env.DATABASE_URL = "postgresql://mock:mock@localhost:5432/mock";
 process.env.SESSION_SECRET = "mock-session-secret-at-least-32-chars-long";

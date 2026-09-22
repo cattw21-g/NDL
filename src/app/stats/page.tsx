@@ -5,17 +5,14 @@ import {
   ShieldCheck,
   Flame,
   Globe,
-  Activity,
-  CheckCircle2,
-  TrendingUp,
   Cpu,
 } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { publicLevelWhere, publicRecordWhere } from "@/lib/demo-visibility";
-import { calculateCurrentLevelPoints, calculateLeaderboard, calculateCountryLeaderboard } from "@/lib/points";
+import { calculateLeaderboard } from "@/lib/points";
 import { getCountryMeta, CONTINENTS } from "@/lib/countries";
-import { PageHeader, SectionPanel, MetricTile } from "@/components/ui";
+import { SectionPanel, MetricTile } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 

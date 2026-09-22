@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ArrowUpDown, Search, Video, Filter } from "lucide-react";
+import { CheckCircle2, ArrowUpDown, Search, Video } from "lucide-react";
 import { formatDate } from "@/lib/format";
 
 export type CompletionItem = {

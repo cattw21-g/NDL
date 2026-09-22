@@ -260,10 +260,28 @@ export function getEvidenceTimeoutRemaining(
   };
 }
 
+export type AutoExpireClient = {
+  recordSubmission: {
+    findMany(args: {
+      where: {
+        status: { in: RecordStatus[] };
+        reviewedAt: { lt: Date };
+      };
+      select: { id: true };
+    }): Promise<Array<{ id: string }>>;
+    updateMany(args: {
+      where: { id: { in: string[] } };
+      data: { status: RecordStatus; moderatorNotes: string };
+    }): Promise<{ count: number }>;
+  };
+};
+
 /**
  * Automatically transitions overdue Under Consideration / Needs Changes submissions to REJECTED.
  */
-export async function autoExpireOverdueSubmissions(prismaClient: any): Promise<number> {
+export async function autoExpireOverdueSubmissions(
+  prismaClient: AutoExpireClient,
+): Promise<number> {
   const cutoff = new Date(Date.now() - EVIDENCE_TIMEOUT_MS);
   const overdue = await prismaClient.recordSubmission.findMany({
     where: {
@@ -279,11 +297,12 @@ export async function autoExpireOverdueSubmissions(prismaClient: any): Promise<n
 
   await prismaClient.recordSubmission.updateMany({
     where: {
-      id: { in: overdue.map((s: any) => s.id) },
+      id: { in: overdue.map((s) => s.id) },
     },
     data: {
       status: RecordStatus.REJECTED,
-      moderatorNotes: "Automatically closed due to evidence request timeout (3 days elapsed without required proof update).",
+      moderatorNotes:
+        "Automatically closed due to evidence request timeout (3 days elapsed without required proof update).",
     },
   });
 

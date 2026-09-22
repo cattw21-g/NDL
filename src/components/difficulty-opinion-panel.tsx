@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Scale, ThumbsUp, ChevronDown, Check, Star, ShieldCheck, BarChart3 } from "lucide-react";
+import { Scale, Check, Star, BarChart3 } from "lucide-react";
 import { SectionPanel } from "@/components/ui";
 import { analyzeDifficultyOpinions } from "@/lib/difficulty-analysis";
 
@@ -22,10 +22,8 @@ type Props = {
 };
 
 export function DifficultyOpinionPanel({
-  levelId,
   levelName,
   currentRank,
-  victorCount,
   initialOpinions = [],
 }: Props) {
   const [opinions, setOpinions] = useState<Opinion[]>(initialOpinions);

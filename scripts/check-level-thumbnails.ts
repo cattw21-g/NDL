@@ -12,11 +12,12 @@ async function main() {
     console.log("getDownloadUrl result:", dlUrl);
     const r = await fetch(dlUrl);
     console.log("fetch dlUrl status:", r.status);
-  } catch (err: any) {
-    console.log("getDownloadUrl error:", err?.message);
+  } catch (err: unknown) {
+    console.log("getDownloadUrl error:", err instanceof Error ? err.message : String(err));
   }
 
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result: any = await get(b.url, { access: "public" });
     console.log("get result keys:", Object.keys(result || {}));
     if (result && result.body) {
@@ -24,8 +25,8 @@ async function main() {
       const buf = Buffer.from(await result.arrayBuffer());
       console.log("Successfully downloaded bytes:", buf.length);
     }
-  } catch (err: any) {
-    console.log("get error:", err?.message);
+  } catch (err: unknown) {
+    console.log("get error:", err instanceof Error ? err.message : String(err));
   }
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BarChart3, X, Zap, Cpu, Award, ShieldCheck, Flame, PieChart } from "lucide-react";
+import { BarChart3, X, Cpu, Award, ShieldCheck, Flame } from "lucide-react";
 
 type Props = {
   playerName: string;

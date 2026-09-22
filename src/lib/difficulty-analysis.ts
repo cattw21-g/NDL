@@ -66,8 +66,8 @@ export function analyzeDifficultyOpinions(ranks: number[]): OpinionAnalysisResul
 
   // 5. Reliability Score (% based on sample size and standard deviation)
   // Higher sample size increases confidence; higher stdDev reduces confidence.
-  let sampleWeight = Math.min(50, n * 10); // up to 50% for sample size (5+ ratings)
-  let consistencyWeight = Math.max(0, 50 - stdDev * 5); // up to 50% for low variance
+  const sampleWeight = Math.min(50, n * 10); // up to 50% for sample size (5+ ratings)
+  const consistencyWeight = Math.max(0, 50 - stdDev * 5); // up to 50% for low variance
   const reliabilityScore = Math.min(100, Math.round(sampleWeight + consistencyWeight));
 
   let reliabilityLabel: OpinionAnalysisResult["reliabilityLabel"];

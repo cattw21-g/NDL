@@ -1,5 +1,4 @@
-import { Code2, Terminal, ExternalLink, Zap, ShieldCheck, Database } from "lucide-react";
-import Link from "next/link";
+import { Code2, Terminal, ExternalLink } from "lucide-react";
 import { CopyButton } from "@/components/copy-button";
 import { SectionPanel } from "@/components/ui";
 

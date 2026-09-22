@@ -1,6 +1,3 @@
-import Link from "next/link";
-import { Users, Hammer, Sparkles, ShieldCheck } from "lucide-react";
-
 type Credit = {
   name: string;
   role: string;

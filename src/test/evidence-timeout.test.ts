@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getEvidenceTimeoutRemaining, EVIDENCE_TIMEOUT_MS } from "@/lib/submission-workflow";
+import { getEvidenceTimeoutRemaining } from "@/lib/submission-workflow";
 
 describe("getEvidenceTimeoutRemaining", () => {
   it("returns null for non-evidence requested statuses", () => {

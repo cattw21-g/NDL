@@ -11,14 +11,14 @@ describe("Database Hygiene & Self-Cleaning Maintenance", () => {
     let deleted = false;
     const mockPrisma = {
       session: {
-        deleteMany: async (args: { where: { expiresAt: { lt: Date } } }) => {
+        deleteMany: async () => {
           deleted = true;
           return { count: 3 };
         },
       },
     };
 
-    const count = await cleanExpiredSessions(mockPrisma as any);
+    const count = await cleanExpiredSessions(mockPrisma as unknown as Parameters<typeof cleanExpiredSessions>[0]);
     expect(deleted).toBe(true);
     expect(count).toBe(3);
   });
@@ -33,7 +33,7 @@ describe("Database Hygiene & Self-Cleaning Maintenance", () => {
       },
     };
 
-    const result = await cleanExpiredTokens(mockPrisma as any);
+    const result = await cleanExpiredTokens(mockPrisma as unknown as Parameters<typeof cleanExpiredTokens>[0]);
     expect(result.resetTokens).toBe(2);
     expect(result.verificationTokens).toBe(5);
   });
@@ -49,7 +49,7 @@ describe("Database Hygiene & Self-Cleaning Maintenance", () => {
       },
     };
 
-    const count = await cleanOldRateLimitAttempts(mockPrisma as any, 48);
+    const count = await cleanOldRateLimitAttempts(mockPrisma as unknown as Parameters<typeof cleanOldRateLimitAttempts>[0], 48);
     expect(count).toBe(12);
     expect(cutoffUsed).toBeInstanceOf(Date);
   });
@@ -70,7 +70,7 @@ describe("Database Hygiene & Self-Cleaning Maintenance", () => {
       },
     };
 
-    const summary = await runDatabaseMaintenance(mockPrisma as any);
+    const summary = await runDatabaseMaintenance(mockPrisma as unknown as Parameters<typeof runDatabaseMaintenance>[0]);
     expect(summary.ok).toBe(true);
     expect(summary.deletedSessions).toBe(1);
     expect(summary.deletedResetTokens).toBe(2);

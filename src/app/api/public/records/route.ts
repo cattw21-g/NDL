@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cachedJson } from "@/lib/api-cache";
 import { prisma } from "@/lib/db";
 import { publicRecordWhere } from "@/lib/demo-visibility";
+import type { Prisma } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
   const page = Math.max(Number(searchParams.get("page") ?? "1"), 1);
   const skip = (page - 1) * limit;
 
-  const where: any = publicRecordWhere({
+  const where: Prisma.RecordWhereInput = publicRecordWhere({
     ...(levelId ? { levelId } : {}),
     ...(playerId ? { playerId } : {}),
     ...(isVerifier !== null && isVerifier !== undefined
@@ -83,7 +84,12 @@ export async function POST(request: NextRequest) {
     const apiKeyHeader = request.headers.get("x-api-key");
     const token = authHeader?.replace(/^Bearer\s+/i, "") || apiKeyHeader;
 
-    let authenticatedUser: any = null;
+    let authenticatedUser: {
+      id: string;
+      playerName: string;
+      displayName: string;
+      isSubmissionLocked: boolean;
+    } | null = null;
 
     if (token) {
       // 1. Session token authentication
@@ -194,7 +200,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine target player
-    let effectivePlayer: any;
+    let effectivePlayer: {
+      id: string;
+      playerName: string;
+      displayName: string;
+      isSubmissionLocked?: boolean;
+    };
     if (authenticatedUser) {
       effectivePlayer = authenticatedUser;
     } else {
@@ -329,7 +340,7 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 },
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Write API error:", error);
     return NextResponse.json(
       { error: "Internal server error processing record submission." },

@@ -1,31 +1,45 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { TRANSLATIONS, type SupportedLanguage, type TranslationDictionary } from "./translations";
 
-export function useTranslation() {
-  const [lang, setLang] = useState<SupportedLanguage>("en");
-  const [mounted, setMounted] = useState(false);
+const emptySubscribe = () => () => {};
 
-  useEffect(() => {
-    setMounted(true);
+function subscribeLang(callback: () => void) {
+  window.addEventListener("ndl_language_change", callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener("ndl_language_change", callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
+function getLangSnapshot(): SupportedLanguage {
+  if (typeof window === "undefined") return "en";
+  try {
     const saved = localStorage.getItem("ndl_lang") as SupportedLanguage;
-    if (saved && TRANSLATIONS[saved]) {
-      setLang(saved);
-    }
+    if (saved && TRANSLATIONS[saved]) return saved;
+  } catch {
+    // Ignore storage restrictions
+  }
+  return "en";
+}
 
-    function handleLangChange(e: Event) {
-      const customEvent = e as CustomEvent<SupportedLanguage>;
-      if (customEvent.detail && TRANSLATIONS[customEvent.detail]) {
-        setLang(customEvent.detail);
-      }
-    }
+function getServerLangSnapshot(): SupportedLanguage {
+  return "en";
+}
 
-    window.addEventListener("ndl_language_change", handleLangChange);
-    return () => {
-      window.removeEventListener("ndl_language_change", handleLangChange);
-    };
-  }, []);
+export function useTranslation() {
+  const isLoaded = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
+  const lang = useSyncExternalStore(
+    subscribeLang,
+    getLangSnapshot,
+    getServerLangSnapshot,
+  );
 
   const t = useCallback(
     (key: keyof TranslationDictionary | string, fallback?: string): string => {
@@ -39,11 +53,10 @@ export function useTranslation() {
       }
       return fallback ?? String(key);
     },
-    [lang]
+    [lang],
   );
 
   const changeLanguage = useCallback((newLang: SupportedLanguage) => {
-    setLang(newLang);
     try {
       localStorage.setItem("ndl_lang", newLang);
       document.cookie = `ndl_lang=${newLang}; path=/; max-age=31536000; SameSite=Lax`;
@@ -61,7 +74,9 @@ export function useTranslation() {
           document.cookie = `googtrans=${targetTrans}; domain=.${rootDomain}; path=/; max-age=31536000; SameSite=Lax`;
         }
       }
-    } catch {}
+    } catch {
+      // Ignore cookie errors
+    }
 
     window.dispatchEvent(new CustomEvent("ndl_language_change", { detail: newLang }));
 
@@ -72,7 +87,9 @@ export function useTranslation() {
         combo.value = newLang;
         combo.dispatchEvent(new Event("change"));
       }
-    } catch {}
+    } catch {
+      // Ignore combo errors
+    }
 
     // Smooth page reload to apply full language translation across all cards, tables, and server content
     window.location.reload();
@@ -82,6 +99,6 @@ export function useTranslation() {
     t,
     lang,
     changeLanguage,
-    isLoaded: mounted,
+    isLoaded,
   };
 }

@@ -29,7 +29,7 @@ import { Eyebrow, MetricTile, SectionPanel, inputClass } from "@/components/ui";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/format";
-import { FALLBACK_THUMBNAIL_SRC, resolveUpcomingThumbnail } from "@/lib/media";
+import { resolveUpcomingThumbnail } from "@/lib/media";
 import {
   imageUploadProvider,
   maxImageUploadBytes,

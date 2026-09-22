@@ -1,9 +1,9 @@
-import { Shield, ShieldAlert, ShieldCheck, UserCheck, MessageSquare, Mail, HelpCircle, ExternalLink } from "lucide-react";
+import { Shield, ShieldAlert, ShieldCheck, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { publicUserWhere } from "@/lib/demo-visibility";
 import { getCountryMeta } from "@/lib/countries";
-import { PageHeader, SectionPanel } from "@/components/ui";
+import { SectionPanel } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { cachedJson } from "@/lib/api-cache";
 import { prisma } from "@/lib/db";
 import { publicLevelWhere, publicRecordWhere } from "@/lib/demo-visibility";

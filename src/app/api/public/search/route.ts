@@ -1,6 +1,7 @@
 import { type NextRequest } from "next/server";
 
 import { apiOk } from "@/lib/api-response";
+import { publicCacheHeaders } from "@/lib/api-cache";
 import { enforceApiRateLimit } from "@/lib/api-auth";
 import { parseApiLimit, parseApiSearch } from "@/lib/api-query";
 import {
@@ -27,12 +28,17 @@ export async function GET(request: NextRequest) {
   const limit = parseApiLimit(request.nextUrl.searchParams);
 
   if (!q) {
-    return apiOk({
-      query: q,
-      levels: [],
-      players: [],
-      limit,
-    });
+    return apiOk(
+      {
+        query: q,
+        levels: [],
+        players: [],
+        limit,
+      },
+      {
+        headers: publicCacheHeaders(30, 120),
+      },
+    );
   }
 
   const [levels, players] = await Promise.all([
@@ -73,10 +79,15 @@ export async function GET(request: NextRequest) {
     }),
   ]);
 
-  return apiOk({
-    query: q,
-    levels: levels.map(serializePublicLevel),
-    players: players.map(serializePublicPlayer),
-    limit,
-  });
+  return apiOk(
+    {
+      query: q,
+      levels: levels.map(serializePublicLevel),
+      players: players.map(serializePublicPlayer),
+      limit,
+    },
+    {
+      headers: publicCacheHeaders(30, 120),
+    },
+  );
 }

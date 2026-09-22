@@ -1,5 +1,4 @@
-import { Bot, MessageSquare, ShieldCheck, Zap, ExternalLink, Terminal, CheckCircle2 } from "lucide-react";
-import Link from "next/link";
+import { Bot, ShieldCheck, Zap, Terminal } from "lucide-react";
 import { SectionPanel } from "@/components/ui";
 
 export const metadata = {

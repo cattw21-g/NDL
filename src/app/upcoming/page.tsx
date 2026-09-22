@@ -4,7 +4,7 @@ import { demoModeEnabled } from "@/lib/demo-visibility";
 import { isAdminRole } from "@/lib/permissions";
 import { UpcomingLevelItem, UpcomingView } from "@/components/upcoming-view";
 import { parseUpcomingProgress } from "@/lib/upcoming-progress";
-import { FALLBACK_THUMBNAIL_SRC, resolveUpcomingThumbnail } from "@/lib/media";
+import { resolveUpcomingThumbnail } from "@/lib/media";
 
 export { parseUpcomingProgress };
 

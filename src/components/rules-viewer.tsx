@@ -14,13 +14,12 @@ function sectionId(title: string) {
 }
 
 export function RulesViewer({
-  defaultContent,
   updatedAtFormatted,
 }: {
-  defaultContent: string;
+  defaultContent?: string;
   updatedAtFormatted: string;
 }) {
-  const { lang, t } = useTranslation();
+  const { lang } = useTranslation();
 
   const activeRules = RULES_TRANSLATIONS[lang] || RULES_TRANSLATIONS.en;
 
