@@ -173,8 +173,9 @@ We have implemented extensive backend security and safety systems across the web
 ---
 
 ### 👥 What's Next: Community Moderators Coming Soon!
-Managing the rapid growth of Nerfed Demonlist, reviewing submissions, and evaluating level suggestions is a lot of work. With our new safety foundation in place:
+With our new safety foundations and security tools ready, we're getting set for the next chapter:
 - **We will soon begin looking for active, trusted members of the community to join the team as List Moderators!**
+- Mods will help review and accept record submissions and level suggestions so everything stays fast and organized.
 - Stay tuned to our announcements channel for upcoming details on moderator applications and how you can get involved.
 
 Thank you all for your continuous support, good luck on your grinds, and we'll see you on the leaderboard!
