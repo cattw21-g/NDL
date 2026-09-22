@@ -449,7 +449,11 @@ export async function reviewSubmissionAction(formData: FormData) {
     await applySubmissionReview(tx, submission, moderator, parsed.data);
   });
 
-  if (submission.player.email) {
+  if (
+    submission.player.email &&
+    !submission.player.email.endsWith(".local") &&
+    !submission.player.email.includes("_guest@")
+  ) {
     const levelUrl = absoluteSiteUrl(`/levels/${submission.level.slug}`);
     const progress = submission.progress ?? 100;
     const computedPoints = calculateCurrentLevelPoints(submission.level);

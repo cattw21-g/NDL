@@ -221,7 +221,11 @@ export async function reviewLevelSuggestionAction(formData: FormData) {
     });
   });
 
-  if (suggestion.submitter.email) {
+  if (
+    suggestion.submitter.email &&
+    !suggestion.submitter.email.endsWith(".local") &&
+    !suggestion.submitter.email.includes("_guest@")
+  ) {
     void sendLevelSuggestionStatusEmail({
       to: suggestion.submitter.email,
       submitterName: suggestion.submitter.displayName,

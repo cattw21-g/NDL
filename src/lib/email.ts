@@ -284,6 +284,11 @@ export async function sendRecordStatusEmail(
   const config = readSmtpConfig(env);
   const logger = options.logger ?? console;
 
+  if (!isDeliverableEmail(email.to)) {
+    logger.log(`[EMAIL] Skipped record status notification to non-deliverable email: ${email.to}`);
+    return "dev-log" as const;
+  }
+
   if (!config) {
     logger.log(`[DEV EMAIL] Record status notification to ${email.to}: ${email.levelName} (${email.status}, ${email.progress}%)`);
     return "dev-log" as const;
@@ -319,6 +324,11 @@ export async function sendLevelSuggestionStatusEmail(
 ) {
   const config = readSmtpConfig(env);
   const logger = options.logger ?? console;
+
+  if (!isDeliverableEmail(email.to)) {
+    logger.log(`[EMAIL] Skipped level suggestion notification to non-deliverable email: ${email.to}`);
+    return "dev-log" as const;
+  }
 
   if (!config) {
     logger.log(`[DEV EMAIL] Level suggestion notification to ${email.to}: ${email.levelName} (${email.status})`);
@@ -502,11 +512,51 @@ export function levelSuggestionStatusEmailHtml(
 </html>`;
 }
 
+export function isDeliverableEmail(email: string | null | undefined): boolean {
+  if (!email || typeof email !== "string") {
+    return false;
+  }
+
+  const trimmed = email.trim().toLowerCase();
+  const emailRegex =
+    /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+  if (!emailRegex.test(trimmed)) {
+    return false;
+  }
+
+  const domain = trimmed.split("@")[1];
+  if (!domain || !domain.includes(".")) {
+    return false;
+  }
+
+  const forbiddenTlds = [
+    ".local",
+    ".localhost",
+    ".test",
+    ".invalid",
+    ".internal",
+    ".lan",
+  ];
+  if (forbiddenTlds.some((tld) => domain.endsWith(tld))) {
+    return false;
+  }
+
+  if (domain === "ndl.local" || domain === "nerfeddemonlist.local") {
+    return false;
+  }
+
+  return true;
+}
+
 async function sendViaSmtp(
   config: SmtpConfig,
   message: Omit<TransactionalMailMessage, "from">,
   createTransport?: TransportFactory,
 ) {
+  if (!isDeliverableEmail(message.to)) {
+    return;
+  }
+
   const transportFactory: TransportFactory =
     createTransport ??
     ((transportOptions) => nodemailer.createTransport(transportOptions));
@@ -582,6 +632,11 @@ export async function sendNewsBroadcastEmail(
   const env = dependencies.env ?? process.env;
   const config = readSmtpConfig(env);
   const logger = dependencies.logger ?? console;
+
+  if (!isDeliverableEmail(data.to)) {
+    logger.log(`[EMAIL] Skipped news broadcast to non-deliverable email: ${data.to}`);
+    return;
+  }
 
   const subject = `[NDL News] ${data.title}`;
   const text = [
