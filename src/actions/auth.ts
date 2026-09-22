@@ -108,10 +108,23 @@ export async function loginAction(formData: FormData) {
   redirect("/submissions");
 }
 
+import { isBotSubmission } from "@/lib/honeypot";
+
 export async function registerAction(
   _previousState: RegisterFormState,
   formData: FormData,
 ): Promise<RegisterFormState> {
+  // Anti-Bot Honeypot Defense: Silently absorb automated spam
+  if (isBotSubmission(formData)) {
+    return {
+      ok: true,
+      summary: "Registration received.",
+      formErrors: [],
+      fieldErrors: {},
+      values: _previousState.values,
+    };
+  }
+
   const parsed = validateRegisterFormSubmission(formData);
 
   if (!parsed.success) {

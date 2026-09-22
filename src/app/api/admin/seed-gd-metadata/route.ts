@@ -92,7 +92,14 @@ const METADATA: Record<
   },
 };
 
-export async function GET() {
+import { requireApiAdmin } from '@/lib/api-admin-guard';
+
+export async function GET(request: Request) {
+  const auth = await requireApiAdmin(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     // 1. Ensure all schema columns, tables, and constraints exist on the database
     await prisma.$executeRawUnsafe(`

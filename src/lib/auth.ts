@@ -73,6 +73,36 @@ export async function destroyCurrentSession() {
   cookieStore.delete(SESSION_COOKIE);
 }
 
+/**
+ * Revokes all active database sessions for a user (e.g. on password reset, account suspension, or role demotion).
+ */
+export async function revokeAllUserSessions(userId: string) {
+  if (!userId) return;
+  await prisma.session.deleteMany({
+    where: {
+      userId,
+    },
+  });
+}
+
+/**
+ * Revokes all other sessions for a user, keeping only their current active session.
+ */
+export async function revokeOtherUserSessions(userId: string, currentToken?: string) {
+  if (!userId) return;
+  if (!currentToken) {
+    await revokeAllUserSessions(userId);
+    return;
+  }
+  const currentHash = hashToken(currentToken);
+  await prisma.session.deleteMany({
+    where: {
+      userId,
+      tokenHash: { not: currentHash },
+    },
+  });
+}
+
 async function getSessionUser({ includeUnverified = false } = {}) {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;

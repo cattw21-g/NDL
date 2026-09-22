@@ -40,20 +40,64 @@ import {
   saveProofImageUpload,
   saveVideoUpload,
 } from "@/lib/upload-storage";
+import { isBotSubmission } from "@/lib/honeypot";
+import { validateProofUrl, validatePhysicsParameters } from "@/lib/proof-security";
 import {
   formDataToObject,
   reviewSchema,
 } from "@/lib/validation";
 
 export async function submitRecordAction(
-  _prevState: SubmissionFormState,
+  previousState: SubmissionFormState,
   formData: FormData,
 ): Promise<SubmissionFormState> {
+  // Anti-Bot Honeypot Defense: Silently absorb automated spam
+  if (isBotSubmission(formData)) {
+    return {
+      ok: true,
+      summary: "Submission received.",
+      formErrors: [],
+      fieldErrors: {},
+      values: previousState.values,
+    };
+  }
+
   const sessionUser = await getCurrentUser();
   const parsed = validateSubmissionFormSubmission(formData);
 
   if (!parsed.success) {
     return parsed.state;
+  }
+
+  // Security & Anti-Cheat: Validate proof platform and physics limits
+  const proofCheck = validateProofUrl(parsed.data.videoUrl);
+  if (!proofCheck.valid) {
+    return createSubmissionFormErrorState(parsed.values, {
+      fieldErrors: {
+        videoUrl: [proofCheck.reason],
+      },
+    });
+  }
+
+  if (parsed.data.rawFootageUrl) {
+    const rawCheck = validateProofUrl(parsed.data.rawFootageUrl);
+    if (!rawCheck.valid) {
+      return createSubmissionFormErrorState(parsed.values, {
+        fieldErrors: {
+          rawFootageUrl: [rawCheck.reason],
+        },
+      });
+    }
+  }
+
+  const physicsCheck = validatePhysicsParameters({
+    fps: parsed.data.fps,
+    progress: parsed.data.progress,
+  });
+  if (!physicsCheck.valid) {
+    return createSubmissionFormErrorState(parsed.values, {
+      formErrors: [physicsCheck.reason],
+    });
   }
 
   // Determine submitting player (session user or guest)
@@ -529,3 +573,5 @@ export async function reviewSubmissionAction(formData: FormData) {
   revalidatePath("/admin");
   redirect("/moderation?reviewed=1");
 }
+
+export const createSubmissionAction = submitRecordAction;

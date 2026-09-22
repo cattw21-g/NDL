@@ -43,6 +43,36 @@ async function getChannelIdByName(
   return null;
 }
 
+async function fetchWithDiscordRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 3,
+): Promise<Response> {
+  let attempt = 0;
+  while (attempt < maxRetries) {
+    attempt++;
+    const res = await fetch(url, options);
+
+    if (res.status === 429) {
+      const retryAfterHeader = res.headers.get("Retry-After");
+      const retryAfterSec = retryAfterHeader ? Number(retryAfterHeader) : 1;
+      const waitMs = Math.min(Math.max(retryAfterSec * 1000, 500), 5000);
+      console.warn(`Discord rate limit hit (429). Retrying in ${waitMs}ms (attempt ${attempt}/${maxRetries})...`);
+      await new Promise((r) => setTimeout(r, waitMs));
+      continue;
+    }
+
+    if (res.status >= 500 && attempt < maxRetries) {
+      const waitMs = attempt * 1000;
+      await new Promise((r) => setTimeout(r, waitMs));
+      continue;
+    }
+
+    return res;
+  }
+  return fetch(url, options);
+}
+
 async function sendDiscordEmbed(
   channelName: string,
   embed: Record<string, unknown>,
@@ -63,7 +93,7 @@ async function sendDiscordEmbed(
       return;
     }
 
-    const msgRes = await fetch(`${DISCORD_API_BASE}/channels/${channelId}/messages`, {
+    const msgRes = await fetchWithDiscordRetry(`${DISCORD_API_BASE}/channels/${channelId}/messages`, {
       method: "POST",
       headers: {
         Authorization: `Bot ${token}`,

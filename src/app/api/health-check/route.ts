@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { runDatabaseMaintenance, type MaintenanceResult } from "@/lib/database-hygiene";
 
 export const dynamic = "force-dynamic";
 
@@ -47,13 +48,20 @@ export async function GET() {
     dbInfo = `error: ${String(err)}`;
   }
 
+  let maintenance: MaintenanceResult | null = null;
+  try {
+    maintenance = await runDatabaseMaintenance(prisma);
+  } catch (err) {
+    console.error("Maintenance task error in health check:", err);
+  }
+
   return NextResponse.json({
     status: "ok",
     clientId: clientId.trim(),
     guildId,
-    tokenPrefix: botToken.slice(0, 10),
-    tokenSuffix: botToken.slice(-6),
+    hasBotToken: Boolean(botToken && botToken.length > 0),
     dbMigration: migrationResult,
     dbInfo,
+    maintenance,
   });
 }

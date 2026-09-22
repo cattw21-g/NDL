@@ -60,6 +60,15 @@ export function SubmitRecordForm({
 
   return (
     <form action={formAction} aria-busy={pending} className="grid min-w-0 gap-4">
+      {/* Invisible Anti-Bot Honeypot */}
+      <div style={{ display: "none" }} aria-hidden="true" tabIndex={-1}>
+        <input
+          type="text"
+          name="website_url_hp"
+          autoComplete="off"
+          tabIndex={-1}
+        />
+      </div>
       {state.summary ? (
         <div
           role="alert"

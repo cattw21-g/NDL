@@ -30,6 +30,15 @@ export function RegisterForm() {
 
   return (
     <form action={formAction} aria-busy={pending}>
+      {/* Invisible Anti-Bot Honeypot */}
+      <div style={{ display: "none" }} aria-hidden="true" tabIndex={-1}>
+        <input
+          type="text"
+          name="website_url_hp"
+          autoComplete="off"
+          tabIndex={-1}
+        />
+      </div>
       <SectionPanel className="space-y-4 p-5">
         {state.summary ? (
           <div

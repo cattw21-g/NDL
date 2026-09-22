@@ -2,10 +2,16 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db';
 import { syncAllLinkedDiscordUsers } from '@/lib/discord-role-sync';
+import { requireApiAdmin } from '@/lib/api-admin-guard';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireApiAdmin(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const allRecords = await prisma.record.findMany({
       include: {

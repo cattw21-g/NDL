@@ -29,6 +29,7 @@ import {
   localUploadsEnabled,
   saveThumbnailUpload,
 } from "@/lib/upload-storage";
+import { isBotSubmission } from "@/lib/honeypot";
 import {
   formDataToObject,
   levelSuggestionConvertSchema,
@@ -39,11 +40,59 @@ export async function submitLevelSuggestionAction(
   _prevState: LevelSuggestionFormState,
   formData: FormData,
 ): Promise<LevelSuggestionFormState> {
+  // Anti-Bot Honeypot Defense: Silently absorb automated spam
+  if (isBotSubmission(formData)) {
+    return {
+      ok: true,
+      summary: "Suggestion received.",
+      formErrors: [],
+      fieldErrors: {},
+      values: _prevState.values,
+    };
+  }
+
   const user = await requireUser();
   const parsed = validateLevelSuggestionFormSubmission(formData);
 
   if (!parsed.success) {
     return parsed.state;
+  }
+
+  // Duplicate GD Level ID Prevention: Block duplicates of existing levels or pending suggestions
+  const cleanGdId = parsed.data.gdLevelId.trim();
+  const existingLevel = await prisma.level.findFirst({
+    where: {
+      gdLevelId: cleanGdId,
+    },
+    select: { id: true, name: true, status: true },
+  });
+
+  if (existingLevel) {
+    return createLevelSuggestionFormErrorState(parsed.values, {
+      fieldErrors: {
+        gdLevelId: [
+          `This Geometry Dash Level ID is already registered on NDL as "${existingLevel.name}" (${existingLevel.status}).`,
+        ],
+      },
+    });
+  }
+
+  const existingSuggestion = await prisma.levelSuggestion.findFirst({
+    where: {
+      gdLevelId: cleanGdId,
+      status: { in: ["PENDING", "APPROVED"] },
+    },
+    select: { id: true, name: true, status: true },
+  });
+
+  if (existingSuggestion) {
+    return createLevelSuggestionFormErrorState(parsed.values, {
+      fieldErrors: {
+        gdLevelId: [
+          `A suggestion for this Geometry Dash Level ID ("${existingSuggestion.name}") is already in the review queue (${existingSuggestion.status}).`,
+        ],
+      },
+    });
   }
 
   const rateLimit = await checkRateLimit(
