@@ -33,14 +33,16 @@ export default async function ChangelogPostPage({
   if (slug === "nerfed-demonlist-v2-0-0-official-roadmap") {
     redirect("/changelog/nerfed-demonlist-v1-5-0-official-release");
   }
-  const postFromDb = await prisma.changelogPost.findFirst({
-    where: publicChangelogWhere({
-      slug,
-    }),
-    include: {
-      author: true,
-    },
-  });
+  const postFromDb = await prisma.changelogPost
+    .findFirst({
+      where: publicChangelogWhere({
+        slug,
+      }),
+      include: {
+        author: true,
+      },
+    })
+    .catch(() => null);
 
   const post =
     postFromDb ??

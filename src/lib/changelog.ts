@@ -138,6 +138,50 @@ We put a ton of hard work into getting everything ready for this release. Enjoy 
 *— cattw21 & NDL Staff*`,
 };
 
+export const V1_5_1_ANNOUNCEMENT_POST = {
+  title: "Nerfed Demonlist v1.5.1: Bug Fixes, System Safety & Future Mods",
+  slug: "nerfed-demonlist-v1-5-1-bug-fixes-and-safety",
+  category: "ANNOUNCEMENT" as const,
+  summary:
+    "v1.5.1 is live! We've fixed UI and system bugs, added smooth loading skeletons and crash recovery, clarified mandatory microphone/audio rules for legitimate records, strengthened backend security to protect user accounts and logs, and prepared our safety infrastructure as we gear up to onboard community moderators soon!",
+  content: `Hey everyone!
+
+Welcome to **Nerfed Demonlist v1.5.1**! Today's update brings a wave of polish, bug fixes, quality-of-life upgrades, enhanced background safety features, and exciting news regarding the future of the NDL moderation team.
+
+---
+
+### 🛠️ Simplified Bug Fixes & UX Upgrades
+- **Crash-Proof Error Recovery**: We added custom, friendly error screens across the entire site. If an unexpected connection hiccup occurs, you won't get a blank page or be stuck—simply hit the "Reload application" button to recover safely.
+- **Smooth Loading Skeletons**: You will now see smooth animated loading placeholders when navigating between the ranked list, level pages, player leaderboards, stats, and upcoming demons, eliminating awkward visual jumps.
+- **Snappier & More Responsive Navigation**: Improved mobile layouts, link transitions, and fast client-side syncing across the entire site.
+
+---
+
+### 🎙️ Record Submissions: Microphone / Click Audio Requirement
+A quick and very important reminder for all runners submitting records:
+- **Microphone / click audio is strictly required for legitimate record verification.**
+- We have been receiving a high volume of submissions with missing or completely muted audio. To keep the list fair, authentic, and protected against illegitimate runs, **all completions and qualifying progress runs must have clearly audible clicks/taps** in your video or raw footage. Silent submissions will not be accepted.
+
+---
+
+### 🛡️ System Safety & Preparing for Future Moderators
+We have implemented extensive backend security and safety systems across the website:
+- **Comprehensive Activity Auditing**: Every moderation action, record review, and suggestion update is now permanently logged and traceable to prevent abuse or unauthorized tampering.
+- **Hardened Account Protections**: Added robust security barriers safeguarding player records, user profiles, and sensitive actions.
+- **Why this matters**: In the future, we will be opening up moderator positions so trusted community members can help accept records and manage the list. These safety systems ensure the website remains 100% secure, transparent, and protected for everyone, regardless of team size.
+
+---
+
+### 👥 What's Next: Community Moderators Coming Soon!
+Managing the rapid growth of Nerfed Demonlist, reviewing submissions, and evaluating level suggestions is a lot of work. With our new safety foundation in place:
+- **We will soon begin looking for active, trusted members of the community to join the team as List Moderators!**
+- Stay tuned to our announcements channel for upcoming details on moderator applications and how you can get involved.
+
+Thank you all for your continuous support, good luck on your grinds, and we'll see you on the leaderboard!
+
+*— cattw21 & NDL Staff*`,
+};
+
 export const REVIEW_PAUSE_SEPT_2026_POST = {
   title: "Records & Suggestions Update: Review Pause (13/09 – 20/09)",
   slug: "records-suggestions-pause-september-2026",
@@ -161,13 +205,28 @@ Thanks for your patience and understanding, keep having fun, and good luck beati
 
 export const DEFAULT_POSTS = [
   {
+    id: "nerfed-demonlist-v1-5-1-bug-fixes-and-safety",
+    title: V1_5_1_ANNOUNCEMENT_POST.title,
+    slug: V1_5_1_ANNOUNCEMENT_POST.slug,
+    category: V1_5_1_ANNOUNCEMENT_POST.category,
+    summary: V1_5_1_ANNOUNCEMENT_POST.summary,
+    content: V1_5_1_ANNOUNCEMENT_POST.content,
+    isPinned: true,
+    isPublished: true,
+    isDemo: false,
+    publishedAt: new Date("2026-09-22T20:30:00.000Z"),
+    updatedAt: new Date("2026-09-22T20:30:00.000Z"),
+    archivedAt: null,
+    author: { displayName: "cattw21" },
+  },
+  {
     id: "records-suggestions-pause-september-2026",
     title: REVIEW_PAUSE_SEPT_2026_POST.title,
     slug: REVIEW_PAUSE_SEPT_2026_POST.slug,
     category: REVIEW_PAUSE_SEPT_2026_POST.category,
     summary: REVIEW_PAUSE_SEPT_2026_POST.summary,
     content: REVIEW_PAUSE_SEPT_2026_POST.content,
-    isPinned: true,
+    isPinned: false,
     isPublished: true,
     isDemo: false,
     publishedAt: new Date("2026-09-13T19:00:00.000Z"),

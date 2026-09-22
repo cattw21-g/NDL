@@ -9,7 +9,7 @@ import {
 import Link from "next/link";
 
 import { LevelList } from "@/components/level-list";
-import { changelogCategoryLabel } from "@/lib/changelog";
+import { changelogCategoryLabel, DEFAULT_POSTS } from "@/lib/changelog";
 import { prisma } from "@/lib/db";
 import {
   demoModeEnabled,
@@ -107,6 +107,10 @@ export default async function Home() {
       ...lvl,
       _count: { records: lvl.recordCount },
     }));
+  }
+
+  if (!latestPost) {
+    latestPost = DEFAULT_POSTS[0];
   }
 
   const rankedCount = levels.filter((level) => level.status === "RANKED").length;

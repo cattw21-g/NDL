@@ -20,13 +20,15 @@ export const metadata = {
 export default async function ChangelogPage() {
   await ensureLatestChangelogPost(prisma);
 
-  const postsFromDb = await prisma.changelogPost.findMany({
-    where: publicChangelogWhere(),
-    include: {
-      author: true,
-    },
-    orderBy: [{ isPinned: "desc" }, { publishedAt: "desc" }],
-  });
+  const postsFromDb = await prisma.changelogPost
+    .findMany({
+      where: publicChangelogWhere(),
+      include: {
+        author: true,
+      },
+      orderBy: [{ isPinned: "desc" }, { publishedAt: "desc" }],
+    })
+    .catch(() => []);
 
   const posts = postsFromDb.length > 0 ? postsFromDb : DEFAULT_POSTS;
 
