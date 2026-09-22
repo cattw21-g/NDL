@@ -9,6 +9,7 @@ describe("Minimum Progress Requirements (Pointercrate Parity & 30% Floor)", () =
       levelId: "level-123",
       videoUrl: "https://youtube.com/watch?v=abcdefghijk",
       fps: "240",
+      clickAudioIncluded: "true",
       inputDevice: "Razer Viper 8K",
     };
 

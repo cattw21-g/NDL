@@ -196,4 +196,23 @@ describe("rate limiting", () => {
       expect(staffResult.message).toContain("bot API requests");
     }
   });
+
+  it("rate-limits moderator review actions to prevent compromised account spam", async () => {
+    const modAttempts = Array.from({ length: 60 }, () => ({
+      action: "moderation-review",
+      key: userRateLimitKey("mod-123"),
+      occurredAt: new Date("2026-05-31T00:00:00.000Z"),
+    }));
+    const result = await checkRateLimit(
+      createClient(modAttempts),
+      "moderation-review",
+      userRateLimitKey("mod-123"),
+      new Date("2026-05-31T00:00:30.000Z"),
+    );
+
+    expect(result.allowed).toBe(false);
+    if (!result.allowed) {
+      expect(result.message).toContain("Moderation review rate limit");
+    }
+  });
 });

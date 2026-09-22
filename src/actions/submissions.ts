@@ -436,6 +436,21 @@ export async function reviewSubmissionAction(formData: FormData) {
     redirect("/moderation?error=missing");
   }
 
+  // Security: Moderators cannot review their own submissions (Anti-Cheat / Conflict of Interest)
+  if (submission.playerId === moderator.id) {
+    redirect("/moderation?error=self_review_forbidden");
+  }
+
+  // Security: Moderator action rate-limiting to prevent compromised automated mass actions
+  const rateLimit = await checkRateLimit(
+    prisma,
+    "moderation-review",
+    moderator.id,
+  );
+  if (!rateLimit.allowed) {
+    redirect("/moderation?error=rate_limited");
+  }
+
   if (
     !canTransitionSubmission(
       submission.status as SubmissionStatus,

@@ -167,6 +167,21 @@ export async function reviewLevelSuggestionAction(formData: FormData) {
     redirect("/moderation?error=missing");
   }
 
+  // Security: Moderators cannot approve their own level suggestions
+  if (suggestion.submitterId === moderator.id && parsed.data.status === "APPROVED") {
+    redirect("/moderation?error=self_approval_forbidden");
+  }
+
+  // Security: Moderator action rate-limiting to prevent compromised automated mass actions
+  const rateLimit = await checkRateLimit(
+    prisma,
+    "moderation-suggestion-review",
+    moderator.id,
+  );
+  if (!rateLimit.allowed) {
+    redirect("/moderation?error=rate_limited");
+  }
+
   if (suggestion.createdLevelId || suggestion.status === "CONVERTED") {
     redirect("/moderation?error=transition");
   }

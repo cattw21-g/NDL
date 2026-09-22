@@ -41,9 +41,9 @@ export const RULES_TRANSLATIONS: Record<
       {
         title: "Click audio and microphone proof",
         bullets: [
-          "Audible click sounds recorded via microphone are required for all top records.",
-          "Fake, edited, synchronized, or overlaid click sounds are strictly prohibited and result in a ban.",
-          "Separate microphone tracks are recommended to maintain clear audio balance.",
+          "Audible click sounds recorded via microphone are strictly mandatory for all records. Music-only or silent runs are rejected.",
+          "Fake, edited, synchronized, synthesized, or overlaid click sounds are strictly prohibited and result in an immediate ban.",
+          "A clear microphone or dedicated audio track must be provided to verify legitimate physical human clicks.",
         ],
       },
       {

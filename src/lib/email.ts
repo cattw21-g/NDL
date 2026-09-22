@@ -512,41 +512,8 @@ export function levelSuggestionStatusEmailHtml(
 </html>`;
 }
 
-export function isDeliverableEmail(email: string | null | undefined): boolean {
-  if (!email || typeof email !== "string") {
-    return false;
-  }
-
-  const trimmed = email.trim().toLowerCase();
-  const emailRegex =
-    /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
-  if (!emailRegex.test(trimmed)) {
-    return false;
-  }
-
-  const domain = trimmed.split("@")[1];
-  if (!domain || !domain.includes(".")) {
-    return false;
-  }
-
-  const forbiddenTlds = [
-    ".local",
-    ".localhost",
-    ".test",
-    ".invalid",
-    ".internal",
-    ".lan",
-  ];
-  if (forbiddenTlds.some((tld) => domain.endsWith(tld))) {
-    return false;
-  }
-
-  if (domain === "ndl.local" || domain === "nerfeddemonlist.local") {
-    return false;
-  }
-
-  return true;
-}
+import { isDeliverableEmail } from "./email-deliverability";
+export { isDeliverableEmail };
 
 async function sendViaSmtp(
   config: SmtpConfig,

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { changelogCategoryValues } from "@/lib/changelog";
 
 import { isValidPublicUploadMediaPath, isValidThumbnailSource } from "./media";
+import { validateEmailForRegistration } from "./email-deliverability";
 
 const emptyToUndefined = (value: unknown) => {
   if (typeof value !== "string") {
@@ -99,6 +100,15 @@ export const registerSchema = z
         message: "Passwords do not match.",
       });
     }
+
+    const emailCheck = validateEmailForRegistration(value.email);
+    if (!emailCheck.valid) {
+      context.addIssue({
+        code: "custom",
+        path: ["email"],
+        message: emailCheck.error,
+      });
+    }
   });
 
 export const submissionSchema = z
@@ -128,6 +138,15 @@ export const submissionSchema = z
     comments: optionalText(1000),
   })
   .superRefine((value, context) => {
+    if (!value.clickAudioIncluded) {
+      context.addIssue({
+        code: "custom",
+        path: ["clickAudioIncluded"],
+        message:
+          "Audible microphone/click proof is strictly mandatory for all submissions. Please confirm your video contains audible clicks.",
+      });
+    }
+
     if (value.rawFootageIncluded && !value.rawFootageUrl) {
       context.addIssue({
         code: "custom",

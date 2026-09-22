@@ -48,10 +48,11 @@ const rulesContent = `## General policy
 - Do not cut away from the run before the completion and endscreen are clear enough to review.
 
 ## Click audio and microphone proof
-- Click audio is required for serious records. Fake, added, replaced, or edited click sounds are banned.
-- Separate microphone or click tracks are required for high-ranked records and strongly recommended for all records.
-- Game audio should be present unless a moderator explicitly accepts a documented reason.
-- Audio should line up with visible inputs and gameplay timing.
+- Audible microphone / click proof is strictly MANDATORY for ALL record submissions. Submissions without audible microphone click audio will be rejected. Music-only or silent runs are strictly forbidden.
+- Fake, added, synthesized, replaced, or edited click sounds are strictly banned and will result in an immediate submission ban.
+- A dedicated microphone or audible physical input audio track is required so staff can verify legitimate human clicks against video frames.
+- Game audio should also be present alongside microphone click audio.
+- Physical click audio must synchronize with visible inputs, gameplay jumps, and death/victory frames.
 
 ## Overlays and visibility
 - FPS, CPS, cheat indicators, and other proof overlays should remain visible when they are relevant to the run.

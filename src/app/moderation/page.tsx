@@ -185,7 +185,11 @@ export default async function ModerationPage({
             {recordSubmissions.length > 0 ? (
               <div className="space-y-4">
                 {recordSubmissions.map((submission) => (
-                  <RecordReviewCard key={submission.id} submission={submission} />
+                  <RecordReviewCard
+                    key={submission.id}
+                    submission={submission}
+                    currentUserId={moderator.id}
+                  />
                 ))}
                 <PaginationControls
                   params={params}
@@ -216,6 +220,7 @@ export default async function ModerationPage({
                     key={suggestion.id}
                     suggestion={suggestion}
                     canConvert={canConvertSuggestions}
+                    currentUserId={moderator.id}
                   />
                 ))}
                 <PaginationControls
@@ -687,13 +692,17 @@ function QueueBlock({
 
 function RecordReviewCard({
   submission,
+  currentUserId,
 }: {
   submission: RecordSubmissionListItem;
+  currentUserId: string;
 }) {
+  const isSelfSubmission = submission.playerId === currentUserId;
   const canReview =
-    submission.status === "PENDING" ||
-    submission.status === "NEEDS_CHANGES" ||
-    submission.status === "UNDER_CONSIDERATION";
+    !isSelfSubmission &&
+    (submission.status === "PENDING" ||
+      submission.status === "NEEDS_CHANGES" ||
+      submission.status === "UNDER_CONSIDERATION");
 
   const deadline = getEvidenceTimeoutRemaining(
     submission.status,
@@ -741,10 +750,15 @@ function RecordReviewCard({
           <FactPill label="Progress" value={`${submission.progress ?? 100}%`} />
           <FactPill label="FPS" value={submission.fps} />
           <FactPill label="CBF" value={submission.cbfUsed ? "yes" : "no"} />
-          <FactPill
-            label="Click audio"
-            value={submission.clickAudioIncluded ? "yes" : "no"}
-          />
+          {submission.clickAudioIncluded ? (
+            <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">
+              🎙️ Mic Audio: Confirmed
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-md border border-rose-500/50 bg-rose-500/15 px-2.5 py-1 text-xs font-black text-rose-700 dark:text-rose-300">
+              ⚠️ NO MIC AUDIO (Policy Violation)
+            </span>
+          )}
           <FactPill
             label="Mic track"
             value={submission.separateMicClickTrack ? "yes" : "no"}
@@ -770,7 +784,14 @@ function RecordReviewCard({
         ) : null}
       </div>
 
-      {canReview ? (
+      {isSelfSubmission &&
+      (submission.status === "PENDING" ||
+        submission.status === "NEEDS_CHANGES" ||
+        submission.status === "UNDER_CONSIDERATION") ? (
+        <div className="flex items-center gap-2 border-t border-amber-300 bg-amber-50 p-4 text-sm font-bold text-amber-900 dark:border-amber-500/50 dark:bg-amber-950/40 dark:text-amber-200">
+          🔒 <span className="font-black">Anti-Cheat Safeguard:</span> This is your own record submission. You cannot review your own records. Another staff moderator or administrator must verify it.
+        </div>
+      ) : canReview ? (
         <form
           action={reviewSubmissionAction}
           className="grid gap-3 border-t border-slate-300 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-950/60"
@@ -785,12 +806,22 @@ function RecordReviewCard({
                 <option value="NEEDS_CHANGES">Needs changes</option>
               </select>
             </FieldLabel>
-            <FieldLabel label="Moderator notes (optional)">
+            <FieldLabel label="Moderator notes (choose template or type custom)">
               <input
                 name="moderatorNotes"
+                list={`record-presets-${submission.id}`}
                 className={inputClass}
-                placeholder="Optional notes for submitter"
+                placeholder="Type note or choose a quick template..."
               />
+              <datalist id={`record-presets-${submission.id}`}>
+                <option value="Rejected: Missing audible microphone click audio. Physical clicks are strictly mandatory for all records." />
+                <option value="Rejected: Raw unedited footage with audible microphone clicks is required." />
+                <option value="Rejected: Progress run does not meet the minimum list requirement for this demon." />
+                <option value="Rejected: Level ID or version does not match the official NDL demon version." />
+                <option value="Rejected: Physics bypass or unauthorized modification detected." />
+                <option value="Needs changes: Video is private, unavailable, or missing. Please submit a valid proof link." />
+                <option value="Needs changes: Please provide a raw recording with audible microphone clicks." />
+              </datalist>
             </FieldLabel>
           </div>
           <SubmitButton>Save record review</SubmitButton>
@@ -811,10 +842,13 @@ function RecordReviewCard({
 function SuggestionReviewCard({
   suggestion,
   canConvert,
+  currentUserId,
 }: {
   suggestion: LevelSuggestionListItem;
   canConvert: boolean;
+  currentUserId: string;
 }) {
+  const isSelfSuggestion = suggestion.submitterId === currentUserId;
   const canReview =
     suggestion.status === "PENDING" || suggestion.status === "NEEDS_CHANGES";
   const canConvertApproved =
@@ -872,20 +906,32 @@ function SuggestionReviewCard({
           className="grid gap-3 border-t border-slate-300 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-950/60"
         >
           <input type="hidden" name="suggestionId" value={suggestion.id} />
+          {isSelfSuggestion && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 p-2.5 text-xs font-bold text-amber-900 dark:border-amber-500/50 dark:bg-amber-950/40 dark:text-amber-200">
+              🔒 <span className="font-black">Conflict of Interest Safeguard:</span> This is your own suggestion. You cannot approve it yourself. Another moderator or administrator must approve it.
+            </div>
+          )}
           <div className="grid gap-3 md:grid-cols-[14rem_1fr]">
             <FieldLabel label="Decision">
               <select name="status" required className={inputClass}>
-                <option value="APPROVED">Approve</option>
+                {!isSelfSuggestion && <option value="APPROVED">Approve</option>}
                 <option value="REJECTED">Reject</option>
                 <option value="NEEDS_CHANGES">Needs changes</option>
               </select>
             </FieldLabel>
-            <FieldLabel label="Moderator notes (optional)">
+            <FieldLabel label="Moderator notes (choose template or type custom)">
               <input
                 name="moderatorNotes"
+                list={`suggestion-presets-${suggestion.id}`}
                 className={inputClass}
                 placeholder="Optional notes for submitter"
               />
+              <datalist id={`suggestion-presets-${suggestion.id}`}>
+                <option value="Rejected: Does not meet NDL quality or fidelity standards." />
+                <option value="Rejected: Nerf route deviates too far from original demon." />
+                <option value="Rejected: Unverified or missing verification proof video." />
+                <option value="Needs changes: Please update the verification video link or GD level ID." />
+              </datalist>
             </FieldLabel>
           </div>
           <SubmitButton>Save suggestion review</SubmitButton>

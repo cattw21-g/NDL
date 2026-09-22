@@ -333,15 +333,20 @@ export function SubmitRecordForm({
         </FormSection>
 
         <FormSection
-          title="Audio/click proof"
-          description="Mark the audio evidence included in the proof package."
+          title="Microphone & Click Audio Proof"
+          description="Audible microphone click audio is mandatory for all NDL records. Submissions without audible mic clicks will be rejected."
         >
+          <div className="mb-3 rounded-lg border border-cyan-500/30 bg-cyan-950/20 p-3 text-xs text-zinc-300">
+            <span className="font-bold text-cyan-400">🎙️ Mandatory Mic Audio Policy:</span>{" "}
+            Every submitted record must feature clear, audible clicks recorded through your microphone. Silent or music-only runs without audible mic clicks will be rejected.
+          </div>
           <div className="grid gap-4 md:grid-cols-2">
             <CheckboxField
               name="clickAudioIncluded"
-              label="Click audio is included"
+              label="I confirm clear microphone click audio is audible in my video *"
               defaultChecked={values.clickAudioIncluded === "true"}
               errors={state.fieldErrors.clickAudioIncluded}
+              help="Mandatory. Runs without audible mic clicks cannot be accepted."
             />
             <CheckboxField
               name="separateMicClickTrack"
@@ -355,6 +360,13 @@ export function SubmitRecordForm({
               label="Game audio is included"
               defaultChecked={values.gameAudioIncluded === "true"}
               errors={state.fieldErrors.gameAudioIncluded}
+            />
+            <TextInput
+              name="microphoneModel"
+              label="Microphone Model (Optional)"
+              help="e.g. Blue Yeti, HyperX QuadCast, Razer Seiren, iPhone / EarPods"
+              defaultValue={values.microphoneModel}
+              errors={state.fieldErrors.microphoneModel}
             />
           </div>
         </FormSection>

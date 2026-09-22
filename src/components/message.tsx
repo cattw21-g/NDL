@@ -14,6 +14,18 @@ const messages: Record<string, string> = {
   "video-type": "Upload video proof as MP4 files.",
   "video-upload-disabled": "MP4 upload is unavailable. Use a link instead.",
   "slug-conflict": "That slug is already used by another post.",
+  self_review_forbidden:
+    "Security Policy: You cannot review or accept your own record submissions. Another staff member must review it.",
+  "self-review-forbidden":
+    "Security Policy: You cannot review or accept your own record submissions. Another staff member must review it.",
+  self_approval_forbidden:
+    "Security Policy: You cannot approve your own level suggestions. Another staff member must review it.",
+  "self-approval-forbidden":
+    "Security Policy: You cannot approve your own level suggestions. Another staff member must review it.",
+  rate_limited:
+    "Security Policy: Moderation rate limit reached. Please wait a moment before reviewing further submissions.",
+  "rate-limited":
+    "Security Policy: Moderation rate limit reached. Please wait a moment before reviewing further submissions.",
 };
 
 export function PageMessage({

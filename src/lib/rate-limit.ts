@@ -14,6 +14,8 @@ export type RateLimitAction =
   | "password-reset-attempt"
   | "record-submission"
   | "level-suggestion"
+  | "moderation-review"
+  | "moderation-suggestion-review"
   | "public-api"
   | "bot-staff-api";
 
@@ -42,6 +44,16 @@ const rules: Record<
   "password-reset-attempt": { limit: 8, windowMs: 15 * 60 * 1000 },
   "record-submission": { limit: 8, windowMs: 60 * 60 * 1000 },
   "level-suggestion": { limit: 5, windowMs: 24 * 60 * 60 * 1000 },
+  "moderation-review": {
+    limit: 60,
+    windowMs: 60 * 1000,
+    message: "Moderation review rate limit reached. Please pause a moment before reviewing further.",
+  },
+  "moderation-suggestion-review": {
+    limit: 60,
+    windowMs: 60 * 1000,
+    message: "Moderation suggestion review rate limit reached. Please pause a moment before reviewing further.",
+  },
   "public-api": {
     limit: 60,
     windowMs: 60 * 1000,

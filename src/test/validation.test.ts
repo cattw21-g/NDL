@@ -122,6 +122,7 @@ describe("submission validation", () => {
       rawFootageUrl: "/uploads/raw-footage/raw.mp4",
       proofImageUrl: "/uploads/proof-images/proof.webp",
       fps: "240",
+      clickAudioIncluded: "true",
       rawFootageIncluded: "true",
       inputDevice: "Keyboard space key",
     });
@@ -152,12 +153,48 @@ describe("submission validation", () => {
     expect(parsed.success).toBe(false);
   });
 
+  it("strictly requires audible microphone click audio", () => {
+    const missingMic = submissionSchema.safeParse({
+      levelId: "level",
+      videoUrl: "https://example.com/video",
+      fps: "240",
+      clickAudioIncluded: "false",
+      inputDevice: "Keyboard space key",
+    });
+
+    expect(missingMic.success).toBe(false);
+    if (!missingMic.success) {
+      expect(
+        missingMic.error.flatten().fieldErrors.clickAudioIncluded,
+      ).toContain(
+        "Audible microphone/click proof is strictly mandatory for all submissions. Please confirm your video contains audible clicks.",
+      );
+    }
+
+    const omittedMic = submissionSchema.safeParse({
+      levelId: "level",
+      videoUrl: "https://example.com/video",
+      fps: "240",
+      inputDevice: "Keyboard space key",
+    });
+
+    expect(omittedMic.success).toBe(false);
+    if (!omittedMic.success) {
+      expect(
+        omittedMic.error.flatten().fieldErrors.clickAudioIncluded,
+      ).toContain(
+        "Audible microphone/click proof is strictly mandatory for all submissions. Please confirm your video contains audible clicks.",
+      );
+    }
+  });
+
   it("enforces minimum 30% progress for progress runs", () => {
     const below30 = submissionSchema.safeParse({
       levelId: "level",
       progress: "29",
       videoUrl: "https://example.com/video",
       fps: "240",
+      clickAudioIncluded: "true",
       inputDevice: "Keyboard space key",
     });
     expect(below30.success).toBe(false);
@@ -172,6 +209,7 @@ describe("submission validation", () => {
       progress: "30",
       videoUrl: "https://example.com/video",
       fps: "240",
+      clickAudioIncluded: "true",
       inputDevice: "Keyboard space key",
     });
     expect(at30.success).toBe(true);
@@ -181,6 +219,7 @@ describe("submission validation", () => {
       progress: "100",
       videoUrl: "https://example.com/video",
       fps: "240",
+      clickAudioIncluded: "true",
       inputDevice: "Keyboard space key",
     });
     expect(completion.success).toBe(true);
@@ -190,6 +229,7 @@ describe("submission validation", () => {
       progress: "101",
       videoUrl: "https://example.com/video",
       fps: "240",
+      clickAudioIncluded: "true",
       inputDevice: "Keyboard space key",
     });
     expect(over100.success).toBe(false);
