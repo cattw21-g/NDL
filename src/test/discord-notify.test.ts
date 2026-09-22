@@ -10,6 +10,7 @@ import {
   notifyNewSuggestion,
   notifyRecordAccepted,
   notifyUpcomingDemonAdded,
+  resolveStaffMention,
 } from "../lib/discord-notify";
 
 function source(relativePath: string) {
@@ -124,4 +125,45 @@ describe("Discord notification system and website actions integration", () => {
 
     expect(upcomingSource).toContain("notifyUpcomingDemonAdded");
   });
+
+  it("resolves staff notification mention according to env priority", async () => {
+    const originalEnv = { ...process.env };
+
+    try {
+      // 1. Explicit mention override
+      process.env.DISCORD_NOTIFY_MENTION = "<@999999999>";
+      expect(await resolveStaffMention()).toBe("<@999999999>");
+
+      // 2. Owner ID and staff role ID combined
+      delete process.env.DISCORD_NOTIFY_MENTION;
+      process.env.DISCORD_OWNER_ID = "111111111";
+      process.env.DISCORD_STAFF_ROLE_ID = "222222222";
+      expect(await resolveStaffMention()).toBe("<@111111111> <@&222222222>");
+
+      // 3. Owner ID alone
+      delete process.env.DISCORD_STAFF_ROLE_ID;
+      expect(await resolveStaffMention()).toBe("<@111111111>");
+
+      // 4. Staff role ID alone
+      delete process.env.DISCORD_OWNER_ID;
+      process.env.DISCORD_STAFF_ROLE_ID = "222222222";
+      expect(await resolveStaffMention()).toBe("<@&222222222>");
+
+      // 5. Default fallback to cattw21's Discord ID (948605174203686912)
+      delete process.env.DISCORD_STAFF_ROLE_ID;
+      expect(await resolveStaffMention()).toBe("<@948605174203686912>");
+    } finally {
+      process.env = originalEnv;
+    }
+  });
+
+  it("ensures record and suggestion notifications format mentions and allowed_mentions correctly", () => {
+    const notifySource = source("lib/discord-notify.ts");
+
+    expect(notifySource).toContain("resolveStaffMention");
+    expect(notifySource).toContain("allowed_mentions");
+    expect(notifySource).toContain("🔔 ${mention} **New Record Submission Pending Review!**");
+    expect(notifySource).toContain("💡 ${mention} **New Demon Suggestion Pending Review!**");
+  });
 });
+

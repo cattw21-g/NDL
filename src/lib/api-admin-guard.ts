@@ -15,19 +15,21 @@ export async function requireApiAdmin(
   request: Request,
   getUser?: () => Promise<{ id: string; playerName: string; role: string | AppRole } | null>,
 ): Promise<AdminAuthResult> {
-  // 1. Check Bearer token (fast path without database query)
+  // 1. Check Bearer token or cron secret header (fast path without database query)
   const authHeader = request.headers.get("authorization");
-  const bearerToken = authHeader?.startsWith("Bearer ")
+  const cronHeader = request.headers.get("x-cron-secret");
+  const token = authHeader?.startsWith("Bearer ")
     ? authHeader.slice(7).trim()
-    : null;
+    : cronHeader?.trim() || null;
 
   const validSecrets = [
     process.env.BOT_API_SECRET,
     process.env.NDL_BOT_API_SECRET,
     process.env.CRON_SECRET,
+    process.env.ADMIN_SEED_SECRET,
   ].filter((s): s is string => Boolean(s && s.trim().length > 0));
 
-  if (bearerToken && validSecrets.includes(bearerToken)) {
+  if (token && validSecrets.includes(token)) {
     return {
       authorized: true,
       actor: { name: "service-token", isService: true },

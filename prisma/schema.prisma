@@ -246,6 +246,7 @@ model RecordSubmission {
   @@index([status, submittedAt])
   @@index([playerId])
   @@index([levelId])
+  @@index([playerId, levelId])
   @@index([progress])
   @@index([isDemo])
 }
@@ -272,6 +273,7 @@ model Record {
 
   @@index([playerId])
   @@index([levelId])
+  @@index([playerId, levelId])
   @@index([progress])
   @@index([isVerifier])
   @@index([acceptedAt])

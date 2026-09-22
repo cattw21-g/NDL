@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { cachedJson } from "@/lib/api-cache";
 import { prisma } from "@/lib/db";
 import { publicLevelWhere, publicRecordWhere } from "@/lib/demo-visibility";
-import { calculateLeaderboard } from "@/lib/points";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const [levels, records] = await Promise.all([
     prisma.level.findMany({
       where: publicLevelWhere(),
@@ -50,21 +50,24 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({
-    timestamp: new Date().toISOString(),
-    demons: {
-      total: levels.length,
-      mainList: mainList.length,
-      extendedList: extendedList.length,
-      legacyList: legacyList.length,
+  return cachedJson(
+    request,
+    {
+      demons: {
+        total: levels.length,
+        mainList: mainList.length,
+        extendedList: extendedList.length,
+        legacyList: legacyList.length,
+      },
+      records: {
+        totalAccepted: records.length,
+        completions100: completions100.length,
+        progressRuns: records.length - completions100.length,
+        totalPointsAwarded: totalPoints,
+        cbfAdoptionRatePercent: records.length > 0 ? Math.round((cbfCount / records.length) * 100) : 0,
+      },
+      difficultyDistribution: difficultyCounts,
     },
-    records: {
-      totalAccepted: records.length,
-      completions100: completions100.length,
-      progressRuns: records.length - completions100.length,
-      totalPointsAwarded: totalPoints,
-      cbfAdoptionRatePercent: records.length > 0 ? Math.round((cbfCount / records.length) * 100) : 0,
-    },
-    difficultyDistribution: difficultyCounts,
-  });
+    { sMaxAge: 120, staleWhileRevalidate: 600 },
+  );
 }

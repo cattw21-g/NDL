@@ -73,10 +73,70 @@ async function fetchWithDiscordRetry(
   return fetch(url, options);
 }
 
+let cachedGuildOwnerId: string | null = "948605174203686912";
+
+/**
+ * Resolves the Discord mention string to notify staff/owner about new queue items.
+ * Prioritizes DISCORD_NOTIFY_MENTION, then DISCORD_OWNER_ID / DISCORD_STAFF_ROLE_ID,
+ * falling back to the known server owner ID (cattw21: 948605174203686912) or fetching from Discord API.
+ */
+export async function resolveStaffMention(
+  guildId?: string,
+  botToken?: string,
+): Promise<string> {
+  const customMention = process.env.DISCORD_NOTIFY_MENTION?.trim();
+  if (customMention) {
+    return customMention;
+  }
+
+  const staffRoleId = process.env.DISCORD_STAFF_ROLE_ID?.trim();
+  const ownerUserId =
+    process.env.DISCORD_OWNER_ID?.trim() ||
+    process.env.DISCORD_NOTIFY_USER_ID?.trim();
+
+  if (ownerUserId && staffRoleId) {
+    return `<@${ownerUserId}> <@&${staffRoleId}>`;
+  }
+  if (ownerUserId) {
+    return `<@${ownerUserId}>`;
+  }
+  if (staffRoleId) {
+    return `<@&${staffRoleId}>`;
+  }
+
+  if (cachedGuildOwnerId) {
+    return `<@${cachedGuildOwnerId}>`;
+  }
+
+  if (guildId && botToken) {
+    try {
+      const res = await fetchWithDiscordRetry(
+        `${DISCORD_API_BASE}/guilds/${guildId}`,
+        {
+          headers: { Authorization: `Bot ${botToken}` },
+          cache: "no-store",
+        },
+      );
+      if (res.ok) {
+        const guildData: { owner_id?: string } = await res.json();
+        if (guildData.owner_id) {
+          cachedGuildOwnerId = guildData.owner_id;
+          return `<@${guildData.owner_id}>`;
+        }
+      }
+    } catch (err) {
+      console.error("Failed to resolve Discord guild owner for mention:", err);
+    }
+  }
+
+  return "@here";
+}
+
 async function sendDiscordEmbed(
   channelName: string,
   embed: Record<string, unknown>,
   autoReactEmojis: string[] = [],
+  content?: string,
 ) {
   const token = process.env.DISCORD_BOT_TOKEN?.trim();
   const guildId = process.env.DISCORD_GUILD_ID?.trim() || "1541532007304003595";
@@ -93,15 +153,24 @@ async function sendDiscordEmbed(
       return;
     }
 
+    const payload: Record<string, unknown> = {
+      embeds: [embed],
+    };
+
+    if (content) {
+      payload.content = content;
+      payload.allowed_mentions = {
+        parse: ["users", "roles", "everyone"],
+      };
+    }
+
     const msgRes = await fetchWithDiscordRetry(`${DISCORD_API_BASE}/channels/${channelId}/messages`, {
       method: "POST",
       headers: {
         Authorization: `Bot ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        embeds: [embed],
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!msgRes.ok) {
@@ -264,7 +333,12 @@ export async function notifyNewSubmission(data: {
     timestamp: new Date().toISOString(),
   };
 
-  await sendDiscordEmbed("record-queue-logs", embed);
+  const token = process.env.DISCORD_BOT_TOKEN?.trim();
+  const guildId = process.env.DISCORD_GUILD_ID?.trim() || "1541532007304003595";
+  const mention = await resolveStaffMention(guildId, token);
+  const content = `🔔 ${mention} **New Record Submission Pending Review!**`;
+
+  await sendDiscordEmbed("record-queue-logs", embed, [], content);
 }
 
 /**
@@ -316,7 +390,12 @@ export async function notifyNewSuggestion(data: {
     timestamp: new Date().toISOString(),
   };
 
-  await sendDiscordEmbed("suggestion-queue-logs", embed);
+  const token = process.env.DISCORD_BOT_TOKEN?.trim();
+  const guildId = process.env.DISCORD_GUILD_ID?.trim() || "1541532007304003595";
+  const mention = await resolveStaffMention(guildId, token);
+  const content = `💡 ${mention} **New Demon Suggestion Pending Review!**`;
+
+  await sendDiscordEmbed("suggestion-queue-logs", embed, [], content);
 }
 
 /**

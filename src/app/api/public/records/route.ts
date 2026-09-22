@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cachedJson } from "@/lib/api-cache";
 import { prisma } from "@/lib/db";
 import { publicRecordWhere } from "@/lib/demo-visibility";
 
@@ -61,15 +62,19 @@ export async function GET(request: NextRequest) {
     prisma.record.count({ where }),
   ]);
 
-  return NextResponse.json({
-    data: records,
-    pagination: {
-      page,
-      limit,
-      totalCount,
-      totalPages: Math.ceil(totalCount / limit),
+  return cachedJson(
+    request,
+    {
+      data: records,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
     },
-  });
+    { sMaxAge: 30, staleWhileRevalidate: 120 },
+  );
 }
 
 export async function POST(request: NextRequest) {

@@ -1,6 +1,7 @@
 import { type NextRequest } from "next/server";
 
 import { apiOk } from "@/lib/api-response";
+import { publicCacheHeaders } from "@/lib/api-cache";
 import { enforceApiRateLimit } from "@/lib/api-auth";
 import { parseApiLimit } from "@/lib/api-query";
 import { serializeChangelogPost } from "@/lib/api-serializers";
@@ -26,8 +27,13 @@ export async function GET(request: NextRequest) {
     take: limit,
   });
 
-  return apiOk({
-    posts: posts.map(serializeChangelogPost),
-    limit,
-  });
+  return apiOk(
+    {
+      posts: posts.map(serializeChangelogPost),
+      limit,
+    },
+    {
+      headers: publicCacheHeaders(60, 300),
+    },
+  );
 }
