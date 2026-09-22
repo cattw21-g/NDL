@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { publicLevelWhere } from "@/lib/demo-visibility";
 import { calculateCreatorLeaderboard } from "@/lib/points";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
 export const metadata = {
   title: "Creator Leaderboard — Nerfed Demonlist",

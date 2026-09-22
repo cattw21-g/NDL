@@ -15,7 +15,7 @@ import { prisma } from "@/lib/db";
 import { publicChangelogWhere } from "@/lib/demo-visibility";
 import { formatDate, formatDateTime } from "@/lib/format";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 export const metadata = {
   title: "Changelog Update - NDL",
   description:

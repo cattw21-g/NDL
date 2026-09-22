@@ -48,7 +48,7 @@ import { FALLBACK_RANKED_LEVELS } from "@/lib/fallback-levels";
 
 import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export async function generateMetadata({
   params,

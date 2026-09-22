@@ -5,7 +5,7 @@ import { publicRecordWhere } from "@/lib/demo-visibility";
 import { calculateLeaderboard, type LeaderboardRecord } from "@/lib/points";
 import { getCountryMeta } from "@/lib/countries";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
 type Props = {
   params: Promise<{ countryCode: string }>;

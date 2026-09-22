@@ -10,7 +10,7 @@ import {
   calculateLeaderboard,
 } from "@/lib/points";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 export const metadata = {
   title: "Players - NDL",
   description:

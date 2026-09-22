@@ -14,7 +14,7 @@ import { calculateLeaderboard } from "@/lib/points";
 import { getCountryMeta, CONTINENTS } from "@/lib/countries";
 import { SectionPanel, MetricTile } from "@/components/ui";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
 export const metadata = {
   title: "Advanced Stats Viewer — Nerfed Demonlist",

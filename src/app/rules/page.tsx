@@ -5,7 +5,7 @@ import { EmptyState, SectionPanel } from "@/components/ui";
 import { prisma } from "@/lib/db";
 import { formatDate } from "@/lib/format";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 export const metadata = {
   title: "Rules - NDL",
   description:

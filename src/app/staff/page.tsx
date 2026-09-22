@@ -5,7 +5,7 @@ import { publicUserWhere } from "@/lib/demo-visibility";
 import { getCountryMeta } from "@/lib/countries";
 import { SectionPanel } from "@/components/ui";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export const metadata = {
   title: "Staff Directory — Nerfed Demonlist",

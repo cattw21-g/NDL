@@ -9,7 +9,7 @@ import {
 import { getCountryMeta, type Continent } from "@/lib/countries";
 import { InteractiveWorldMap } from "@/components/interactive-world-map";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
 export const metadata = {
   title: "Country Rankings — Nerfed Demonlist",

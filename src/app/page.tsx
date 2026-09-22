@@ -23,7 +23,7 @@ import { calculateCurrentLevelPoints } from "@/lib/points";
 import { FALLBACK_RANKED_LEVELS } from "@/lib/fallback-levels";
 import { resolveLevelThumbnail } from "@/lib/media";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 export const metadata = {
   title: "NDL - Nerfed Demonlist",
   description:

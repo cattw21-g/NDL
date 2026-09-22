@@ -4,7 +4,7 @@ import { ArchiveDatePicker, type ArchivePreset } from "@/components/archive-date
 import { SafeThumbnail } from "@/components/safe-thumbnail";
 import { resolveLevelThumbnail } from "@/lib/media";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
 export const metadata = {
   title: "List Archive — Nerfed Demonlist",
