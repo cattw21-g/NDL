@@ -128,9 +128,9 @@ export function LevelCard({
       ) : null}
 
       {/* Main Level Card Row (prominent Pointercrate-style layout) */}
-      <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:gap-4 sm:p-4">
+      <div className="flex flex-col gap-3.5 p-3.5 sm:flex-row sm:items-center sm:gap-4 sm:p-4 md:gap-5">
         {/* Left: Rank & Thumbnail */}
-        <div className="flex shrink-0 items-center gap-2.5 sm:gap-3.5">
+        <div className="flex shrink-0 items-center gap-3 sm:gap-4">
           {/* 1. Rank */}
           <div className="flex shrink-0 items-center justify-center">
             <RankBadge rank={level.rank} />
@@ -140,7 +140,7 @@ export function LevelCard({
           <div className="shrink-0">
             <Link
               href={`/levels/${level.slug}`}
-              className="relative block aspect-video w-28 overflow-hidden rounded-lg border border-zinc-200/90 bg-zinc-100 shadow-sm transition group-hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:group-hover:border-zinc-700 sm:w-40 md:w-48"
+              className="relative block aspect-video w-32 overflow-hidden rounded-lg border border-zinc-200/90 bg-zinc-100 shadow-sm transition group-hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:group-hover:border-zinc-700 sm:w-44 md:w-52 lg:w-56"
               tabIndex={-1}
               aria-hidden="true"
             >
@@ -163,7 +163,7 @@ export function LevelCard({
           <div className="flex flex-wrap items-baseline gap-2">
             <Link
               href={`/levels/${level.slug}`}
-              className="truncate font-black text-base leading-snug text-zinc-950 transition hover:text-cyan-600 dark:text-white dark:hover:text-cyan-400 sm:text-xl"
+              className="truncate font-black text-lg leading-snug text-zinc-950 transition hover:text-cyan-600 dark:text-white dark:hover:text-cyan-400 sm:text-xl md:text-2xl"
             >
               {level.name}
             </Link>
@@ -181,11 +181,11 @@ export function LevelCard({
 
           <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400 sm:mt-1.5 sm:text-sm">
             <span>
-              Nerfed by <strong className="font-bold text-zinc-900 dark:text-zinc-100">{level.nerfCreator}</strong>
+              Nerfed by <strong className="font-semibold text-zinc-900 dark:text-zinc-100">{level.nerfCreator}</strong>
             </span>
             <span className="text-zinc-300 dark:text-zinc-700">•</span>
             <span>
-              Verified by <strong className="font-bold text-zinc-900 dark:text-zinc-100">{level.verifier || "Open"}</strong>
+              Verified by <strong className="font-semibold text-zinc-900 dark:text-zinc-100">{level.verifier || "Open"}</strong>
             </span>
             {level.publisher && level.publisher !== level.nerfCreator ? (
               <>
@@ -208,7 +208,7 @@ export function LevelCard({
           </div>
           <Link
             href={`/levels/${level.slug}`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-bold text-cyan-600 transition hover:border-cyan-400 hover:bg-cyan-50 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-cyan-400 dark:hover:bg-cyan-950/40 sm:text-sm"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3.5 py-2 text-xs font-bold text-cyan-600 transition hover:border-cyan-400 hover:bg-cyan-50 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-cyan-400 dark:hover:bg-cyan-950/40 sm:text-sm"
           >
             <span>Details</span>
             <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />

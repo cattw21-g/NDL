@@ -16,7 +16,36 @@ type Attempt = {
 function createClient(attempts: Attempt[] = []) {
   return {
     rateLimitAttempt: {
-      deleteMany: async () => ({ count: 0 }),
+      deleteMany: async (args?: {
+        where?: {
+          action?: string;
+          key?: string;
+          occurredAt?: Date | { lte?: Date };
+        };
+      }) => {
+        let removed = 0;
+        if (args?.where) {
+          const { action, key, occurredAt } = args.where;
+          for (let i = attempts.length - 1; i >= 0; i--) {
+            const a = attempts[i];
+            const matchAction = !action || a.action === action;
+            const matchKey = !key || a.key === key;
+            const matchTime =
+              !occurredAt ||
+              (occurredAt instanceof Date
+                ? a.occurredAt.getTime() === occurredAt.getTime()
+                : !occurredAt.lte || a.occurredAt <= occurredAt.lte);
+            if (matchAction && matchKey && matchTime) {
+              attempts.splice(i, 1);
+              removed++;
+            }
+          }
+        } else {
+          removed = attempts.length;
+          attempts.length = 0;
+        }
+        return { count: removed };
+      },
       count: async (args: {
         where: {
           action: string;
@@ -233,5 +262,38 @@ describe("rate limiting", () => {
     if (!result.allowed) {
       expect(result.message).toContain("Too many profile updates");
     }
+  });
+
+  it("prevents race condition when concurrent requests arrive near the limit", async () => {
+    // 14 attempts exist, limit is 15 (profile-update)
+    const attempts = Array.from({ length: 14 }, () => ({
+      action: "profile-update",
+      key: userRateLimitKey("player-race"),
+      occurredAt: new Date("2026-05-31T00:00:00.000Z"),
+    }));
+    const client = createClient(attempts);
+
+    // Two requests arrive simultaneously
+    const [reqA, reqB] = await Promise.all([
+      checkRateLimit(
+        client,
+        "profile-update",
+        userRateLimitKey("player-race"),
+        new Date("2026-05-31T00:01:00.000Z"),
+      ),
+      checkRateLimit(
+        client,
+        "profile-update",
+        userRateLimitKey("player-race"),
+        new Date("2026-05-31T00:01:00.000Z"),
+      ),
+    ]);
+
+    const allowedCount = [reqA, reqB].filter((r) => r.allowed).length;
+    const blockedCount = [reqA, reqB].filter((r) => !r.allowed).length;
+
+    // Both cannot succeed to exceed the limit
+    expect(allowedCount).toBeLessThanOrEqual(1);
+    expect(blockedCount).toBeGreaterThanOrEqual(1);
   });
 });

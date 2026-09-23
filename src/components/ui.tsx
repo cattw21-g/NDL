@@ -125,17 +125,19 @@ export function RankBadge({
 }) {
   const topRank =
     rank === 1
-      ? "border-amber-400/60 bg-amber-500/10 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-300"
+      ? "border-amber-400/80 bg-amber-500/15 text-amber-700 shadow-[0_0_12px_rgba(245,158,11,0.2)] dark:border-amber-500/50 dark:bg-amber-500/20 dark:text-amber-300"
       : rank === 2
-        ? "border-cyan-400/60 bg-cyan-500/10 text-cyan-700 dark:border-cyan-500/40 dark:bg-cyan-500/15 dark:text-cyan-300"
+        ? "border-cyan-400/70 bg-cyan-500/15 text-cyan-700 shadow-[0_0_10px_rgba(6,182,212,0.18)] dark:border-cyan-500/50 dark:bg-cyan-500/20 dark:text-cyan-300"
         : rank === 3
-          ? "border-teal-500/50 bg-teal-500/10 text-teal-800 dark:border-teal-500/30 dark:bg-teal-500/15 dark:text-teal-300"
-          : "border-zinc-200 bg-zinc-100/70 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-300";
+          ? "border-teal-500/60 bg-teal-500/15 text-teal-800 shadow-[0_0_10px_rgba(20,184,166,0.18)] dark:border-teal-500/40 dark:bg-teal-500/20 dark:text-teal-300"
+          : rank && rank <= 10
+            ? "border-zinc-300 bg-zinc-100/90 text-zinc-800 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200"
+            : "border-zinc-200 bg-zinc-100/70 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-300";
 
   return (
     <span
       className={cx(
-        "inline-flex h-9 min-w-12 items-center justify-center rounded-lg border px-2.5 text-sm font-black tabular-nums transition-colors sm:h-11 sm:min-w-14 sm:text-base",
+        "inline-flex h-10 min-w-12 items-center justify-center rounded-lg border px-2.5 text-sm font-black tabular-nums transition-colors sm:h-12 sm:min-w-16 sm:text-base",
         topRank,
         className,
       )}

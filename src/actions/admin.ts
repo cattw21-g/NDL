@@ -1549,6 +1549,23 @@ export async function deleteAdminRecordAction(formData: FormData) {
     return;
   }
 
+  const recordSnapshot = {
+    id: record.id,
+    levelId: record.levelId,
+    playerId: record.playerId,
+    submissionId: record.submissionId,
+    progress: record.progress,
+    isVerifier: record.isVerifier,
+    pointsAwarded: record.pointsAwarded,
+    videoUrl: record.videoUrl,
+    rawFootageUrl: record.rawFootageUrl,
+    fps: record.fps,
+    cbfUsed: record.cbfUsed,
+    isDemo: record.isDemo,
+    acceptedAt: record.acceptedAt?.toISOString() ?? null,
+    createdAt: record.createdAt.toISOString(),
+  };
+
   await prisma.$transaction(async (tx) => {
     if (record.submissionId) {
       await tx.recordSubmission.update({
@@ -1578,6 +1595,7 @@ export async function deleteAdminRecordAction(formData: FormData) {
       entityId: recordId,
       entityLabel: `${record.player.displayName} on ${record.level.name}`,
       note: `Admin deleted record (${record.progress}%, video: ${record.videoUrl}, points: ${record.pointsAwarded})`,
+      before: recordSnapshot,
     });
   });
 
@@ -1586,6 +1604,137 @@ export async function deleteAdminRecordAction(formData: FormData) {
   revalidatePath("/players");
   revalidatePath(`/players/${record.player.playerName}`);
   revalidatePath("/admin/records");
+  revalidatePath("/admin/audit-logs");
+}
+
+export async function restoreAdminRecordAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const recordId = String(formData.get("recordId") || "").trim();
+  const auditLogId = String(formData.get("auditLogId") || "").trim();
+
+  if (!recordId && !auditLogId) {
+    throw new Error("Record ID or Audit Log ID is required for restoration.");
+  }
+
+  const log = auditLogId
+    ? await prisma.adminAuditLog.findUnique({
+        where: { id: auditLogId },
+      })
+    : await prisma.adminAuditLog.findFirst({
+        where: {
+          action: "RECORD_DELETED",
+          entityType: "Record",
+          entityId: recordId,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+  if (!log || !log.beforeJson) {
+    throw new Error("No deletion snapshot found for this record.");
+  }
+
+  const snapshot = log.beforeJson as {
+    id: string;
+    levelId: string;
+    playerId: string;
+    submissionId?: string | null;
+    progress: number;
+    isVerifier?: boolean;
+    pointsAwarded: number;
+    videoUrl: string;
+    rawFootageUrl?: string | null;
+    fps?: number;
+    cbfUsed?: boolean;
+    isDemo?: boolean;
+    acceptedAt?: string | null;
+    createdAt?: string | null;
+  };
+
+  if (!snapshot.id || !snapshot.levelId || !snapshot.playerId) {
+    throw new Error("Invalid or corrupted record snapshot in audit log.");
+  }
+
+  const [existingRecord, level, player] = await Promise.all([
+    prisma.record.findUnique({ where: { id: snapshot.id } }),
+    prisma.level.findUnique({ where: { id: snapshot.levelId } }),
+    prisma.user.findUnique({ where: { id: snapshot.playerId } }),
+  ]);
+
+  if (existingRecord) {
+    throw new Error("A record with this ID already exists in the database.");
+  }
+
+  if (!level) {
+    throw new Error("Cannot restore record: the associated level no longer exists.");
+  }
+
+  if (!player) {
+    throw new Error("Cannot restore record: the associated player account no longer exists.");
+  }
+
+  const submission = snapshot.submissionId
+    ? await prisma.recordSubmission.findUnique({
+        where: { id: snapshot.submissionId },
+      })
+    : null;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.record.create({
+      data: {
+        id: snapshot.id,
+        playerId: snapshot.playerId,
+        levelId: snapshot.levelId,
+        submissionId: submission ? snapshot.submissionId : null,
+        progress: snapshot.progress,
+        isVerifier: Boolean(snapshot.isVerifier),
+        videoUrl: snapshot.videoUrl,
+        rawFootageUrl:
+          snapshot.rawFootageUrl && snapshot.rawFootageUrl !== "[redacted]"
+            ? snapshot.rawFootageUrl
+            : submission?.rawFootageUrl ?? null,
+        fps: snapshot.fps ?? 360,
+        cbfUsed: Boolean(snapshot.cbfUsed),
+        pointsAwarded: snapshot.pointsAwarded,
+        isDemo: Boolean(snapshot.isDemo),
+        acceptedAt: snapshot.acceptedAt ? new Date(snapshot.acceptedAt) : new Date(),
+        createdAt: snapshot.createdAt ? new Date(snapshot.createdAt) : undefined,
+      },
+    });
+
+    if (submission) {
+      await tx.recordSubmission.update({
+        where: { id: submission.id },
+        data: {
+          status: "ACCEPTED",
+          moderatorNotes: `Record restored by admin ${admin.displayName}.`,
+          reviewedAt: snapshot.acceptedAt ? new Date(snapshot.acceptedAt) : new Date(),
+          reviewerId: admin.id,
+        },
+      });
+    }
+
+    await writeAuditLog(tx, {
+      actor: {
+        id: admin.id,
+        playerName: admin.playerName,
+        displayName: admin.displayName,
+        role: admin.role,
+      },
+      action: "RECORD_RESTORED",
+      entityType: "Record",
+      entityId: snapshot.id,
+      entityLabel: `${player.displayName} on ${level.name} (${snapshot.progress}%)`,
+      note: `Admin restored deleted record (${snapshot.progress}%, video: ${snapshot.videoUrl}, points: ${snapshot.pointsAwarded})`,
+      after: snapshot,
+    });
+  });
+
+  revalidatePath("/");
+  revalidatePath(`/levels/${level.slug}`);
+  revalidatePath("/players");
+  revalidatePath(`/players/${player.playerName}`);
+  revalidatePath("/admin/records");
+  revalidatePath("/admin/audit-logs");
 }
 
 export async function cleanupUnusedBlobsAction() {

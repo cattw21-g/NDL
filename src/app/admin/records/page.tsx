@@ -3,6 +3,7 @@ import {
   Check,
   ExternalLink,
   Plus,
+  RotateCcw,
   Trash2,
   Trophy,
 } from "lucide-react";
@@ -11,6 +12,7 @@ import Link from "next/link";
 import {
   createAdminRecordAction,
   deleteAdminRecordAction,
+  restoreAdminRecordAction,
   updateAdminRecordAction,
 } from "@/actions/admin";
 import { Eyebrow, MetricTile, SectionPanel, inputClass } from "@/components/ui";
@@ -31,7 +33,7 @@ export default async function AdminRecordsPage({
   await requireAdmin();
   const { levelId, q } = await searchParams;
 
-  const [levels, records] = await Promise.all([
+  const [levels, records, deletedAuditLogs] = await Promise.all([
     prisma.level.findMany({
       orderBy: [
         { rank: { sort: "asc", nulls: "last" } },
@@ -69,7 +71,20 @@ export default async function AdminRecordsPage({
       ],
       take: 100,
     }),
+    prisma.adminAuditLog.findMany({
+      where: {
+        action: "RECORD_DELETED",
+        entityType: "Record",
+      },
+      orderBy: { createdAt: "desc" },
+      take: 15,
+    }),
   ]);
+
+  const currentRecordIds = new Set(records.map((r) => r.id));
+  const restorableLogs = deletedAuditLogs.filter(
+    (log) => !currentRecordIds.has(log.entityId) && log.beforeJson
+  );
 
   const fullCompletions = records.filter((r) => r.progress === 100).length;
   const progressRuns = records.filter((r) => r.progress < 100).length;
@@ -389,6 +404,78 @@ export default async function AdminRecordsPage({
           )}
         </div>
       </SectionPanel>
+
+      {/* Restorable Records (Accidental Deletion Recovery) */}
+      {restorableLogs.length > 0 ? (
+        <SectionPanel className="overflow-hidden">
+          <div className="border-b border-slate-200 bg-slate-100 p-4 dark:border-slate-800 dark:bg-slate-950/60">
+            <h2 className="flex items-center gap-2 text-base font-black text-slate-950 dark:text-slate-50">
+              <RotateCcw className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              Recently Deleted Records (Recovery Available)
+            </h2>
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+              Records deleted by admins or players can be restored with their exact original ID, relationships, and stats.
+            </p>
+          </div>
+          <div className="divide-y divide-slate-200 dark:divide-slate-800">
+            {restorableLogs.map((log) => {
+              const snapshot = (log.beforeJson ?? {}) as {
+                progress?: number;
+                pointsAwarded?: number;
+                isVerifier?: boolean;
+                videoUrl?: string;
+              };
+
+              return (
+                <div
+                  key={log.id}
+                  className="flex flex-wrap items-center justify-between gap-4 p-4 hover:bg-slate-50/70 dark:hover:bg-slate-850/50"
+                >
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-black text-slate-950 dark:text-slate-100">
+                        {log.entityLabel}
+                      </span>
+                      {typeof snapshot.progress === "number" ? (
+                        <span
+                          className={`rounded px-2 py-0.5 text-xs font-black ${
+                            snapshot.progress === 100
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                              : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                          }`}
+                        >
+                          {snapshot.progress}%
+                        </span>
+                      ) : null}
+                      {snapshot.isVerifier ? (
+                        <span className="rounded border border-amber-400 bg-amber-50 px-1.5 py-0.5 text-xs font-black text-amber-900 dark:border-amber-500/50 dark:bg-amber-950/40 dark:text-amber-200">
+                          VERIFIER
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Deleted by <span className="font-semibold text-slate-700 dark:text-slate-300">{log.actorName}</span> on {formatDate(log.createdAt)}
+                      {log.note ? ` • ${log.note}` : ""}
+                    </p>
+                  </div>
+
+                  <form action={restoreAdminRecordAction}>
+                    <input type="hidden" name="auditLogId" value={log.id} />
+                    <button
+                      type="submit"
+                      className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-emerald-600 bg-emerald-50 px-3.5 text-xs font-black text-emerald-900 transition hover:bg-emerald-100 dark:border-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-200"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Restore Record
+                    </button>
+                  </form>
+                </div>
+              );
+            })}
+          </div>
+        </SectionPanel>
+      ) : null}
     </div>
   );
 }

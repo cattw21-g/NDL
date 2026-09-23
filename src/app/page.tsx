@@ -68,6 +68,7 @@ export default async function Home() {
   let acceptedCount = 0;
   let latestRecords: RecordItem[] = [];
   let latestPost: ChangelogItem | null = null;
+  let isDegraded = false;
 
   try {
     const results = await Promise.all([
@@ -138,6 +139,7 @@ export default async function Home() {
     latestRecords = results[3];
     latestPost = results[4];
   } catch (err) {
+    isDegraded = true;
     console.warn("Database unavailable, falling back to static level data:", err);
     levels = FALLBACK_RANKED_LEVELS.map((lvl) => ({
       ...lvl,
@@ -147,9 +149,8 @@ export default async function Home() {
     pendingCount = 1;
   }
 
-  const isDegraded = levels.length > 0 && levels[0] === FALLBACK_RANKED_LEVELS[0];
-
   if (levels.length === 0) {
+    isDegraded = true;
     levels = FALLBACK_RANKED_LEVELS.map((lvl) => ({
       ...lvl,
       _count: { records: lvl.recordCount },
@@ -169,9 +170,9 @@ export default async function Home() {
         <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-amber-900 dark:text-amber-200">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
           <div className="text-xs">
-            <p className="font-bold text-sm">Notice: Database in Maintenance Mode</p>
+            <p className="text-sm font-bold">Notice: Database in Maintenance Mode</p>
             <p className="mt-0.5 leading-relaxed text-amber-800 dark:text-amber-300">
-              The list database is currently in read-only maintenance mode. Displaying cached records. Submissions and live updates will resume automatically once connection is restored.
+              The live database is temporarily offline for maintenance. Currently displaying static fallback list data. Submissions, account actions, and live leaderboard updates will resume automatically once the database connection is restored.
             </p>
           </div>
         </div>

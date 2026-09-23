@@ -97,7 +97,16 @@ export async function checkRateLimit(
   const rule = rules[action];
   const windowStart = new Date(now.getTime() - rule.windowMs);
 
-  // Request hot path is zero-write for pruning: cleanup is handled exclusively by /api/cron/maintenance
+  // Request hot path is zero-write for pruning (handled by cron).
+  // Atomic insert-first pattern prevents concurrent race condition where simultaneous
+  // requests both read count < limit and both proceed past the limit.
+  await client.rateLimitAttempt.create({
+    data: {
+      action,
+      key,
+      occurredAt: now,
+    },
+  });
 
   const count = await client.rateLimitAttempt.count({
     where: {
@@ -109,21 +118,25 @@ export async function checkRateLimit(
     },
   });
 
-  if (count >= rule.limit) {
+  if (count > rule.limit) {
+    try {
+      await client.rateLimitAttempt.deleteMany({
+        where: {
+          action,
+          key,
+          occurredAt: now,
+        },
+      });
+    } catch {
+      // gracefully ignore cleanup failure
+    }
+
     return {
       allowed: false,
       retryAfterSeconds: Math.ceil(rule.windowMs / 1000),
       message: rule.message ?? "Too many attempts. Wait a bit and try again.",
     };
   }
-
-  await client.rateLimitAttempt.create({
-    data: {
-      action,
-      key,
-      occurredAt: now,
-    },
-  });
 
   return { allowed: true };
 }

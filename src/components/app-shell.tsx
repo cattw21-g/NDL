@@ -46,7 +46,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <DecorativeRail side="right" />
 
       <header className="sticky top-0 z-30 border-b border-slate-300 bg-white/95 shadow-[0_2px_14px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-slate-700 dark:bg-slate-950/92 dark:shadow-[0_2px_18px_rgba(0,0,0,0.34)]">
-        <div className="mx-auto max-w-7xl px-3 py-2.5 sm:px-5">
+        <div className="mx-auto max-w-[1400px] px-3 py-2.5 sm:px-5">
           {/* Top Bar: Brand Logo & User/Platform Controls */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Link
@@ -147,7 +147,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       ) : null}
 
-      <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 px-3 py-5 sm:px-5 sm:py-7">
+      <main className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-5 px-3 py-5 sm:px-5 sm:py-7">
         {children}
       </main>
       <Suspense fallback={<SiteFooter user={null} />}>
