@@ -1,10 +1,28 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
-
 import { useMemo, useState } from "react";
+import Image from "next/image";
 
 import { safeThumbnailSrc, FALLBACK_THUMBNAIL_SRC } from "@/lib/media";
+
+const DEFAULT_SIZES =
+  "(max-width: 640px) 144px, (max-width: 768px) 176px, (max-width: 1024px) 208px, 224px";
+
+function isOptimizableSource(src: string): boolean {
+  if (!src) return false;
+  if (src.startsWith("blob:") || src.startsWith("data:")) return false;
+  if (src.endsWith(".svg") || src.includes(".svg?")) return false;
+  if (src.endsWith(".gif") || src.includes(".gif?")) return false;
+  if (src.startsWith("/")) return true; // Local static public images
+  try {
+    const url = new URL(src);
+    const host = url.hostname.toLowerCase();
+    if (host.endsWith(".public.blob.vercel-storage.com")) return true;
+    if (host === "img.youtube.com" || host === "i.ytimg.com") return true;
+    if (host === "cdn.discordapp.com") return true;
+  } catch {}
+  return false;
+}
 
 export function SafeThumbnail({
   src,
@@ -14,6 +32,7 @@ export function SafeThumbnail({
   fallbackSrc,
   priority = false,
   sizes,
+  quality = 80,
 }: {
   src: string | null | undefined;
   alt: string;
@@ -22,6 +41,7 @@ export function SafeThumbnail({
   fallbackSrc?: string | null;
   priority?: boolean;
   sizes?: string;
+  quality?: number;
 }) {
   const initialSrc = useMemo(
     () => safeThumbnailSrc(src, { allowObjectUrl }),
@@ -43,14 +63,17 @@ export function SafeThumbnail({
         ? FALLBACK_THUMBNAIL_SRC
         : initialSrc;
 
+  const isOptimizable = isOptimizableSource(imageSrc);
+
   return (
-    <img
+    <Image
       src={imageSrc}
       alt={alt}
-      sizes={sizes}
-      loading={priority ? "eager" : "lazy"}
-      fetchPriority={priority ? "high" : "auto"}
-      decoding="async"
+      fill
+      sizes={sizes || DEFAULT_SIZES}
+      quality={quality}
+      priority={priority}
+      unoptimized={!isOptimizable}
       className={className}
       onError={() => {
         if (failedSrc !== initialSrc) {

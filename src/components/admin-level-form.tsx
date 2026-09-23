@@ -244,7 +244,7 @@ export function AdminLevelForm({
             <span className="mb-2 block text-xs font-black uppercase text-slate-500 dark:text-slate-400">
               Thumbnail preview
             </span>
-            <div className="aspect-video overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950">
+            <div className="relative aspect-video overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950">
               <SafeThumbnail
                 src={previewSrc}
                 alt="Level thumbnail preview"

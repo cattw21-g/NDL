@@ -393,7 +393,7 @@ export function LevelSuggestionForm({
               <p className="text-xs font-black uppercase text-slate-500 dark:text-slate-400">
                 Proposed preview
               </p>
-              <div className="aspect-video w-full max-w-xl overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950/60">
+              <div className="relative aspect-video w-full max-w-xl overflow-hidden rounded-md border border-slate-300 bg-slate-100 dark:border-slate-700 dark:bg-slate-950/60">
                 <SafeThumbnail
                   src={thumbnailPreviewUrl}
                   alt="Suggested thumbnail preview"

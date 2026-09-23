@@ -21,6 +21,30 @@ const nextConfig: NextConfig = {
       bodySizeLimit: uploadBodySizeLimit(),
     },
   },
+  images: {
+    formats: ["image/avif", "image/webp"],
+    qualities: [75, 80],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 144, 176, 208, 224, 256, 384, 448],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.public.blob.vercel-storage.com",
+      },
+      {
+        protocol: "https",
+        hostname: "img.youtube.com",
+      },
+      {
+        protocol: "https",
+        hostname: "i.ytimg.com",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.discordapp.com",
+      },
+    ],
+  },
   serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg"],
   async headers() {
     const csp = [

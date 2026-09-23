@@ -25,7 +25,10 @@ describe("LevelCard", () => {
     const markup = renderToStaticMarkup(<LevelCard level={level} />);
 
     expect(markup).toContain("#1");
-    expect(markup).toContain("/uploads/thumbnails/uploaded-thumb.webp");
+    expect(
+      markup.includes("/uploads/thumbnails/uploaded-thumb.webp") ||
+        markup.includes(encodeURIComponent("/uploads/thumbnails/uploaded-thumb.webp")),
+    ).toBe(true);
     expect(markup).toContain("aspect-video");
     expect(markup).toContain("sm:w-44 md:w-52 lg:w-56");
     expect(markup).toContain("lg:flex-row");
@@ -64,9 +67,8 @@ describe("LevelCard", () => {
 
       expect(markup).toContain("#1");
       expect(markup).toContain("object-cover");
-      expect(markup).toContain(
-        thumbnailUrl.includes("\\") ? "/thumbnails/fallback.svg" : thumbnailUrl,
-      );
+      const expected = thumbnailUrl.includes("\\") ? "/thumbnails/fallback.svg" : thumbnailUrl;
+      expect(markup.includes(expected) || markup.includes(encodeURIComponent(expected))).toBe(true);
     }
   });
 
