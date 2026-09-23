@@ -21,6 +21,10 @@ export function normalizeIp(rawIp: string | null | undefined): string {
   if (ip.startsWith("::ffff:")) {
     ip = ip.slice(7);
   }
+  const ipv4PortMatch = ip.match(/^(\d{1,3}(?:\.\d{1,3}){3}):\d+$/);
+  if (ipv4PortMatch) {
+    ip = ipv4PortMatch[1];
+  }
   return ip;
 }
 
@@ -60,12 +64,12 @@ function legacyHashClientIp(ip: string): string {
  * Edge-verified proxy headers take precedence over client-spoofable X-Forwarded-For.
  */
 export function extractClientIp(headerStore: Headers): string {
+  const vercelIp = headerStore.get("x-vercel-forwarded-for")?.split(",")[0]?.trim();
   const cfIp = headerStore.get("cf-connecting-ip")?.trim();
   const realIp = headerStore.get("x-real-ip")?.trim();
-  const vercelIp = headerStore.get("x-vercel-forwarded-for")?.split(",")[0]?.trim();
   const forwardedFor = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim();
 
-  return normalizeIp(cfIp || realIp || vercelIp || forwardedFor || "");
+  return normalizeIp(vercelIp || cfIp || realIp || forwardedFor || "");
 }
 
 /**

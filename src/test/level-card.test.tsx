@@ -21,19 +21,16 @@ const level: LevelCardLevel = {
 };
 
 describe("LevelCard", () => {
-  it("renders uploaded local thumbnails with a visible rank", () => {
+  it("renders uploaded local thumbnails with a visible rank and compact scannable layout", () => {
     const markup = renderToStaticMarkup(<LevelCard level={level} />);
 
     expect(markup).toContain("#1");
     expect(markup).toContain("/uploads/thumbnails/uploaded-thumb.webp");
-    expect(markup).toContain(
-      "md:grid-cols-[4.75rem_15rem_minmax(0,1fr)_10rem]",
-    );
-    expect(markup).toContain("md:w-60");
+    expect(markup).toContain("w-20 sm:w-28");
     expect(markup).toContain("aspect-video");
-    expect(markup).toContain("md:items-center");
-    expect(markup).toContain("md:col-auto");
-    expect(markup).not.toContain("md:col-span-1");
+    expect(markup).toContain("sm:flex");
+    expect(markup).toContain("320 pts");
+    expect(markup).toContain("2 records");
     expect(markup).not.toContain("Reviewed list entry");
     expect(markup).not.toContain("RANKED");
   });
@@ -51,9 +48,7 @@ describe("LevelCard", () => {
     );
 
     expect(markup).toContain("min-w-0");
-    expect(markup).toContain("truncate text-lg");
-    expect(markup).toContain("md:grid-cols-[4.75rem_15rem_minmax(0,1fr)_10rem]");
-    expect(markup).toContain("grid-cols-3");
+    expect(markup).toContain("truncate");
   });
 
   it("keeps thumbnail sources safe across common list row cases", () => {
@@ -109,7 +104,7 @@ describe("LevelCard", () => {
     );
 
     expect(markup).toContain("Your Run: 100% Accepted");
-    expect(markup).toContain("border-emerald-500");
+    expect(markup).toContain("border-emerald-400");
     expect(markup).toContain("Remove accepted banner from this level");
   });
 
@@ -128,7 +123,7 @@ describe("LevelCard", () => {
     );
 
     expect(markup).toContain("Your Run: Rejected");
-    expect(markup).toContain("border-rose-500");
+    expect(markup).toContain("border-rose-400");
     expect(markup).toContain("Remove rejected banner from this level");
   });
 
@@ -148,7 +143,6 @@ describe("LevelCard", () => {
     );
 
     expect(markup).not.toContain("Your Run: 100% Accepted");
-    expect(markup).not.toContain("ring-emerald-400");
     expect(markup).not.toContain("Remove accepted banner from this level");
   });
 });

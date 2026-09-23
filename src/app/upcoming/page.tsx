@@ -15,6 +15,42 @@ export const metadata = {
     "Explore nerfed demons currently in verification and approved levels waiting for a verifier.",
 };
 
+type UpcomingPendingLevel = {
+  id: string;
+  name: string;
+  originalName: string;
+  slug: string;
+  gdLevelId: string;
+  publisher: string;
+  nerfCreator: string;
+  verifier: string;
+  verifierUserId: string | null;
+  showcaseUrl: string;
+  verificationVideoUrl: string | null;
+  thumbnailUrl: string;
+  difficulty: string;
+  description: string;
+  versionNotes: string | null;
+  minimumProgress?: number | null;
+};
+
+type UpcomingApprovedSuggestion = {
+  id: string;
+  name: string;
+  originalName: string;
+  gdLevelId: string;
+  publisher: string;
+  nerfCreator: string;
+  verifier: string;
+  showcaseUrl: string;
+  verificationVideoUrl: string | null;
+  thumbnailUrl: string | null;
+  versionNotes: string | null;
+  submitter: {
+    displayName: string;
+  };
+};
+
 export default async function UpcomingPage() {
   const user = await getCurrentUser();
   const isAdmin = user
@@ -24,8 +60,8 @@ export default async function UpcomingPage() {
     : false;
   const isDemoMode = demoModeEnabled();
 
-  let pendingLevels: Array<any> = [];
-  let approvedSuggestions: Array<any> = [];
+  let pendingLevels: UpcomingPendingLevel[] = [];
+  let approvedSuggestions: UpcomingApprovedSuggestion[] = [];
 
   try {
     const results = await Promise.all([

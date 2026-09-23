@@ -12,6 +12,8 @@ describe("Anti-Alt IP Security & Network Conflict Detection", () => {
   it("normalizes IP addresses correctly", () => {
     expect(normalizeIp("  192.168.1.1  ")).toBe("192.168.1.1");
     expect(normalizeIp("::ffff:192.168.1.1")).toBe("192.168.1.1");
+    expect(normalizeIp("192.168.1.1:8080")).toBe("192.168.1.1");
+    expect(normalizeIp("::ffff:192.168.1.1:8080")).toBe("192.168.1.1");
     expect(normalizeIp("")).toBe("");
     expect(normalizeIp(null)).toBe("");
   });
@@ -58,6 +60,14 @@ describe("Anti-Alt IP Security & Network Conflict Detection", () => {
       "cf-connecting-ip": "203.0.113.77",
     });
     expect(extractClientIp(spoofedHeaders)).toBe("203.0.113.77");
+
+    // Prioritizes x-vercel-forwarded-for over all other headers
+    const vercelHeaders = new Headers({
+      "x-forwarded-for": "1.2.3.4",
+      "cf-connecting-ip": "203.0.113.77",
+      "x-vercel-forwarded-for": "198.51.100.111, 10.0.0.1",
+    });
+    expect(extractClientIp(vercelHeaders)).toBe("198.51.100.111");
   });
 
   it("detects network conflict when moderator and submitter share the same public IP", () => {

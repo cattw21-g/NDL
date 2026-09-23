@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 
 import { LevelCard, type LevelCardLevel } from "@/components/level-card";
@@ -190,10 +190,23 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
                 setQuery(nextQuery);
                 updateUrlParams(tab, tier, nextQuery);
               }}
-              placeholder="Search demons, creators, verifiers, GD ID..."
+              placeholder="Search demons, nerfers, verifiers, GD ID..."
               aria-label="Search demons by name, creator, verifier, or GD ID"
-              className={`${inputClass} w-full pl-9 text-xs sm:text-sm`}
+              className={`${inputClass} w-full pl-9 ${query ? "pr-8" : ""} text-xs sm:text-sm`}
             />
+            {query ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  updateUrlParams(tab, tier, "");
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                aria-label="Clear search query"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -238,7 +251,7 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
               </select>
             </div>
 
-            <span className="text-xs font-medium text-zinc-400">
+            <span className="rounded-md border border-zinc-200/80 bg-zinc-50 px-2 py-1 text-xs font-semibold text-zinc-600 tabular-nums dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
               {filtered.length} {filtered.length === 1 ? "demon" : "demons"}
             </span>
           </div>
@@ -246,7 +259,7 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
       </div>
 
       {/* Level Cards List */}
-      <div className="space-y-3 bg-zinc-50/30 p-2.5 dark:bg-zinc-950/30 sm:p-3">
+      <div className="space-y-2 bg-zinc-50/30 p-2 sm:p-3 dark:bg-zinc-950/30">
         {filtered.length > 0 ? (
           filtered.map((level) => {
             const userSub = submissionsBySlug[level.slug];

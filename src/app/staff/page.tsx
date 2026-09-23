@@ -23,8 +23,27 @@ export const metadata = {
   },
 };
 
+type StaffUser = {
+  id: string;
+  playerName: string;
+  displayName: string;
+  role: string;
+  bio: string | null;
+  countryCode: string | null;
+  subdivision: string | null;
+  discordUsername: string | null;
+  youtubeUrl: string | null;
+  twitchUrl: string | null;
+  twitterUrl: string | null;
+  createdAt: Date;
+  _count: {
+    verifiedLevels: number;
+    reviewedSubmissions: number;
+  };
+};
+
 export default async function StaffPage() {
-  let staffUsers: Array<any> = [];
+  let staffUsers: StaffUser[] = [];
 
   try {
     staffUsers = await prisma.user.findMany({

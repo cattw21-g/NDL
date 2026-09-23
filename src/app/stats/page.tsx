@@ -32,10 +32,50 @@ export const metadata = {
   },
 };
 
+type StatsLevel = {
+  id: string;
+  name: string;
+  slug: string;
+  rank: number | null;
+  status: string;
+  difficulty: string;
+  points: number;
+  verifier: string;
+  nerfCreator: string;
+  _count: {
+    records: number;
+  };
+};
+
+type StatsRecord = {
+  id: string;
+  playerId: string;
+  levelId: string;
+  progress: number;
+  pointsAwarded: number;
+  fps: number;
+  cbfUsed: boolean;
+  isVerifier: boolean;
+  acceptedAt: Date;
+  player: {
+    id: string;
+    playerName: string;
+    displayName: string;
+    countryCode: string | null;
+  };
+};
+
+type StatsUser = {
+  id: string;
+  playerName: string;
+  displayName: string;
+  countryCode: string | null;
+};
+
 export default async function StatsPage() {
-  let levels: Array<any> = [];
-  let records: Array<any> = [];
-  let users: Array<any> = [];
+  let levels: StatsLevel[] = [];
+  let records: StatsRecord[] = [];
+  let users: StatsUser[] = [];
 
   try {
     const results = await Promise.all([

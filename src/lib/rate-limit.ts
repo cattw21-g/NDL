@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 
 import type { PrismaClient } from "../generated/prisma/client";
+import { extractClientIp } from "./anti-alt";
 import {
   EMAIL_RESEND_COOLDOWN_MESSAGE,
   EMAIL_RESEND_COOLDOWN_SECONDS,
@@ -74,10 +75,9 @@ const rules: Record<
 
 export async function requestRateLimitKey(fallback = "anonymous") {
   const headerStore = await headers();
-  const forwardedFor = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = headerStore.get("x-real-ip")?.trim();
+  const ip = extractClientIp(headerStore);
 
-  return `ip:${forwardedFor || realIp || fallback}`;
+  return `ip:${ip || fallback}`;
 }
 
 export function userRateLimitKey(userId: string) {
@@ -97,20 +97,7 @@ export async function checkRateLimit(
   const rule = rules[action];
   const windowStart = new Date(now.getTime() - rule.windowMs);
 
-  // Prune old logs probabilistically (~1% of requests) to prevent table bloat without adding write overhead to every check
-  if (Math.random() < 0.01) {
-    try {
-      await client.rateLimitAttempt.deleteMany({
-        where: {
-          occurredAt: {
-            lt: new Date(now.getTime() - 48 * 60 * 60 * 1000),
-          },
-        },
-      });
-    } catch {
-      // Background prune failure handled gracefully
-    }
-  }
+  // Request hot path is zero-write for pruning: cleanup is handled exclusively by /api/cron/maintenance
 
   const count = await client.rateLimitAttempt.count({
     where: {

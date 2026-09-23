@@ -1542,29 +1542,43 @@ export async function deleteAdminRecordAction(formData: FormData) {
 
   const record = await prisma.record.findUnique({
     where: { id: recordId },
-    include: { level: true, player: true },
+    include: { level: true, player: true, submission: true },
   });
 
   if (!record) {
     return;
   }
 
-  await prisma.record.delete({
-    where: { id: recordId },
-  });
+  await prisma.$transaction(async (tx) => {
+    if (record.submissionId) {
+      await tx.recordSubmission.update({
+        where: { id: record.submissionId },
+        data: {
+          status: "REJECTED",
+          moderatorNotes: `Record revoked by admin ${admin.displayName}: removed from rankings.`,
+          reviewedAt: new Date(),
+          reviewerId: admin.id,
+        },
+      });
+    }
 
-  await writeAuditLog(prisma, {
-    actor: {
-      id: admin.id,
-      playerName: admin.playerName,
-      displayName: admin.displayName,
-      role: admin.role,
-    },
-    action: "RECORD_DELETED",
-    entityType: "Record",
-    entityId: recordId,
-    entityLabel: `${record.player.displayName} on ${record.level.name}`,
-    note: `Admin deleted record`,
+    await tx.record.delete({
+      where: { id: recordId },
+    });
+
+    await writeAuditLog(tx, {
+      actor: {
+        id: admin.id,
+        playerName: admin.playerName,
+        displayName: admin.displayName,
+        role: admin.role,
+      },
+      action: "RECORD_DELETED",
+      entityType: "Record",
+      entityId: recordId,
+      entityLabel: `${record.player.displayName} on ${record.level.name}`,
+      note: `Admin deleted record (${record.progress}%, video: ${record.videoUrl}, points: ${record.pointsAwarded})`,
+    });
   });
 
   revalidatePath("/");

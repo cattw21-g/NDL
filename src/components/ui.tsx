@@ -116,21 +116,28 @@ export function MetricTile({
   );
 }
 
-export function RankBadge({ rank }: { rank: number | null }) {
+export function RankBadge({
+  rank,
+  className,
+}: {
+  rank: number | null;
+  className?: string;
+}) {
   const topRank =
     rank === 1
-      ? "border-amber-400 bg-white text-amber-900 shadow-[inset_4px_0_0_#f59e0b] dark:border-amber-400 dark:bg-amber-950/30 dark:text-amber-100"
+      ? "border-amber-400/60 bg-amber-500/10 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-300"
       : rank === 2
-        ? "border-cyan-400 bg-white text-cyan-900 shadow-[inset_4px_0_0_#0891b2] dark:border-cyan-400 dark:bg-cyan-950/30 dark:text-cyan-100"
+        ? "border-cyan-400/60 bg-cyan-500/10 text-cyan-700 dark:border-cyan-500/40 dark:bg-cyan-500/15 dark:text-cyan-300"
         : rank === 3
-          ? "border-teal-400 bg-white text-teal-900 shadow-[inset_4px_0_0_#0f766e] dark:border-teal-400 dark:bg-teal-950/30 dark:text-teal-100"
-          : "border-slate-300 bg-white text-slate-800 dark:border-slate-600 dark:bg-slate-950 dark:text-slate-100";
+          ? "border-teal-500/50 bg-teal-500/10 text-teal-800 dark:border-teal-500/30 dark:bg-teal-500/15 dark:text-teal-300"
+          : "border-zinc-200 bg-zinc-100/70 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-300";
 
   return (
     <span
       className={cx(
-        "inline-flex min-h-9 min-w-14 items-center justify-center rounded-md border px-2.5 font-black tabular-nums",
+        "inline-flex h-8 min-w-11 items-center justify-center rounded-md border px-2 text-xs font-black tabular-nums transition-colors",
         topRank,
+        className,
       )}
     >
       {rank ? `#${rank}` : "UNR"}
@@ -138,9 +145,20 @@ export function RankBadge({ rank }: { rank: number | null }) {
   );
 }
 
-export function PointsPill({ points }: { points: number }) {
+export function PointsPill({
+  points,
+  className,
+}: {
+  points: number;
+  className?: string;
+}) {
   return (
-    <span className="inline-flex min-h-8 items-center justify-center rounded-md border border-emerald-300 bg-white px-3 text-sm font-black text-emerald-800 tabular-nums dark:border-emerald-500/50 dark:bg-emerald-950/30 dark:text-emerald-100">
+    <span
+      className={cx(
+        "inline-flex h-7 items-center justify-center rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 text-xs font-bold text-emerald-700 tabular-nums dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300",
+        className,
+      )}
+    >
       {points} pts
     </span>
   );

@@ -18,6 +18,7 @@ export async function deleteRecordAction(formData: FormData): Promise<{ success:
     include: {
       level: true,
       player: true,
+      submission: true,
     },
   });
 
@@ -33,6 +34,19 @@ export async function deleteRecordAction(formData: FormData): Promise<{ success:
   }
 
   await prisma.$transaction(async (tx) => {
+    // If record originated from a submission, transition submission to REJECTED with audit note
+    if (record.submissionId) {
+      await tx.recordSubmission.update({
+        where: { id: record.submissionId },
+        data: {
+          status: "REJECTED",
+          moderatorNotes: `Record revoked by ${user.displayName} (${user.role}): removed from rankings.`,
+          reviewedAt: new Date(),
+          reviewerId: user.id,
+        },
+      });
+    }
+
     await tx.record.delete({
       where: { id: record.id },
     });
@@ -43,7 +57,7 @@ export async function deleteRecordAction(formData: FormData): Promise<{ success:
         type: "SUBMISSION_REJECTED",
         targetType: "Record",
         targetId: record.id,
-        summary: `${user.displayName} removed record for ${record.level.name}.`,
+        summary: `${user.displayName} removed record for ${record.level.name} (${record.progress}%, video: ${record.videoUrl}, points: ${record.pointsAwarded}).`,
       },
     });
   });

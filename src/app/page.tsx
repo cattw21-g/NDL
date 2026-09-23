@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
+  AlertTriangle,
   Newspaper,
   Trophy,
   Upload,
@@ -17,7 +17,7 @@ import {
   publicUserWhere,
 } from "@/lib/demo-visibility";
 import { formatDate } from "@/lib/format";
-import { calculateCurrentLevelPoints } from "@/lib/points";
+import { calculateCurrentLevelPoints, type ScoredLevelStatus } from "@/lib/points";
 import { FALLBACK_RANKED_LEVELS } from "@/lib/fallback-levels";
 import { resolveLevelThumbnail } from "@/lib/media";
 
@@ -28,13 +28,46 @@ export const metadata = {
     "Browse the Nerfed Demonlist ranked list, accepted records, player standings, rules, and staff updates.",
 };
 
+type LevelItem = {
+  slug: string;
+  rank: number | null;
+  name: string;
+  originalName: string;
+  publisher: string;
+  nerfCreator: string;
+  verifier: string;
+  thumbnailUrl: string;
+  showcaseUrl?: string;
+  status: ScoredLevelStatus;
+  difficulty: string;
+  points: number;
+  gdLevelId?: string;
+  _count?: { records: number };
+};
+
+type RecordItem = {
+  id: string;
+  videoUrl: string;
+  progress: number;
+  player: { displayName: string };
+  level: { name: string; rank: number | null; status: ScoredLevelStatus; points: number };
+};
+
+type ChangelogItem = {
+  slug: string;
+  title: string;
+  summary: string;
+  category: string;
+  publishedAt: Date | string | null;
+};
+
 export default async function Home() {
   const isDemoMode = demoModeEnabled();
-  let levels: any[] = [];
+  let levels: LevelItem[] = [];
   let pendingCount = 0;
   let acceptedCount = 0;
-  let latestRecords: any[] = [];
-  let latestPost: any = null;
+  let latestRecords: RecordItem[] = [];
+  let latestPost: ChangelogItem | null = null;
 
   try {
     const results = await Promise.all([
@@ -114,6 +147,8 @@ export default async function Home() {
     pendingCount = 1;
   }
 
+  const isDegraded = levels.length > 0 && levels[0] === FALLBACK_RANKED_LEVELS[0];
+
   if (levels.length === 0) {
     levels = FALLBACK_RANKED_LEVELS.map((lvl) => ({
       ...lvl,
@@ -129,6 +164,19 @@ export default async function Home() {
 
   return (
     <div className="space-y-6">
+      {/* Degraded / Maintenance Mode Banner */}
+      {isDegraded ? (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-amber-900 dark:text-amber-200">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div className="text-xs">
+            <p className="font-bold text-sm">Notice: Database in Maintenance Mode</p>
+            <p className="mt-0.5 leading-relaxed text-amber-800 dark:text-amber-300">
+              The list database is currently in read-only maintenance mode. Displaying cached records. Submissions and live updates will resume automatically once connection is restored.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       {/* Header Banner */}
       <div className="relative overflow-hidden rounded-2xl border border-cyan-500/20 bg-gradient-to-b from-cyan-500/10 via-zinc-900/50 to-zinc-950 p-6 sm:p-10 shadow-2xl">
         <div className="relative z-10">
@@ -264,8 +312,8 @@ export default async function Home() {
                           {record.level.name}
                         </span>
                       </div>
-                      <span className="shrink-0 rounded bg-cyan-500/10 px-2 py-0.5 text-xs font-bold text-cyan-700 dark:text-cyan-400">
-                        +{recordPoints}
+                      <span className="shrink-0 rounded-md border border-zinc-200/80 bg-zinc-100/70 px-2 py-0.5 text-xs font-semibold tabular-nums text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-300">
+                        +{recordPoints} pts
                       </span>
                     </a>
                   );
