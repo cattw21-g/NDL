@@ -138,6 +138,71 @@ We put a ton of hard work into getting everything ready for this release. Enjoy 
 *— cattw21 & NDL Staff*`,
 };
 
+export const V1_6_0_ANNOUNCEMENT_POST = {
+  title: "NDL v1.6.0",
+  slug: "ndl-v1-6-0",
+  category: "ANNOUNCEMENT" as const,
+  summary:
+    "NDL v1.6.0 is live! Featuring a redesigned Demonlist browsing experience with large high-quality thumbnails, dramatically faster image loading, outage fallback resilience, smart anti-alt and top-10 moderation safeguards, record restoration, and site-wide mobile polish.",
+  content: `Hey everyone!
+
+**NDL v1.6.0 is officially here!** 🎉
+
+Over the past few days, we’ve put a massive amount of care into making Nerfed Demonlist faster, cleaner, more reliable, and better to use across every device. This update brings a refined Demonlist presentation with larger previews, major image optimization and speed upgrades, intelligent moderation safeguards, background resilience during outages, and countless quality-of-life polish items.
+
+Here is everything included in the official v1.6.0 release:
+
+---
+
+### 🏆 Demonlist & Browsing Experience
+- **Reworked Level Card Presentation**: Level cards now feature larger, prominent 16:9 thumbnails, high-visibility rank badges, and a cleaner information hierarchy inspired by classic demonlist layouts.
+- **Refined Filtering & Search Controls**: Decluttered the list toolbar by removing redundant sort options and duplicate filter chips, making it faster and easier to find exactly the demons you're looking for.
+- **Reworked Upcoming Demons View**: Updated the Upcoming tab with clearer verification status badges, progress tracking indicators, and cleaner metadata.
+- **Smoother Navigation**: Refined sticky jump bars and header controls with smoother scrolling, tighter spacing, and cleaner transitions.
+
+---
+
+### ⚡ Performance & Image Delivery
+- **Optimized Level Thumbnails**: Migrated all level thumbnails to modern, responsive image delivery (AVIF and WebP). Instead of downloading multi-megabyte source images, your browser now receives crisp, lightweight images sized specifically for your screen—drastically reducing data usage and loading cards nearly instantly.
+- **Faster Initial Page Loads**: Added priority preloading to top demon previews so the homepage and list render immediately without layout jumps.
+- **Optimized Public Page Caching**: Reworked caching across the Demonlist, Leaderboards, Stats, and Countries, enabling pages to load faster with less server overhead.
+- **Reduced Background Network Activity**: Made real-time background sync smarter and quieter, automatically pausing unnecessary requests when browser tabs are inactive.
+
+---
+
+### 🛡️ Moderation & Record Management
+- **Added Anti-Alt & Conflict Detection**: Moderators now have automated conflict detection tools to identify potential duplicate accounts or ban evasions during record reviews, keeping rankings fair and transparent.
+- **Added Top 10 Verification Safeguards**: High-profile runs on top 10 demons now pass through dedicated verification gates requiring additional review before acceptance.
+- **Added Structured Rejection Notes**: When a submission cannot be accepted, moderators can now provide clear, categorized explanations so players receive helpful feedback on what needs fixing.
+- **Added Record Restoration Tools**: Implemented reversible record management so mistakenly deleted or modified records can be recovered safely without data loss.
+
+---
+
+### 🔒 Security & Site Reliability
+- **Outage Fallback Resilience**: Added a durable fallback system. If our database encounters temporary maintenance or connection limits, the Demonlist automatically serves a verified snapshot so you can continue browsing rankings and level details seamlessly without downtime.
+- **Strengthened Anti-Abuse Protections**: Upgraded request rate limiting across login, record submissions, and voting to protect the community against spam and automated abuse.
+- **Hardened Administrative Safeguards**: Added emergency rollback tools and tamper-resistant audit logging with automatic redaction of sensitive credentials.
+
+---
+
+### 📱 Mobile & Accessibility
+- **Improved Mobile Responsiveness**: Tailored layout spacing, card padding, and button hit targets specifically for mobile devices and tablets, ensuring a smooth experience whether you're on a phone or desktop.
+- **Enhanced Accessibility**: Improved screen reader labels, keyboard focus rings, and contrast across badges and navigation links.
+
+---
+
+### 🛠️ Bug Fixes & Refinements
+- **Video Link Handling**: Refined video URL validation and playback normalization for edge cases on YouTube and Twitch.
+- **Submission Status Sync**: Fixed an issue where recent submission statuses in user menus did not always update immediately after moderator review.
+- **Leaderboard Performance**: Improved memory and query efficiency on high-volume player rankings.
+
+---
+
+Thank you for being part of Nerfed Demonlist and supporting the project. Good luck on your grinds, and we'll see you on the leaderboard!
+
+*— cattw21 & NDL Staff*`,
+};
+
 export const V1_5_1_ANNOUNCEMENT_POST = {
   title: "Nerfed Demonlist v1.5.1: Bug Fixes, System Safety & Future Mods",
   slug: "nerfed-demonlist-v1-5-1-bug-fixes-and-safety",
@@ -206,13 +271,28 @@ Thanks for your patience and understanding, keep having fun, and good luck beati
 
 export const DEFAULT_POSTS = [
   {
+    id: "ndl-v1-6-0",
+    title: V1_6_0_ANNOUNCEMENT_POST.title,
+    slug: V1_6_0_ANNOUNCEMENT_POST.slug,
+    category: V1_6_0_ANNOUNCEMENT_POST.category,
+    summary: V1_6_0_ANNOUNCEMENT_POST.summary,
+    content: V1_6_0_ANNOUNCEMENT_POST.content,
+    isPinned: true,
+    isPublished: true,
+    isDemo: false,
+    publishedAt: new Date("2026-09-23T20:00:00.000Z"),
+    updatedAt: new Date("2026-09-23T20:00:00.000Z"),
+    archivedAt: null,
+    author: { displayName: "cattw21" },
+  },
+  {
     id: "nerfed-demonlist-v1-5-1-bug-fixes-and-safety",
     title: V1_5_1_ANNOUNCEMENT_POST.title,
     slug: V1_5_1_ANNOUNCEMENT_POST.slug,
     category: V1_5_1_ANNOUNCEMENT_POST.category,
     summary: V1_5_1_ANNOUNCEMENT_POST.summary,
     content: V1_5_1_ANNOUNCEMENT_POST.content,
-    isPinned: true,
+    isPinned: false,
     isPublished: true,
     isDemo: false,
     publishedAt: new Date("2026-09-22T20:30:00.000Z"),
@@ -391,6 +471,16 @@ export async function ensureLatestChangelogPost(prismaClient: PrismaClient) {
         },
       });
     }
+
+    await prismaClient.changelogPost.updateMany({
+      where: {
+        slug: { not: V1_6_0_ANNOUNCEMENT_POST.slug },
+        isPinned: true,
+      },
+      data: {
+        isPinned: false,
+      },
+    });
   } catch {
     // Fail-safe
   }
