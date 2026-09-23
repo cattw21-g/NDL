@@ -43,6 +43,11 @@ import {
 import { isBotSubmission } from "@/lib/honeypot";
 import { validateProofUrl, validatePhysicsParameters } from "@/lib/proof-security";
 import {
+  extractClientIp,
+  hasNetworkConflict,
+  hashClientIp,
+} from "@/lib/anti-alt";
+import {
   formDataToObject,
   reviewSchema,
 } from "@/lib/validation";
@@ -159,10 +164,7 @@ export async function submitRecordAction(
 
   // Rate Limiting
   const headerList = await headers();
-  const clientIp =
-    headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    headerList.get("cf-connecting-ip") ||
-    "guest-client";
+  const clientIp = extractClientIp(headerList) || "guest-client";
 
   const rateLimitKey = sessionUser
     ? userRateLimitKey(sessionUser.id)
@@ -339,6 +341,7 @@ export async function submitRecordAction(
         data: buildSubmissionCreateData(effectiveUser.id, upload.data),
       });
 
+      const submitterIpHash = hashClientIp(clientIp);
       await tx.moderationAction.create({
         data: {
           actorId: effectiveUser.id,
@@ -346,6 +349,7 @@ export async function submitRecordAction(
           targetType: "RecordSubmission",
           targetId: submission.id,
           summary: `${effectiveUser.displayName} submitted a record for ${level.name}.`,
+          metadata: submitterIpHash ? { submitterIpHash } : undefined,
         },
       });
     });
@@ -483,6 +487,33 @@ export async function reviewSubmissionAction(formData: FormData) {
   // Security: Moderators cannot review their own submissions (Anti-Cheat / Conflict of Interest)
   if (submission.playerId === moderator.id) {
     redirect("/moderation?error=self_review_forbidden");
+  }
+
+  // Security: Network Conflict Detection (Anti-Alt / Same Network or Device)
+  const headerList = await headers();
+  const reviewerIp = extractClientIp(headerList);
+
+  const creationAction = await prisma.moderationAction.findFirst({
+    where: {
+      targetType: "RecordSubmission",
+      targetId: submission.id,
+      type: ModerationActionType.SUBMISSION_CREATED,
+    },
+    select: { metadata: true },
+  });
+
+  const submitterIpHash = (
+    creationAction?.metadata as { submitterIpHash?: string } | null
+  )?.submitterIpHash;
+
+  if (
+    hasNetworkConflict({
+      submitterIpHash,
+      reviewerIp,
+      reviewerRole: moderator.role,
+    })
+  ) {
+    redirect("/moderation?error=conflict_of_interest");
   }
 
   // Security: Moderator action rate-limiting to prevent compromised automated mass actions

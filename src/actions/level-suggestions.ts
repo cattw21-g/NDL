@@ -2,6 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+
+import {
+  extractClientIp,
+  hasNetworkConflict,
+  hashClientIp,
+} from "@/lib/anti-alt";
 
 import { ModerationActionType } from "@/generated/prisma/enums";
 import { writeAuditLog } from "@/lib/audit-log";
@@ -163,6 +170,10 @@ export async function submitLevelSuggestionAction(
       },
     });
 
+    const headerList = await headers();
+    const clientIp = extractClientIp(headerList);
+    const submitterIpHash = hashClientIp(clientIp);
+
     await prisma.moderationAction.create({
       data: {
         actorId: user.id,
@@ -170,6 +181,7 @@ export async function submitLevelSuggestionAction(
         targetType: "LevelSuggestion",
         targetId: suggestion.id,
         summary: `${user.displayName} suggested ${suggestion.name}.`,
+        metadata: submitterIpHash ? { submitterIpHash } : undefined,
       },
     });
   } catch {
@@ -219,6 +231,35 @@ export async function reviewLevelSuggestionAction(formData: FormData) {
   // Security: Moderators cannot approve their own level suggestions
   if (suggestion.submitterId === moderator.id && parsed.data.status === "APPROVED") {
     redirect("/moderation?error=self_approval_forbidden");
+  }
+
+  // Security: Network Conflict Detection (Anti-Alt / Same Network or Device)
+  if (parsed.data.status === "APPROVED") {
+    const headerList = await headers();
+    const reviewerIp = extractClientIp(headerList);
+
+    const creationAction = await prisma.moderationAction.findFirst({
+      where: {
+        targetType: "LevelSuggestion",
+        targetId: suggestion.id,
+        type: ModerationActionType.LEVEL_SUGGESTION_CREATED,
+      },
+      select: { metadata: true },
+    });
+
+    const submitterIpHash = (
+      creationAction?.metadata as { submitterIpHash?: string } | null
+    )?.submitterIpHash;
+
+    if (
+      hasNetworkConflict({
+        submitterIpHash,
+        reviewerIp,
+        reviewerRole: moderator.role,
+      })
+    ) {
+      redirect("/moderation?error=conflict_of_interest");
+    }
   }
 
   // Security: Moderator action rate-limiting to prevent compromised automated mass actions

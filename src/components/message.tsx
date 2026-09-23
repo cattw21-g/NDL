@@ -26,6 +26,10 @@ const messages: Record<string, string> = {
     "Security Policy: Moderation rate limit reached. Please wait a moment before reviewing further submissions.",
   "rate-limited":
     "Security Policy: Moderation rate limit reached. Please wait a moment before reviewing further submissions.",
+  conflict_of_interest:
+    "Security Policy: Network conflict detected. You cannot review submissions originating from your own network or device.",
+  "conflict-of-interest":
+    "Security Policy: Network conflict detected. You cannot review submissions originating from your own network or device.",
 };
 
 export function PageMessage({
