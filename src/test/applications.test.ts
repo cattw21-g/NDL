@@ -231,6 +231,7 @@ describe("Staff Applications System Core Tests", () => {
           discordSyncJob: {
             create: vi.fn().mockResolvedValue({ id: "sync-1" }),
           },
+          $queryRaw: vi.fn().mockResolvedValue([{ id: sub.id }]),
         } as unknown as Prisma.TransactionClient;
       };
 
@@ -312,6 +313,7 @@ describe("Staff Applications System Core Tests", () => {
         discordSyncJob: {
           create: vi.fn(),
         },
+        $queryRaw: vi.fn().mockResolvedValue([{ id: sub.id }]),
       } as unknown as Prisma.TransactionClient;
 
       let transactionRolledBack = false;

@@ -241,30 +241,48 @@ export async function withdrawApplicationAction(params: {
     return { success: false, error: "Authentication required." };
   }
 
-  const submission = await prisma.applicationSubmission.findUnique({
-    where: { id: params.submissionId },
-    include: { opening: true },
-  });
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // Row lock the submission to serialize against concurrent accept/reject decisions
+      await tx.$queryRaw`SELECT "id" FROM "ApplicationSubmission" WHERE "id" = ${params.submissionId} FOR UPDATE`;
 
-  if (!submission || submission.userId !== user.id) {
-    return { success: false, error: "Application not found." };
+      const submission = await tx.applicationSubmission.findUnique({
+        where: { id: params.submissionId },
+        include: { opening: true },
+      });
+
+      if (!submission || submission.userId !== user.id) {
+        throw new Error("Application not found.");
+      }
+
+      if (submission.status === "ACCEPTED") {
+        throw new Error("Cannot withdraw an accepted application.");
+      }
+
+      if (submission.status === "WITHDRAWN") {
+        return { success: true, message: "Application already withdrawn." };
+      }
+
+      if (submission.status === "REJECTED") {
+        throw new Error("Application has already been reviewed.");
+      }
+
+      await tx.applicationSubmission.update({
+        where: { id: submission.id },
+        data: {
+          status: "WITHDRAWN",
+        },
+      });
+
+      return { success: true, message: "Application withdrawn." };
+    });
+
+    revalidatePath("/applications/mine");
+    return result;
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { success: false, error: message };
   }
-
-  if (submission.status === "ACCEPTED") {
-    return { success: false, error: "Cannot withdraw an accepted application." };
-  }
-
-  await prisma.applicationSubmission.update({
-    where: { id: submission.id },
-    data: {
-      status: "WITHDRAWN",
-    },
-  });
-
-  revalidatePath("/applications/mine");
-  revalidatePath(`/admin/applications/${submission.openingId}`);
-
-  return { success: true, message: "Application withdrawn." };
 }
 
 // ==========================================
@@ -464,6 +482,9 @@ export async function executeApplicationDecision(
     ignorePositionLimit?: boolean;
   },
 ) {
+  // Lock the submission row with SELECT ... FOR UPDATE to eliminate races between concurrent decisions / withdrawals
+  await tx.$queryRaw`SELECT "id" FROM "ApplicationSubmission" WHERE "id" = ${params.submissionId} FOR UPDATE`;
+
   const submission = await tx.applicationSubmission.findUnique({
     where: { id: params.submissionId },
     include: {
@@ -480,9 +501,19 @@ export async function executeApplicationDecision(
     throw new Error("Application has already been accepted.");
   }
 
+  if (submission.status === "REJECTED") {
+    throw new Error("Application has already been rejected.");
+  }
+
+  if (submission.status === "WITHDRAWN") {
+    throw new Error("Cannot decide a withdrawn application.");
+  }
+
   if (params.decision === "ACCEPTED") {
-    // Check positions limit INSIDE the database transaction
+    // If position limits apply, lock the ApplicationOpening row FOR UPDATE before counting to serialize capacity decisions
     if (submission.opening.maxPositions && !params.ignorePositionLimit) {
+      await tx.$queryRaw`SELECT "id" FROM "ApplicationOpening" WHERE "id" = ${submission.openingId} FOR UPDATE`;
+
       const acceptedCount = await tx.applicationSubmission.count({
         where: {
           openingId: submission.openingId,

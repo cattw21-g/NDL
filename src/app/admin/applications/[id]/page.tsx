@@ -7,9 +7,15 @@ import { prisma } from "@/lib/db";
 import { AdminSubmissionsTable, type SubmissionRow } from "@/components/admin-submissions-table";
 import { ArrowLeft } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Review Applications — Admin",
   description: "Review candidate submissions for this opening.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function AdminOpeningSubmissionsPage({

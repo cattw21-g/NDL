@@ -6,9 +6,15 @@ import { canManageApplications } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
 import { ArrowLeft, Scale, ChevronRight } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Compare Candidates — Admin",
   description: "Side-by-side comparison of candidate application responses.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function AdminCompareApplicantsPage({

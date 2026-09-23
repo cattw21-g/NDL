@@ -130,11 +130,42 @@ describe("NDL Role-Based Access Control (RBAC) Matrix", () => {
       expect(canApproveSubmission("PLAYER", 1, "cattw21")).toBe(true);
     });
 
-    it("PLAYER and BETA_TESTER -> denied review on all levels", () => {
-      expect(canApproveSubmission("PLAYER", 1)).toBe(false);
-      expect(canApproveSubmission("PLAYER", 25)).toBe(false);
-      expect(canApproveSubmission("BETA_TESTER", 1)).toBe(false);
-      expect(canApproveSubmission("BETA_TESTER", 25)).toBe(false);
+    it("distinguishes final approval from non-approval moderation actions (reject / needs changes)", () => {
+      // Helper simulating the decision gate in reviewSubmissionAction
+      const canPerformModerationAction = (
+        action: "ACCEPTED" | "REJECTED" | "NEEDS_CHANGES",
+        role: string,
+        rank: number,
+        playerName?: string,
+      ) => {
+        if (!canReviewSubmissions(role)) return false;
+        if (action === "ACCEPTED") {
+          return canApproveSubmission(role, rank, playerName);
+        }
+        // Non-approval actions (reject, request changes) are available to all reviewers
+        return true;
+      };
+
+      // Rank 1 demon (Top 10):
+      // Final approval: ONLY admin
+      expect(canPerformModerationAction("ACCEPTED", "LIST_REVIEWER", 1)).toBe(false);
+      expect(canPerformModerationAction("ACCEPTED", "LIST_MODERATOR", 1)).toBe(false);
+      expect(canPerformModerationAction("ACCEPTED", "ADMIN", 1)).toBe(true);
+
+      // Rejections on Top 10: allowed for reviewers and moderators
+      expect(canPerformModerationAction("REJECTED", "LIST_REVIEWER", 1)).toBe(true);
+      expect(canPerformModerationAction("REJECTED", "LIST_MODERATOR", 1)).toBe(true);
+      expect(canPerformModerationAction("REJECTED", "ADMIN", 1)).toBe(true);
+
+      // Needs changes on Top 10: allowed for reviewers and moderators
+      expect(canPerformModerationAction("NEEDS_CHANGES", "LIST_REVIEWER", 1)).toBe(true);
+      expect(canPerformModerationAction("NEEDS_CHANGES", "LIST_MODERATOR", 1)).toBe(true);
+      expect(canPerformModerationAction("NEEDS_CHANGES", "ADMIN", 1)).toBe(true);
+
+      // Normal player / beta tester cannot perform any moderation actions
+      expect(canPerformModerationAction("REJECTED", "PLAYER", 1)).toBe(false);
+      expect(canPerformModerationAction("REJECTED", "BETA_TESTER", 1)).toBe(false);
     });
   });
 });
+

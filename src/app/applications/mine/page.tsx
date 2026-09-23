@@ -13,9 +13,15 @@ import {
   RotateCcw,
 } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "My Applications — Nerfed Demonlist",
   description: "View and manage your staff applications for Nerfed Demonlist.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function MyApplicationsPage() {

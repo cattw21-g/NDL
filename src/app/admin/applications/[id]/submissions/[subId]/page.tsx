@@ -11,9 +11,15 @@ import {
 } from "@/components/admin-applicant-review";
 import { ArrowLeft } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Candidate Review — Admin",
   description: "Evaluate candidate responses and grant staff roles.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function AdminSubmissionDetailPage({
