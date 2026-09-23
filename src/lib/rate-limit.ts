@@ -16,6 +16,7 @@ export type RateLimitAction =
   | "level-suggestion"
   | "moderation-review"
   | "moderation-suggestion-review"
+  | "profile-update"
   | "public-api"
   | "bot-staff-api";
 
@@ -53,6 +54,11 @@ const rules: Record<
     limit: 20,
     windowMs: 60 * 1000,
     message: "Moderation suggestion review rate limit reached. Please pause a moment before reviewing further.",
+  },
+  "profile-update": {
+    limit: 15,
+    windowMs: 5 * 60 * 1000,
+    message: "Too many profile updates. Please wait a few minutes before trying again.",
   },
   "public-api": {
     limit: 60,

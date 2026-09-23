@@ -95,13 +95,15 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
       <div className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
         {/* Primary Scope Tabs */}
         <div className="flex overflow-x-auto border-b border-zinc-200/80 p-2 sm:p-3 dark:border-zinc-800/80 [scrollbar-width:none]">
-          <div className="inline-flex rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
+          <div role="tablist" aria-label="Level scopes" className="inline-flex rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
             {tabs.map((item) => {
               const isActive = tab === item.value;
               return (
                 <button
                   key={item.value}
                   type="button"
+                  role="tab"
+                  aria-selected={isActive}
                   onClick={() => {
                     setTab(item.value);
                     if (item.value === "EXTENDED" || item.value === "LEGACY") {
@@ -130,6 +132,7 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search demons, creators, verifiers, GD ID..."
+              aria-label="Search demons by name, creator, verifier, or GD ID"
               className={`${inputClass} w-full pl-9 text-xs sm:text-sm`}
             />
           </div>
@@ -137,11 +140,12 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
           <div className="flex flex-wrap items-center gap-2">
             {/* Tier Filter Chips (only active on Main List or All) */}
             {(tab === "MAIN" || tab === "ALL") && (
-              <div className="inline-flex rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-900">
+              <div role="group" aria-label="Tier filter" className="inline-flex rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-900">
                 {tierChips.map((chip) => (
                   <button
                     key={chip.value}
                     type="button"
+                    aria-pressed={tier === chip.value}
                     onClick={() => setTier(chip.value)}
                     className={cx(
                       "rounded-md px-2.5 py-1 text-xs font-semibold transition-all",
@@ -162,6 +166,7 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
               <select
                 value={sort}
                 onChange={(event) => setSort(event.target.value as SortMode)}
+                aria-label="Sort demons by"
                 className={`${inputClass} py-1 text-xs font-medium`}
               >
                 <option value="rank">Rank</option>

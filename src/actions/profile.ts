@@ -6,13 +6,14 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { COUNTRIES } from "@/lib/countries";
 import { prisma } from "@/lib/db";
+import { checkRateLimit, userRateLimitKey } from "@/lib/rate-limit";
 
 function parseSocialUrl(raw: unknown, label: string): string | null {
   if (typeof raw !== "string" || !raw.trim()) return null;
   const trimmed = raw.trim();
   try {
     const parsed = new URL(trimmed);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    if (parsed.protocol !== "https:") {
       redirect(`/settings?error=${encodeURIComponent(`${label} must start with https://`)}`);
     }
     return parsed.toString();
@@ -23,6 +24,15 @@ function parseSocialUrl(raw: unknown, label: string): string | null {
 
 export async function updateProfileAction(formData: FormData): Promise<void> {
   const user = await requireUser();
+
+  const rateLimit = await checkRateLimit(
+    prisma,
+    "profile-update",
+    userRateLimitKey(user.id),
+  );
+  if (!rateLimit.allowed) {
+    redirect(`/settings?error=${encodeURIComponent(rateLimit.message)}`);
+  }
 
   const rawCountryCode = formData.get("countryCode");
   const rawSubdivision = formData.get("subdivision");

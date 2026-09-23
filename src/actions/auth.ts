@@ -10,6 +10,7 @@ import {
 import { isVerifiedAccount } from "@/lib/account-state";
 import { prisma } from "@/lib/db";
 import { sendVerificationForUser } from "@/lib/email-verification";
+import { isBotSubmission } from "@/lib/honeypot";
 import {
   checkRateLimit,
   emailRateLimitKey,
@@ -107,8 +108,6 @@ export async function loginAction(formData: FormData) {
   await createSession(user.id);
   redirect("/submissions");
 }
-
-import { isBotSubmission } from "@/lib/honeypot";
 
 export async function registerAction(
   _previousState: RegisterFormState,

@@ -8,6 +8,17 @@ export const revalidate = 120;
 export const metadata = {
   title: "Creator Leaderboard — Nerfed Demonlist",
   description: "Rankings and statistics for nerfed demon creators, level publishers, and verifiers.",
+  openGraph: {
+    title: "Creator Leaderboard — Nerfed Demonlist",
+    description: "Rankings and statistics for nerfed demon creators, level publishers, and verifiers.",
+    siteName: "Nerfed Demonlist",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Creator Leaderboard — Nerfed Demonlist",
+    description: "Rankings and statistics for nerfed demon creators, level publishers, and verifiers.",
+  },
 };
 
 export default async function CreatorsPage() {

@@ -56,7 +56,7 @@ export function isValidBotAuthorization(
   );
 }
 
-function constantTimeEqual(input: string, expected: string) {
+export function constantTimeEqual(input: string, expected: string) {
   const inputBuffer = Buffer.from(input);
   const expectedBuffer = Buffer.from(expected);
 

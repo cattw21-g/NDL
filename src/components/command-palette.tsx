@@ -306,6 +306,7 @@ export function CommandPaletteTrigger() {
     <button
       type="button"
       onClick={trigger}
+      aria-label="Quick Search (Ctrl+K)"
       className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-300 bg-slate-50 px-3 text-xs font-bold text-slate-600 transition hover:border-cyan-400 hover:bg-white hover:text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-cyan-400 dark:hover:bg-slate-950"
     >
       <Search className="h-3.5 w-3.5 text-slate-400" />

@@ -58,7 +58,12 @@ export function StaffNotificationCenter({
   const prevTotalRef = useRef(initialData?.totalPendingCount ?? 0);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const lastFetchedRef = useRef(0);
+
   const fetchNotifications = useCallback(async (manual = false) => {
+    if (!manual && typeof document !== "undefined" && document.hidden) {
+      return;
+    }
     if (manual) setIsRefreshing(true);
     try {
       const res = await fetch("/api/admin/notifications", {
@@ -67,6 +72,7 @@ export function StaffNotificationCenter({
       if (!res.ok) return;
       const json = await res.json();
       if (json.ok && json.data) {
+        lastFetchedRef.current = Date.now();
         const newData = json.data as StaffNotificationData;
         if (newData.totalPendingCount > prevTotalRef.current) {
           setHasNewItemPulse(true);
@@ -82,13 +88,32 @@ export function StaffNotificationCenter({
     }
   }, []);
 
-  // Background polling every 20 seconds
+  // Background polling every 60 seconds, with immediate resume on active tab
   useEffect(() => {
+    lastFetchedRef.current = Date.now();
+
+    const handleResume = () => {
+      if (
+        typeof document !== "undefined" &&
+        !document.hidden &&
+        Date.now() - lastFetchedRef.current > 45_000
+      ) {
+        void fetchNotifications(false);
+      }
+    };
+
+    window.addEventListener("focus", handleResume);
+    document.addEventListener("visibilitychange", handleResume);
+
     const interval = setInterval(() => {
       fetchNotifications(false);
-    }, 20000);
+    }, 60000);
 
-    return () => clearInterval(interval);
+    return () => {
+      window.removeEventListener("focus", handleResume);
+      document.removeEventListener("visibilitychange", handleResume);
+      clearInterval(interval);
+    };
   }, [fetchNotifications]);
 
   // Click outside to close

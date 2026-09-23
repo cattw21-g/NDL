@@ -245,7 +245,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Bottom Bar: Full-Width Distributed Navigation Across The Website */}
-          <nav className="mt-2.5 flex items-center justify-between gap-3 overflow-x-auto border-t border-slate-200/80 pt-2 text-sm dark:border-slate-800/80 [scrollbar-width:none]">
+          <nav
+            aria-label="Main navigation"
+            className="mt-2.5 flex items-center justify-between gap-3 overflow-x-auto border-t border-slate-200/80 pt-2 text-sm dark:border-slate-800/80 [scrollbar-width:none]"
+          >
             {/* Left Wing: Rankings & Exploration */}
             <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
               {primaryNavItems.map((item) => (

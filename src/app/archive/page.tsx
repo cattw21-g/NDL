@@ -9,6 +9,17 @@ export const revalidate = 120;
 export const metadata = {
   title: "List Archive — Nerfed Demonlist",
   description: "View the entire Nerfed Demonlist and player leaderboards exactly as they existed on any past date.",
+  openGraph: {
+    title: "List Archive — Nerfed Demonlist",
+    description: "View the entire Nerfed Demonlist and player leaderboards exactly as they existed on any past date.",
+    siteName: "Nerfed Demonlist",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "List Archive — Nerfed Demonlist",
+    description: "View the entire Nerfed Demonlist and player leaderboards exactly as they existed on any past date.",
+  },
 };
 
 type Props = {

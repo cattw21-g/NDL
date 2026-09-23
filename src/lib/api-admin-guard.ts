@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { isAdminRole, type AppRole } from "@/lib/permissions";
 
+import { constantTimeEqual } from "@/lib/api-auth";
+
 export type AdminAuthResult =
   | { authorized: true; actor: { id?: string; name: string; isService: boolean } }
   | { authorized: false; response: NextResponse };
@@ -29,7 +31,7 @@ export async function requireApiAdmin(
     process.env.ADMIN_SEED_SECRET,
   ].filter((s): s is string => Boolean(s && s.trim().length > 0));
 
-  if (token && validSecrets.includes(token)) {
+  if (token && validSecrets.some((secret) => constantTimeEqual(token, secret))) {
     return {
       authorized: true,
       actor: { name: "service-token", isService: true },

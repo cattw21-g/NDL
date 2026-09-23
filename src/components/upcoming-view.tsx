@@ -102,9 +102,11 @@ export function UpcomingView({
       <div className="rounded-xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-950">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           {/* Segmented Scope Pill */}
-          <div className="inline-flex rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
+          <div role="tablist" aria-label="Upcoming demon scopes" className="inline-flex rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === "verifying"}
               onClick={() => setActiveTab("verifying")}
               className={cx(
                 "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold transition-all",
@@ -118,6 +120,8 @@ export function UpcomingView({
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === "waiting"}
               onClick={() => setActiveTab("waiting")}
               className={cx(
                 "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold transition-all",
@@ -158,15 +162,17 @@ export function UpcomingView({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search demon name, verifier, creator..."
+              aria-label="Search upcoming demons by name, verifier, or creator"
               className={`${inputClass} w-full pl-8.5 py-1 text-xs sm:text-sm`}
             />
           </div>
 
-          <div className="inline-flex rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-900">
+          <div role="group" aria-label="Difficulty tier filter" className="inline-flex rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-900">
             {["ALL", "EXTREME", "MYTHIC", "ADVANCED", "ENTRY"].map((diff) => (
               <button
                 key={diff}
                 type="button"
+                aria-pressed={selectedDifficulty === diff}
                 onClick={() => setSelectedDifficulty(diff)}
                 className={cx(
                   "rounded-md px-2.5 py-1 text-xs font-semibold transition-all",

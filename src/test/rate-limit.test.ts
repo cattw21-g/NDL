@@ -215,4 +215,23 @@ describe("rate limiting", () => {
       expect(result.message).toContain("Moderation review rate limit");
     }
   });
+
+  it("rate-limits profile updates to prevent spam updates", async () => {
+    const attempts = Array.from({ length: 15 }, () => ({
+      action: "profile-update",
+      key: userRateLimitKey("player-123"),
+      occurredAt: new Date("2026-05-31T00:00:00.000Z"),
+    }));
+    const result = await checkRateLimit(
+      createClient(attempts),
+      "profile-update",
+      userRateLimitKey("player-123"),
+      new Date("2026-05-31T00:02:00.000Z"),
+    );
+
+    expect(result.allowed).toBe(false);
+    if (!result.allowed) {
+      expect(result.message).toContain("Too many profile updates");
+    }
+  });
 });

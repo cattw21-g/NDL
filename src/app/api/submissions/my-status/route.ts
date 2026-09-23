@@ -8,7 +8,7 @@ export async function GET() {
   const user = await getCurrentUser();
 
   if (!user) {
-    return apiOk({ submissions: {} });
+    return apiOk({ submissions: {}, authenticated: false });
   }
 
   const submissions = await prisma.recordSubmission.findMany({
@@ -56,5 +56,5 @@ export async function GET() {
     }
   }
 
-  return apiOk({ submissions: submissionsBySlug });
+  return apiOk({ submissions: submissionsBySlug, authenticated: true });
 }

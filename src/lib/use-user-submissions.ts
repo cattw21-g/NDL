@@ -44,16 +44,36 @@ export function useUserSubmissions() {
 
   useEffect(() => {
     let active = true;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    let isAuthenticated = true;
+    let lastFetchedAt = 0;
 
-    async function load() {
+    async function load(isBackgroundPoll = false) {
+      if (isBackgroundPoll && typeof document !== "undefined" && document.hidden) {
+        return;
+      }
+      if (isBackgroundPoll && !isAuthenticated) {
+        return;
+      }
+
       try {
         const res = await fetch("/api/submissions/my-status", {
           cache: "no-store",
         });
         if (!res.ok) return;
         const data = await res.json();
-        if (active && data?.ok && data?.data?.submissions) {
-          setSubmissionsBySlug(data.data.submissions);
+        if (active && data?.ok && data?.data) {
+          lastFetchedAt = Date.now();
+          if (data.data.authenticated === false) {
+            isAuthenticated = false;
+            if (intervalId) {
+              clearInterval(intervalId);
+              intervalId = null;
+            }
+          }
+          if (data.data.submissions) {
+            setSubmissionsBySlug(data.data.submissions);
+          }
         }
       } catch {
         // Ignore network errors
@@ -64,20 +84,33 @@ export function useUserSubmissions() {
       }
     }
 
-    void load();
+    void load(false);
 
-    const handleFocus = () => {
+    const handleResume = () => {
       setDismissedIds(getDismissedBadgeIds());
-      void load();
+      if (
+        typeof document !== "undefined" &&
+        !document.hidden &&
+        Date.now() - lastFetchedAt > 45_000
+      ) {
+        void load(false);
+      }
     };
 
-    window.addEventListener("focus", handleFocus);
-    const interval = setInterval(load, 30_000);
+    window.addEventListener("focus", handleResume);
+    document.addEventListener("visibilitychange", handleResume);
+
+    intervalId = setInterval(() => {
+      void load(true);
+    }, 60_000);
 
     return () => {
       active = false;
-      window.removeEventListener("focus", handleFocus);
-      clearInterval(interval);
+      window.removeEventListener("focus", handleResume);
+      document.removeEventListener("visibilitychange", handleResume);
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
     };
   }, []);
 

@@ -73,4 +73,36 @@ describe("API Admin Guard", () => {
       expect(result.response.status).toBe(401);
     }
   });
+
+  it("authorizes requests with x-cron-secret header", async () => {
+    process.env.CRON_SECRET = "cron-super-secret";
+
+    const request = new Request("https://example.com/api/admin/test", {
+      headers: {
+        "x-cron-secret": "cron-super-secret",
+      },
+    });
+
+    const result = await requireApiAdmin(request);
+    expect(result.authorized).toBe(true);
+    if (result.authorized) {
+      expect(result.actor.isService).toBe(true);
+    }
+  });
+
+  it("safely handles bearer tokens with different lengths without throwing", async () => {
+    process.env.BOT_API_SECRET = "standard-secret";
+
+    const shortRequest = new Request("https://example.com/api/admin/test", {
+      headers: { authorization: "Bearer short" },
+    });
+    const shortResult = await requireApiAdmin(shortRequest, async () => null);
+    expect(shortResult.authorized).toBe(false);
+
+    const longRequest = new Request("https://example.com/api/admin/test", {
+      headers: { authorization: "Bearer very-long-token-that-exceeds-secret-length-12345" },
+    });
+    const longResult = await requireApiAdmin(longRequest, async () => null);
+    expect(longResult.authorized).toBe(false);
+  });
 });
