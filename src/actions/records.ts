@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { isModeratorRole } from "@/lib/permissions";
+import { isAdminRole } from "@/lib/permissions";
 
 export async function toggleRecordVisibilityAction(formData: FormData): Promise<{ success: boolean; message: string }> {
   const user = await requireUser();
@@ -27,10 +27,10 @@ export async function toggleRecordVisibilityAction(formData: FormData): Promise<
   }
 
   const isOwner = record.playerId === user.id;
-  const isMod = isModeratorRole(user.role);
+  const isAdmin = isAdminRole(user.role, user.playerName);
 
-  if (!isOwner && !isMod) {
-    return { success: false, message: "Unauthorized to modify this record." };
+  if (!isOwner && !isAdmin) {
+    return { success: false, message: "Unauthorized to modify this record. Only the record owner or an Admin can alter visibility." };
   }
 
   // Create audit record

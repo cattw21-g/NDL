@@ -45,12 +45,12 @@ const rules: Record<
   "record-submission": { limit: 8, windowMs: 60 * 60 * 1000 },
   "level-suggestion": { limit: 5, windowMs: 24 * 60 * 60 * 1000 },
   "moderation-review": {
-    limit: 60,
+    limit: 20,
     windowMs: 60 * 1000,
     message: "Moderation review rate limit reached. Please pause a moment before reviewing further.",
   },
   "moderation-suggestion-review": {
-    limit: 60,
+    limit: 20,
     windowMs: 60 * 1000,
     message: "Moderation suggestion review rate limit reached. Please pause a moment before reviewing further.",
   },

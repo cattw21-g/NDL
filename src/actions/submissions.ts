@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 
 import { ModerationActionType } from "@/generated/prisma/enums";
 import { getCurrentUser, requireModerator } from "@/lib/auth";
+import { isAdminRole } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
 import { normalizeVideoUrl } from "@/lib/video-validation";
 import {
@@ -514,6 +515,35 @@ export async function reviewSubmissionAction(formData: FormData) {
     })
   ) {
     redirect("/moderation?error=conflict_of_interest");
+  }
+
+  // Security: Upcoming Level Verification Gate (Admins Only)
+  if (
+    parsed.data.status === "ACCEPTED" &&
+    submission.level.status === "PENDING" &&
+    !isAdminRole(moderator.role, moderator.playerName)
+  ) {
+    redirect("/moderation?error=verification_admin_only");
+  }
+
+  // Security: Top 10 Demon High-Stakes Gate (Admin Confirmation Required for 100% Completions)
+  if (
+    parsed.data.status === "ACCEPTED" &&
+    submission.level.rank !== null &&
+    submission.level.rank <= 10 &&
+    (submission.progress ?? 100) === 100 &&
+    !isAdminRole(moderator.role, moderator.playerName)
+  ) {
+    redirect("/moderation?error=top10_admin_only");
+  }
+
+  // Security: Prevent rapid zero-reason rejection spam by moderators
+  if (
+    (parsed.data.status === "REJECTED" || parsed.data.status === "NEEDS_CHANGES") &&
+    !isAdminRole(moderator.role, moderator.playerName) &&
+    (!parsed.data.moderatorNotes || parsed.data.moderatorNotes.trim().length < 10)
+  ) {
+    redirect("/moderation?error=rejection_note_required");
   }
 
   // Security: Moderator action rate-limiting to prevent compromised automated mass actions

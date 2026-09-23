@@ -1600,3 +1600,101 @@ export async function cleanupUnusedBlobsAction() {
   return summary;
 }
 
+export async function rollbackModeratorAction(formData: FormData) {
+  const admin = await requireAdmin();
+
+  const moderatorId = String(formData.get("moderatorId") || "").trim();
+  const rawHours = Number(formData.get("hours") || 24);
+  const hours = Number.isFinite(rawHours) && rawHours > 0 ? Math.min(rawHours, 720) : 24;
+
+  if (!moderatorId) {
+    redirect("/admin/users?error=invalid");
+  }
+
+  const targetModerator = await prisma.user.findUnique({
+    where: { id: moderatorId },
+    select: { id: true, displayName: true, playerName: true, role: true },
+  });
+
+  if (!targetModerator) {
+    redirect("/admin/users?error=missing");
+  }
+
+  const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
+
+  // Find all submissions accepted by this moderator within the cutoff
+  const affectedSubmissions = await prisma.recordSubmission.findMany({
+    where: {
+      reviewerId: moderatorId,
+      status: "ACCEPTED",
+      reviewedAt: { gte: cutoff },
+    },
+    include: {
+      level: true,
+      player: true,
+    },
+  });
+
+  if (affectedSubmissions.length === 0) {
+    redirect("/admin/users?info=no_actions_to_rollback");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    for (const sub of affectedSubmissions) {
+      // Delete any record associated with this submission
+      await tx.record.deleteMany({
+        where: {
+          submissionId: sub.id,
+        },
+      });
+
+      // Reset submission back to PENDING
+      await tx.recordSubmission.update({
+        where: { id: sub.id },
+        data: {
+          status: "PENDING",
+          reviewerId: null,
+          reviewedAt: null,
+          moderatorNotes: `[EMERGENCY ROLLBACK by ${admin.displayName}]: Previously accepted by ${targetModerator.displayName}, reverted back to PENDING for re-review.`,
+        },
+      });
+    }
+
+    // Write audit log
+    await writeAuditLog(tx, {
+      actor: {
+        id: admin.id,
+        playerName: admin.playerName,
+        displayName: admin.displayName,
+        role: admin.role,
+      },
+      action: "MODERATOR_EMERGENCY_ROLLBACK",
+      entityType: "User",
+      entityId: targetModerator.id,
+      entityLabel: `${targetModerator.displayName} (@${targetModerator.playerName})`,
+      note: `Rolled back ${affectedSubmissions.length} record acceptance(s) made in the last ${hours} hour(s).`,
+      before: {
+        affectedSubmissionsCount: affectedSubmissions.length,
+      },
+      after: {
+        revertedToStatus: "PENDING",
+      },
+    });
+  });
+
+  // Re-sync Discord roles across all users
+  await syncAllLinkedDiscordUsers().catch((err) => {
+    console.error("Failed to sync Discord roles on emergency rollback:", err);
+  });
+
+  revalidatePath("/");
+  revalidatePath("/players");
+  revalidatePath("/submissions");
+  revalidatePath("/moderation");
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/records");
+
+  redirect("/admin/users?rollback_success=1");
+}
+

@@ -13,6 +13,7 @@ import {
 import { ModerationActionType } from "@/generated/prisma/enums";
 import { writeAuditLog } from "@/lib/audit-log";
 import { requireAdmin, requireModerator, requireUser } from "@/lib/auth";
+import { isAdminRole } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
 import { deleteBlobSafely, isVercelBlobUrl } from "@/lib/blob-cleanup";
 import {
@@ -260,6 +261,15 @@ export async function reviewLevelSuggestionAction(formData: FormData) {
     ) {
       redirect("/moderation?error=conflict_of_interest");
     }
+  }
+
+  // Security: Prevent rapid zero-reason rejection spam by moderators
+  if (
+    (parsed.data.status === "REJECTED" || parsed.data.status === "NEEDS_CHANGES") &&
+    !isAdminRole(moderator.role, moderator.playerName) &&
+    (!parsed.data.moderatorNotes || parsed.data.moderatorNotes.trim().length < 10)
+  ) {
+    redirect("/moderation?error=rejection_note_required");
   }
 
   // Security: Moderator action rate-limiting to prevent compromised automated mass actions

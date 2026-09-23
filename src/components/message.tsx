@@ -30,6 +30,22 @@ const messages: Record<string, string> = {
     "Security Policy: Network conflict detected. You cannot review submissions originating from your own network or device.",
   "conflict-of-interest":
     "Security Policy: Network conflict detected. You cannot review submissions originating from your own network or device.",
+  top10_admin_only:
+    "Security Policy: 100% completions on Top 10 demons require Admin confirmation before being added to the list.",
+  "top10-admin-only":
+    "Security Policy: 100% completions on Top 10 demons require Admin confirmation before being added to the list.",
+  verification_admin_only:
+    "Security Policy: Verification runs on upcoming levels must be officially confirmed and ranked by an Admin.",
+  "verification-admin-only":
+    "Security Policy: Verification runs on upcoming levels must be officially confirmed and ranked by an Admin.",
+  rejection_note_required:
+    "Security Policy: Moderators must provide an explanatory note (at least 10 characters) explaining why a submission was rejected or needs changes.",
+  "rejection-note-required":
+    "Security Policy: Moderators must provide an explanatory note (at least 10 characters) explaining why a submission was rejected or needs changes.",
+  no_actions_to_rollback:
+    "No accepted submissions found for this moderator in the specified timeframe.",
+  "no-actions-to-rollback":
+    "No accepted submissions found for this moderator in the specified timeframe.",
 };
 
 export function PageMessage({
@@ -48,8 +64,9 @@ export function PageMessage({
     searchParams?.updated ||
     searchParams?.reviewed ||
     searchParams?.converted ||
-    searchParams?.archived
-      ? successMessage
+    searchParams?.archived ||
+    searchParams?.rollback_success
+      ? (searchParams?.rollback_success ? "Emergency rollback completed successfully." : successMessage)
       : null;
 
   if (!error && !success) {
