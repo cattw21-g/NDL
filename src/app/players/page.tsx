@@ -8,6 +8,7 @@ import { demoModeEnabled, publicRecordWhere } from "@/lib/demo-visibility";
 import {
   calculateCurrentLevelPoints,
   calculateLeaderboard,
+  type ScoredLevelStatus,
 } from "@/lib/points";
 
 export const revalidate = 60;
@@ -19,30 +20,70 @@ export const metadata = {
 
 export default async function PlayersPage() {
   const isDemoMode = demoModeEnabled();
-  const [records, allUsers] = await Promise.all([
-    prisma.record.findMany({
-      where: publicRecordWhere({
-        level: {
-          status: {
-            in: ["RANKED", "LEGACY"],
+  let records: Array<{
+    playerId: string;
+    levelId: string;
+    acceptedAt: Date;
+    player: {
+      playerName: string;
+      displayName: string;
+    };
+    level: {
+      rank: number | null;
+      status: ScoredLevelStatus;
+      points: number;
+    };
+  }> = [];
+  let allUsers: Array<{
+    id: string;
+    playerName: string;
+    displayName: string;
+  }> = [];
+
+  try {
+    const results = await Promise.all([
+      prisma.record.findMany({
+        where: publicRecordWhere({
+          level: {
+            status: {
+              in: ["RANKED", "LEGACY"],
+            },
+          },
+        }),
+        select: {
+          playerId: true,
+          levelId: true,
+          acceptedAt: true,
+          player: {
+            select: {
+              playerName: true,
+              displayName: true,
+            },
+          },
+          level: {
+            select: {
+              rank: true,
+              status: true,
+              points: true,
+            },
           },
         },
       }),
-      include: {
-        player: true,
-        level: true,
-      },
-    }),
-    prisma.user.findMany({
-      where: isDemoMode ? {} : { isDemo: false },
-      select: {
-        id: true,
-        playerName: true,
-        displayName: true,
-      },
-      orderBy: { createdAt: "asc" },
-    }),
-  ]);
+      prisma.user.findMany({
+        where: isDemoMode ? {} : { isDemo: false },
+        select: {
+          id: true,
+          playerName: true,
+          displayName: true,
+        },
+        orderBy: { createdAt: "asc" },
+      }),
+    ]);
+    records = results[0] as typeof records;
+    allUsers = results[1];
+  } catch (err) {
+    console.warn("Database unavailable on /players, using fallback:", err);
+  }
 
   const leaderboard = calculateLeaderboard(
     records.map((record) => ({

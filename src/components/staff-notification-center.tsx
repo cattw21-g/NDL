@@ -91,6 +91,12 @@ export function StaffNotificationCenter({
   // Background polling every 60 seconds, with immediate resume on active tab
   useEffect(() => {
     lastFetchedRef.current = Date.now();
+    let initialTimer: ReturnType<typeof setTimeout> | undefined;
+    if (!initialData) {
+      initialTimer = setTimeout(() => {
+        void fetchNotifications(false);
+      }, 0);
+    }
 
     const handleResume = () => {
       if (
@@ -110,11 +116,12 @@ export function StaffNotificationCenter({
     }, 60000);
 
     return () => {
+      if (initialTimer) clearTimeout(initialTimer);
       window.removeEventListener("focus", handleResume);
       document.removeEventListener("visibilitychange", handleResume);
       clearInterval(interval);
     };
-  }, [fetchNotifications]);
+  }, [fetchNotifications, initialData]);
 
   // Click outside to close
   useEffect(() => {

@@ -68,6 +68,26 @@ export function UpcomingView({
     });
   }, [currentList, search, selectedDifficulty]);
 
+  const handleTabKeyDown = (
+    e: React.KeyboardEvent<HTMLButtonElement>,
+    tab: "verifying" | "waiting",
+  ) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      const nextTab = tab === "verifying" ? "waiting" : "verifying";
+      setActiveTab(nextTab);
+      document.getElementById(`tab-${nextTab}`)?.focus();
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      setActiveTab("verifying");
+      document.getElementById("tab-verifying")?.focus();
+    } else if (e.key === "End") {
+      e.preventDefault();
+      setActiveTab("waiting");
+      document.getElementById("tab-waiting")?.focus();
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -104,10 +124,14 @@ export function UpcomingView({
           {/* Segmented Scope Pill */}
           <div role="tablist" aria-label="Upcoming demon scopes" className="inline-flex rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
             <button
+              id="tab-verifying"
               type="button"
               role="tab"
               aria-selected={activeTab === "verifying"}
+              aria-controls="tabpanel-upcoming"
+              tabIndex={activeTab === "verifying" ? 0 : -1}
               onClick={() => setActiveTab("verifying")}
+              onKeyDown={(e) => handleTabKeyDown(e, "verifying")}
               className={cx(
                 "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold transition-all",
                 activeTab === "verifying"
@@ -119,10 +143,14 @@ export function UpcomingView({
               Verifying ({currentlyVerifying.length})
             </button>
             <button
+              id="tab-waiting"
               type="button"
               role="tab"
               aria-selected={activeTab === "waiting"}
+              aria-controls="tabpanel-upcoming"
+              tabIndex={activeTab === "waiting" ? 0 : -1}
               onClick={() => setActiveTab("waiting")}
+              onKeyDown={(e) => handleTabKeyDown(e, "waiting")}
               className={cx(
                 "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold transition-all",
                 activeTab === "waiting"
@@ -188,47 +216,55 @@ export function UpcomingView({
         </div>
       </div>
 
-      {/* Cards List */}
-      {filteredList.length > 0 ? (
-        <div className="grid gap-5 md:grid-cols-2">
-          {filteredList.map((lvl) => (
-            <UpcomingCard
-              key={lvl.id}
-              lvl={lvl}
-              activeTab={activeTab}
-              isAdmin={isAdmin}
-            />
-          ))}
-        </div>
-      ) : (
-        <SectionPanel className="p-12 text-center">
-          <Hourglass className="mx-auto h-12 w-12 text-slate-400" />
-          <h2 className="mt-4 text-xl font-black text-slate-950 dark:text-slate-50">
-            {activeTab === "verifying"
-              ? "No Levels Currently in Verification"
-              : "No Waiting Levels Right Now"}
-          </h2>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            {activeTab === "verifying"
-              ? "Check the 'Waiting Levels' tab to see open nerfed demons waiting for a verifier!"
-              : "All approved nerfed demons currently have assigned verifiers!"}
-          </p>
-          <div className="mt-6 flex justify-center gap-3">
-            <button
-              onClick={() => setActiveTab(activeTab === "verifying" ? "waiting" : "verifying")}
-              className="inline-flex min-h-9 items-center justify-center rounded-md bg-cyan-700 px-4 text-xs font-black text-white hover:bg-cyan-800 dark:bg-cyan-500 dark:text-slate-950"
-            >
-              Switch to {activeTab === "verifying" ? "Waiting Levels" : "Currently Verifying"}
-            </button>
-            <Link
-              href="/suggest-level"
-              className="inline-flex min-h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-            >
-              Suggest a Level
-            </Link>
+      {/* Cards List / Tabpanel */}
+      <div
+        id="tabpanel-upcoming"
+        role="tabpanel"
+        aria-labelledby={`tab-${activeTab}`}
+        tabIndex={0}
+        className="focus:outline-none"
+      >
+        {filteredList.length > 0 ? (
+          <div className="grid gap-5 md:grid-cols-2">
+            {filteredList.map((lvl) => (
+              <UpcomingCard
+                key={lvl.id}
+                lvl={lvl}
+                activeTab={activeTab}
+                isAdmin={isAdmin}
+              />
+            ))}
           </div>
-        </SectionPanel>
-      )}
+        ) : (
+          <SectionPanel className="p-12 text-center">
+            <Hourglass className="mx-auto h-12 w-12 text-slate-400" />
+            <h2 className="mt-4 text-xl font-black text-slate-950 dark:text-slate-50">
+              {activeTab === "verifying"
+                ? "No Levels Currently in Verification"
+                : "No Waiting Levels Right Now"}
+            </h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              {activeTab === "verifying"
+                ? "Check the 'Waiting Levels' tab to see open nerfed demons waiting for a verifier!"
+                : "All approved nerfed demons currently have assigned verifiers!"}
+            </p>
+            <div className="mt-6 flex justify-center gap-3">
+              <button
+                onClick={() => setActiveTab(activeTab === "verifying" ? "waiting" : "verifying")}
+                className="inline-flex min-h-9 items-center justify-center rounded-md bg-cyan-700 px-4 text-xs font-black text-white hover:bg-cyan-800 dark:bg-cyan-500 dark:text-slate-950"
+              >
+                Switch to {activeTab === "verifying" ? "Waiting Levels" : "Currently Verifying"}
+              </button>
+              <Link
+                href="/suggest-level"
+                className="inline-flex min-h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              >
+                Suggest a Level
+              </Link>
+            </div>
+          </SectionPanel>
+        )}
+      </div>
     </div>
   );
 }

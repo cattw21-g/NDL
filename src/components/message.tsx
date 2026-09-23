@@ -27,9 +27,9 @@ const messages: Record<string, string> = {
   "rate-limited":
     "Security Policy: Moderation rate limit reached. Please wait a moment before reviewing further submissions.",
   conflict_of_interest:
-    "Security Policy: Network conflict detected. You cannot review submissions originating from your own network or device.",
+    "Security Policy: Network conflict detected. This submission originated from the same public network IP. Another moderator or administrator must review this record.",
   "conflict-of-interest":
-    "Security Policy: Network conflict detected. You cannot review submissions originating from your own network or device.",
+    "Security Policy: Network conflict detected. This submission originated from the same public network IP. Another moderator or administrator must review this record.",
   top10_admin_only:
     "Security Policy: 100% completions on Top 10 demons require Admin confirmation before being added to the list.",
   "top10-admin-only":

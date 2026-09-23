@@ -47,13 +47,15 @@ describe("Staff review notification system", () => {
     expect(component).toContain("formatRelativeTime");
   });
 
-  it("integrates notification center and nav counter badge in AppShell and NavLink", () => {
+  it("integrates notification center and nav counter badge in HeaderUserNav, AppShell and NavLink", () => {
     const appShell = source("components/app-shell.tsx");
+    const headerNav = source("components/header-user-nav.tsx");
     const navLink = source("components/nav-link.tsx");
 
-    expect(appShell).toContain("StaffNotificationCenter");
-    expect(appShell).toContain("isModeratorRole(user.role)");
-    expect(appShell).toContain("badgeCount={pendingTotalCount}");
+    expect(appShell).toContain("HeaderUserNav");
+    expect(headerNav).toContain("StaffNotificationCenter");
+    expect(headerNav).toContain("isModeratorRole(user.role)");
+    expect(headerNav).toContain("AdminDropdownMenu");
     expect(navLink).toContain("badgeCount");
   });
 

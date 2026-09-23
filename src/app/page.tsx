@@ -71,9 +71,23 @@ export default async function Home() {
       prisma.record.findMany({
         where: publicRecordWhere(),
         take: 3,
-        include: {
-          player: true,
-          level: true,
+        select: {
+          id: true,
+          videoUrl: true,
+          progress: true,
+          player: {
+            select: {
+              displayName: true,
+            },
+          },
+          level: {
+            select: {
+              name: true,
+              rank: true,
+              status: true,
+              points: true,
+            },
+          },
         },
         orderBy: {
           acceptedAt: "desc",

@@ -33,65 +33,76 @@ export const metadata = {
 };
 
 export default async function StatsPage() {
-  const [levels, records, users] = await Promise.all([
-    prisma.level.findMany({
-      where: publicLevelWhere(),
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        rank: true,
-        status: true,
-        difficulty: true,
-        points: true,
-        verifier: true,
-        nerfCreator: true,
-        _count: {
-          select: {
-            records: {
-              where: {
-                progress: 100,
+  let levels: Array<any> = [];
+  let records: Array<any> = [];
+  let users: Array<any> = [];
+
+  try {
+    const results = await Promise.all([
+      prisma.level.findMany({
+        where: publicLevelWhere(),
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          rank: true,
+          status: true,
+          difficulty: true,
+          points: true,
+          verifier: true,
+          nerfCreator: true,
+          _count: {
+            select: {
+              records: {
+                where: {
+                  progress: 100,
+                },
               },
             },
           },
         },
-      },
-      orderBy: [{ rank: { sort: "asc", nulls: "last" } }],
-    }),
-    prisma.record.findMany({
-      where: publicRecordWhere(),
-      select: {
-        id: true,
-        playerId: true,
-        levelId: true,
-        progress: true,
-        pointsAwarded: true,
-        fps: true,
-        cbfUsed: true,
-        isVerifier: true,
-        acceptedAt: true,
-        player: {
-          select: {
-            id: true,
-            playerName: true,
-            displayName: true,
-            countryCode: true,
+        orderBy: [{ rank: { sort: "asc", nulls: "last" } }],
+      }),
+      prisma.record.findMany({
+        where: publicRecordWhere(),
+        select: {
+          id: true,
+          playerId: true,
+          levelId: true,
+          progress: true,
+          pointsAwarded: true,
+          fps: true,
+          cbfUsed: true,
+          isVerifier: true,
+          acceptedAt: true,
+          player: {
+            select: {
+              id: true,
+              playerName: true,
+              displayName: true,
+              countryCode: true,
+            },
           },
         },
-      },
-    }),
-    prisma.user.findMany({
-      where: {
-        isDemo: false,
-      },
-      select: {
-        id: true,
-        playerName: true,
-        displayName: true,
-        countryCode: true,
-      },
-    }),
-  ]);
+      }),
+      prisma.user.findMany({
+        where: {
+          isDemo: false,
+        },
+        select: {
+          id: true,
+          playerName: true,
+          displayName: true,
+          countryCode: true,
+        },
+      }),
+    ]);
+    levels = results[0];
+    records = results[1];
+    users = results[2];
+  } catch (err) {
+    console.warn("Database unavailable on /stats, using fallback:", err);
+  }
 
   // Compute points and classifications
   const mainListLevels = levels.filter((l) => l.status === "RANKED" && l.rank !== null && l.rank <= 75);

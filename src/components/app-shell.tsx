@@ -1,22 +1,17 @@
-import { Settings, UserRound } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { CommandPalette, CommandPaletteTrigger } from "@/components/command-palette";
+import { HeaderTagline } from "@/components/app-shell-i18n";
+import { HeaderUserNav, HeaderUserSkeleton } from "@/components/header-user-nav";
+import { LanguageSelector } from "@/components/language-selector";
 import { NavLink } from "@/components/nav-link";
 import { SiteFooter } from "@/components/site-footer";
+import { SiteFooterServer } from "@/components/site-footer-server";
 import { SplashScreen } from "@/components/splash-screen";
-import {
-  StaffNotificationCenter,
-  type StaffNotificationData,
-} from "@/components/staff-notification-center";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { LanguageSelector } from "@/components/language-selector";
-import { HeaderTagline, LoginButton, LogoutButton } from "@/components/app-shell-i18n";
-import { AdminDropdownMenu } from "@/components/admin-dropdown-menu";
-import { getCurrentUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { demoModeEnabled, publicChangelogWhere } from "@/lib/demo-visibility";
-import { isAdminRole, isModeratorRole } from "@/lib/permissions";
+import { getRecentNewsSlugs } from "@/lib/news-cache";
+import { demoModeEnabled } from "@/lib/demo-visibility";
 
 const primaryNavItems = [
   { href: "/", label: "List", icon: "list" },
@@ -37,115 +32,8 @@ const secondaryNavItems = [
 ] as const;
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
   const isDemoMode = demoModeEnabled();
-
-  const fortyEightHoursAgo = new Date();
-  fortyEightHoursAgo.setHours(fortyEightHoursAgo.getHours() - 48);
-
-  const recentNewsPosts = await prisma.changelogPost.findMany({
-    where: publicChangelogWhere({
-      publishedAt: {
-        gte: fortyEightHoursAgo,
-      },
-    }),
-    select: { slug: true },
-  });
-
-  const recentNewsSlugs = recentNewsPosts.map((p) => p.slug);
-
-  let notificationData: StaffNotificationData | undefined;
-  let pendingTotalCount = 0;
-
-  if (user && isModeratorRole(user.role)) {
-    const [
-      pendingRecordsCount,
-      pendingSuggestionsCount,
-      recentPendingRecords,
-      recentPendingSuggestions,
-    ] = await Promise.all([
-      prisma.recordSubmission.count({
-        where: {
-          status: "PENDING",
-        },
-      }),
-      prisma.levelSuggestion.count({
-        where: {
-          status: "PENDING",
-        },
-      }),
-      prisma.recordSubmission.findMany({
-        where: {
-          status: "PENDING",
-        },
-        take: 4,
-        orderBy: {
-          submittedAt: "desc",
-        },
-        include: {
-          player: {
-            select: {
-              playerName: true,
-              displayName: true,
-            },
-          },
-          level: {
-            select: {
-              name: true,
-              slug: true,
-            },
-          },
-        },
-      }),
-      prisma.levelSuggestion.findMany({
-        where: {
-          status: "PENDING",
-        },
-        take: 4,
-        orderBy: {
-          submittedAt: "desc",
-        },
-        include: {
-          submitter: {
-            select: {
-              playerName: true,
-              displayName: true,
-            },
-          },
-        },
-      }),
-    ]);
-
-    pendingTotalCount = pendingRecordsCount + pendingSuggestionsCount;
-    notificationData = {
-      pendingRecordsCount,
-      pendingSuggestionsCount,
-      totalPendingCount: pendingTotalCount,
-      recentPendingRecords: recentPendingRecords.map((rec) => ({
-        id: rec.id,
-        playerName: rec.player.displayName || rec.player.playerName,
-        levelName: rec.level.name,
-        levelSlug: rec.level.slug,
-        progress: rec.progress,
-        submittedAt: rec.submittedAt.toISOString(),
-      })),
-      recentPendingSuggestions: recentPendingSuggestions.map((sug) => ({
-        id: sug.id,
-        name: sug.name,
-        originalName: sug.originalName,
-        submitterName: sug.submitter.displayName || sug.submitter.playerName,
-        submittedAt: sug.submittedAt.toISOString(),
-      })),
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  const isUserAdmin = user
-    ? isAdminRole(user.role, user.playerName) ||
-      user.playerName.toLowerCase() === "cattw21" ||
-      user.playerName.toLowerCase() === "ndl_admin"
-    : false;
-  const isUserMod = user ? isModeratorRole(user.role) || isUserAdmin : false;
+  const recentNewsSlugs = await getRecentNewsSlugs().catch(() => []);
 
   return (
     <div
@@ -181,32 +69,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
             {/* Utility / User Controls */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {user && isUserMod ? (
-                <StaffNotificationCenter initialData={notificationData} />
-              ) : null}
+              <Suspense fallback={<HeaderUserSkeleton />}>
+                <HeaderUserNav />
+              </Suspense>
               <CommandPaletteTrigger />
-              {user ? (
-                <>
-                  <Link
-                    href={`/players/${user.playerName}`}
-                    className="inline-flex min-h-8 min-w-0 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950 dark:hover:text-cyan-100"
-                  >
-                    <UserRound className="h-3.5 w-3.5" />
-                    <span className="max-w-28 truncate">{user.displayName}</span>
-                  </Link>
-                  <Link
-                    href="/settings"
-                    title="Profile & Country Settings"
-                    className="inline-flex min-h-8 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-xs font-bold text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950 dark:hover:text-cyan-100"
-                    aria-label="Profile Settings"
-                  >
-                    <Settings className="h-3.5 w-3.5" />
-                  </Link>
-                  <LogoutButton />
-                </>
-              ) : (
-                <LoginButton />
-              )}
               {/* Social Links */}
               <div className="flex items-center gap-1 border-r border-slate-200 pr-1.5 dark:border-slate-800">
                 <a
@@ -236,11 +102,6 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
               </div>
               <LanguageSelector />
               <ThemeToggle />
-              {isUserAdmin && (
-                <div className="ml-1 shrink-0 border-l border-slate-300 pl-2 dark:border-slate-700">
-                  <AdminDropdownMenu badgeCount={pendingTotalCount} />
-                </div>
-              )}
             </div>
           </div>
 
@@ -289,17 +150,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 px-3 py-5 sm:px-5 sm:py-7">
         {children}
       </main>
-      <SiteFooter
-        user={
-          user
-            ? {
-                playerName: user.playerName,
-                isModerator: isModeratorRole(user.role),
-                isAdmin: isAdminRole(user.role),
-              }
-            : null
-        }
-      />
+      <Suspense fallback={<SiteFooter user={null} />}>
+        <SiteFooterServer />
+      </Suspense>
     </div>
   );
 }

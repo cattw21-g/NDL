@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { publicLevelWhere } from "@/lib/demo-visibility";
-import { calculateCreatorLeaderboard } from "@/lib/points";
+import { calculateCreatorLeaderboard, type ScoredLevelStatus } from "@/lib/points";
 
 export const revalidate = 120;
 
@@ -22,20 +22,35 @@ export const metadata = {
 };
 
 export default async function CreatorsPage() {
-  const levels = await prisma.level.findMany({
-    where: publicLevelWhere(),
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      rank: true,
-      status: true,
-      nerfCreator: true,
-      publisher: true,
-      verifier: true,
-    },
-    orderBy: { rank: "asc" },
-  });
+  let levels: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    rank: number | null;
+    status: ScoredLevelStatus;
+    nerfCreator: string;
+    publisher: string;
+    verifier: string;
+  }> = [];
+
+  try {
+    levels = (await prisma.level.findMany({
+      where: publicLevelWhere(),
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        rank: true,
+        status: true,
+        nerfCreator: true,
+        publisher: true,
+        verifier: true,
+      },
+      orderBy: { rank: "asc" },
+    })) as typeof levels;
+  } catch (err) {
+    console.warn("Database unavailable on /creators, using fallback:", err);
+  }
 
   const creatorRows = calculateCreatorLeaderboard(levels);
 

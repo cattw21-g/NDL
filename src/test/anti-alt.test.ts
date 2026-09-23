@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   extractClientIp,
@@ -50,6 +51,13 @@ describe("Anti-Alt IP Security & Network Conflict Detection", () => {
       "x-real-ip": "198.51.100.88",
     });
     expect(extractClientIp(headers3)).toBe("198.51.100.88");
+
+    // Prioritizes cf-connecting-ip and x-real-ip over spoofed x-forwarded-for
+    const spoofedHeaders = new Headers({
+      "x-forwarded-for": "1.2.3.4",
+      "cf-connecting-ip": "203.0.113.77",
+    });
+    expect(extractClientIp(spoofedHeaders)).toBe("203.0.113.77");
   });
 
   it("detects network conflict when moderator and submitter share the same public IP", () => {
@@ -99,5 +107,19 @@ describe("Anti-Alt IP Security & Network Conflict Detection", () => {
       allowLocalhostBypass: true,
     });
     expect(conflict).toBe(false);
+  });
+
+  it("safely recognizes legacy salted SHA-256 hashes for backwards compatibility", () => {
+    // Generate a legacy salted hash
+    const legacySalt = process.env.SESSION_SECRET || process.env.NEXTAUTH_SECRET || "ndl-network-security-salt";
+    const legacyHash = crypto.createHash("sha256").update(`198.51.100.200:${legacySalt}`).digest("hex");
+
+    const conflict = hasNetworkConflict({
+      submitterIpHash: legacyHash,
+      reviewerIp: "198.51.100.200",
+      reviewerRole: "MODERATOR",
+      allowLocalhostBypass: false,
+    });
+    expect(conflict).toBe(true);
   });
 });

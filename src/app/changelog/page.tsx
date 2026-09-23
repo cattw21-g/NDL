@@ -17,7 +17,7 @@ export const metadata = {
 };
 
 export default async function ChangelogPage() {
-  await ensureLatestChangelogPost(prisma);
+  await ensureLatestChangelogPost(prisma).catch(() => {});
 
   const postsFromDb = await prisma.changelogPost
     .findMany({

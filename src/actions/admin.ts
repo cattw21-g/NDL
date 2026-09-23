@@ -1605,7 +1605,7 @@ export async function rollbackModeratorAction(formData: FormData) {
 
   const moderatorId = String(formData.get("moderatorId") || "").trim();
   const rawHours = Number(formData.get("hours") || 24);
-  const hours = Number.isFinite(rawHours) && rawHours > 0 ? Math.min(rawHours, 720) : 24;
+  const hours = Number.isFinite(rawHours) && rawHours >= 1 ? Math.min(rawHours, 168) : 24;
 
   if (!moderatorId) {
     redirect("/admin/users?error=invalid");
@@ -1622,7 +1622,7 @@ export async function rollbackModeratorAction(formData: FormData) {
 
   const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
 
-  // Find all submissions accepted by this moderator within the cutoff
+  // Find all record submissions accepted by this moderator within the cutoff
   const affectedSubmissions = await prisma.recordSubmission.findMany({
     where: {
       reviewerId: moderatorId,
@@ -1630,27 +1630,40 @@ export async function rollbackModeratorAction(formData: FormData) {
       reviewedAt: { gte: cutoff },
     },
     include: {
-      level: true,
-      player: true,
+      level: { select: { id: true, name: true, slug: true } },
+      player: { select: { id: true, playerName: true, displayName: true } },
     },
   });
 
-  if (affectedSubmissions.length === 0) {
+  // Find all level suggestions approved by this moderator within the cutoff
+  const affectedSuggestions = await prisma.levelSuggestion.findMany({
+    where: {
+      reviewerId: moderatorId,
+      status: "APPROVED",
+      reviewedAt: { gte: cutoff },
+    },
+    select: {
+      id: true,
+      name: true,
+      submitterId: true,
+    },
+  });
+
+  if (affectedSubmissions.length === 0 && affectedSuggestions.length === 0) {
     redirect("/admin/users?info=no_actions_to_rollback");
   }
 
   await prisma.$transaction(async (tx) => {
+    // 1. Rollback Record Submissions & associated Records
     for (const sub of affectedSubmissions) {
-      // Delete any record associated with this submission
       await tx.record.deleteMany({
         where: {
           submissionId: sub.id,
         },
       });
 
-      // Reset submission back to PENDING
-      await tx.recordSubmission.update({
-        where: { id: sub.id },
+      await tx.recordSubmission.updateMany({
+        where: { id: sub.id, status: "ACCEPTED" },
         data: {
           status: "PENDING",
           reviewerId: null,
@@ -1660,7 +1673,20 @@ export async function rollbackModeratorAction(formData: FormData) {
       });
     }
 
-    // Write audit log
+    // 2. Rollback Level Suggestions approved by this moderator
+    for (const sug of affectedSuggestions) {
+      await tx.levelSuggestion.updateMany({
+        where: { id: sug.id, status: "APPROVED" },
+        data: {
+          status: "PENDING",
+          reviewerId: null,
+          reviewedAt: null,
+          moderatorNotes: `[EMERGENCY ROLLBACK by ${admin.displayName}]: Previously approved by ${targetModerator.displayName}, reverted back to PENDING for re-review.`,
+        },
+      });
+    }
+
+    // 3. Write comprehensive forensic audit log
     await writeAuditLog(tx, {
       actor: {
         id: admin.id,
@@ -1672,9 +1698,20 @@ export async function rollbackModeratorAction(formData: FormData) {
       entityType: "User",
       entityId: targetModerator.id,
       entityLabel: `${targetModerator.displayName} (@${targetModerator.playerName})`,
-      note: `Rolled back ${affectedSubmissions.length} record acceptance(s) made in the last ${hours} hour(s).`,
+      note: `Rolled back ${affectedSubmissions.length} record(s) and ${affectedSuggestions.length} suggestion(s) approved in the last ${hours} hour(s).`,
       before: {
         affectedSubmissionsCount: affectedSubmissions.length,
+        affectedSuggestionsCount: affectedSuggestions.length,
+        revertedSubmissions: affectedSubmissions.map((s) => ({
+          id: s.id,
+          levelName: s.level.name,
+          playerName: s.player.playerName,
+          progress: s.progress,
+        })),
+        revertedSuggestions: affectedSuggestions.map((s) => ({
+          id: s.id,
+          name: s.name,
+        })),
       },
       after: {
         revertedToStatus: "PENDING",

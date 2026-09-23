@@ -24,26 +24,35 @@ export default async function UpcomingPage() {
     : false;
   const isDemoMode = demoModeEnabled();
 
-  const [pendingLevels, approvedSuggestions] = await Promise.all([
-    prisma.level.findMany({
-      where: {
-        status: "PENDING",
-        ...(isDemoMode ? {} : { isDemo: false }),
-      },
-      orderBy: { updatedAt: "desc" },
-    }),
-    prisma.levelSuggestion.findMany({
-      where: {
-        status: "APPROVED",
-        createdLevelId: null,
-        ...(isDemoMode ? {} : { isDemo: false }),
-      },
-      include: {
-        submitter: true,
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-  ]);
+  let pendingLevels: Array<any> = [];
+  let approvedSuggestions: Array<any> = [];
+
+  try {
+    const results = await Promise.all([
+      prisma.level.findMany({
+        where: {
+          status: "PENDING",
+          ...(isDemoMode ? {} : { isDemo: false }),
+        },
+        orderBy: { updatedAt: "desc" },
+      }),
+      prisma.levelSuggestion.findMany({
+        where: {
+          status: "APPROVED",
+          createdLevelId: null,
+          ...(isDemoMode ? {} : { isDemo: false }),
+        },
+        include: {
+          submitter: true,
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
+    pendingLevels = results[0];
+    approvedSuggestions = results[1];
+  } catch (err) {
+    console.warn("Database unavailable on /upcoming, using fallback:", err);
+  }
 
   const allItems: UpcomingLevelItem[] = [
     ...pendingLevels.map((lvl) => ({

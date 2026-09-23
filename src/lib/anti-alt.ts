@@ -1,7 +1,16 @@
 import crypto from "node:crypto";
 import { isAdminRole, type AppRole } from "./permissions";
 
-const IP_SALT = process.env.SESSION_SECRET || process.env.NEXTAUTH_SECRET || "ndl-network-security-salt";
+const IP_KEY =
+  process.env.ANTI_ALT_SECRET ||
+  process.env.SESSION_SECRET ||
+  process.env.NEXTAUTH_SECRET ||
+  "ndl-network-security-hmac-key";
+
+const LEGACY_SALT =
+  process.env.SESSION_SECRET ||
+  process.env.NEXTAUTH_SECRET ||
+  "ndl-network-security-salt";
 
 /**
  * Normalizes an IP string by stripping IPv6 mapping prefix (::ffff:) and whitespace.
@@ -30,23 +39,33 @@ export function isLocalhostIp(ip: string): boolean {
 }
 
 /**
- * Hashes an IP address using SHA-256 and a server secret salt for privacy-compliant storage.
+ * Hashes an IP address using keyed HMAC-SHA256 for privacy-compliant storage.
+ * Keyed HMAC prevents offline dictionary and rainbow table attacks on IPv4 addresses.
  */
 export function hashClientIp(rawIp: string | null | undefined): string | null {
   const ip = normalizeIp(rawIp);
   if (!ip) return null;
-  return crypto.createHash("sha256").update(`${ip}:${IP_SALT}`).digest("hex");
+  return crypto.createHmac("sha256", IP_KEY).update(ip).digest("hex");
+}
+
+/**
+ * Backwards-compatible hash check for legacy salted SHA-256 digests.
+ */
+function legacyHashClientIp(ip: string): string {
+  return crypto.createHash("sha256").update(`${ip}:${LEGACY_SALT}`).digest("hex");
 }
 
 /**
  * Extracts the real client IP from incoming Next.js request headers.
+ * Edge-verified proxy headers take precedence over client-spoofable X-Forwarded-For.
  */
 export function extractClientIp(headerStore: Headers): string {
-  const forwardedFor = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim();
   const cfIp = headerStore.get("cf-connecting-ip")?.trim();
   const realIp = headerStore.get("x-real-ip")?.trim();
+  const vercelIp = headerStore.get("x-vercel-forwarded-for")?.split(",")[0]?.trim();
+  const forwardedFor = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim();
 
-  return normalizeIp(forwardedFor || cfIp || realIp || "");
+  return normalizeIp(cfIp || realIp || vercelIp || forwardedFor || "");
 }
 
 /**
@@ -83,15 +102,30 @@ export function hasNetworkConflict({
     return false;
   }
 
-  const reviewerHash = hashClientIp(normalizedReviewer);
-  if (!reviewerHash) {
+  const reviewerHmac = hashClientIp(normalizedReviewer);
+  if (!reviewerHmac) {
     return false;
   }
 
+  // 1. Check primary keyed HMAC match
+  if (constantTimeHexEqual(submitterIpHash, reviewerHmac)) {
+    return true;
+  }
+
+  // 2. Check legacy salted SHA-256 match for backwards compatibility
+  const legacyReviewerHash = legacyHashClientIp(normalizedReviewer);
+  if (constantTimeHexEqual(submitterIpHash, legacyReviewerHash)) {
+    return true;
+  }
+
+  return false;
+}
+
+function constantTimeHexEqual(hexA: string, hexB: string): boolean {
   try {
-    const bufA = Buffer.from(submitterIpHash, "hex");
-    const bufB = Buffer.from(reviewerHash, "hex");
-    if (bufA.length !== bufB.length) {
+    const bufA = Buffer.from(hexA, "hex");
+    const bufB = Buffer.from(hexB, "hex");
+    if (bufA.length !== bufB.length || bufA.length === 0) {
       return false;
     }
     return crypto.timingSafeEqual(bufA, bufB);

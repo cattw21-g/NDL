@@ -24,38 +24,64 @@ export const metadata = {
 };
 
 export default async function StaffPage() {
-  const staffUsers = await prisma.user.findMany({
-    where: {
-      ...publicUserWhere(),
-      role: {
-        in: ["ADMIN", "MODERATOR"],
-      },
-    },
-    select: {
-      id: true,
-      playerName: true,
-      displayName: true,
-      role: true,
-      bio: true,
-      countryCode: true,
-      subdivision: true,
-      discordUsername: true,
-      youtubeUrl: true,
-      twitchUrl: true,
-      twitterUrl: true,
-      createdAt: true,
-      _count: {
-        select: {
-          verifiedLevels: true,
-          reviewedSubmissions: true,
+  let staffUsers: Array<any> = [];
+
+  try {
+    staffUsers = await prisma.user.findMany({
+      where: {
+        ...publicUserWhere(),
+        role: {
+          in: ["ADMIN", "MODERATOR"],
         },
       },
-    },
-    orderBy: [
-      { role: "asc" }, // ADMIN first, then MODERATOR
-      { createdAt: "asc" },
-    ],
-  });
+      select: {
+        id: true,
+        playerName: true,
+        displayName: true,
+        role: true,
+        bio: true,
+        countryCode: true,
+        subdivision: true,
+        discordUsername: true,
+        youtubeUrl: true,
+        twitchUrl: true,
+        twitterUrl: true,
+        createdAt: true,
+        _count: {
+          select: {
+            verifiedLevels: true,
+            reviewedSubmissions: true,
+          },
+        },
+      },
+      orderBy: [
+        { role: "asc" }, // ADMIN first, then MODERATOR
+        { createdAt: "asc" },
+      ],
+    });
+  } catch (err) {
+    console.warn("Database unavailable on /staff, using fallback:", err);
+  }
+
+  if (staffUsers.length === 0) {
+    staffUsers = [
+      {
+        id: "cattw21",
+        playerName: "cattw21",
+        displayName: "cattw21",
+        role: "ADMIN",
+        bio: "Founder & Lead Developer of Nerfed Demonlist.",
+        countryCode: "US",
+        subdivision: null,
+        discordUsername: "cattw21",
+        youtubeUrl: null,
+        twitchUrl: null,
+        twitterUrl: null,
+        createdAt: new Date("2026-01-01"),
+        _count: { verifiedLevels: 0, reviewedSubmissions: 0 },
+      },
+    ];
+  }
 
   const admins = staffUsers.filter((u) => u.role === "ADMIN");
   const moderators = staffUsers.filter((u) => u.role === "MODERATOR");

@@ -97,13 +97,20 @@ export async function checkRateLimit(
   const rule = rules[action];
   const windowStart = new Date(now.getTime() - rule.windowMs);
 
-  await client.rateLimitAttempt.deleteMany({
-    where: {
-      occurredAt: {
-        lt: new Date(now.getTime() - 48 * 60 * 60 * 1000),
-      },
-    },
-  });
+  // Prune old logs probabilistically (~1% of requests) to prevent table bloat without adding write overhead to every check
+  if (Math.random() < 0.01) {
+    try {
+      await client.rateLimitAttempt.deleteMany({
+        where: {
+          occurredAt: {
+            lt: new Date(now.getTime() - 48 * 60 * 60 * 1000),
+          },
+        },
+      });
+    } catch {
+      // Background prune failure handled gracefully
+    }
+  }
 
   const count = await client.rateLimitAttempt.count({
     where: {

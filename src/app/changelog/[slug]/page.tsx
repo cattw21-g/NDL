@@ -27,7 +27,7 @@ export default async function ChangelogPostPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  await ensureLatestChangelogPost(prisma);
+  await ensureLatestChangelogPost(prisma).catch(() => {});
   const { slug } = await params;
 
   if (slug === "nerfed-demonlist-v2-0-0-official-roadmap") {

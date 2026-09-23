@@ -409,15 +409,16 @@ describe("production readiness guardrails", () => {
 
   it("keeps the production footer wired on public pages only", () => {
     const appShell = source("components/app-shell.tsx");
+    const footerServer = source("components/site-footer-server.tsx");
     const footer = source("components/site-footer.tsx");
     const forbiddenPointercrateCopy =
       "Copyright © Pointercrate. All rights reserved.";
 
     expect(appShell).toContain("SiteFooter");
     expect(appShell).toContain('id="top"');
-    expect(appShell).toContain("<SiteFooter");
-    expect(appShell).toContain("isModerator: isModeratorRole(user.role)");
-    expect(appShell).toContain("isAdmin: isAdminRole(user.role)");
+    expect(appShell).toContain("SiteFooterServer");
+    expect(footerServer).toContain("isModerator: isModeratorRole(user.role)");
+    expect(footerServer).toContain("isAdmin: isAdminRole(user.role)");
     expect(footer).toContain("usePathname");
     expect(footer).toContain('pathname === "/moderation"');
     expect(footer).toContain('pathname === "/review"');
@@ -813,7 +814,7 @@ describe("production readiness guardrails", () => {
     expect(source("app/levels/[slug]/page.tsx")).not.toContain(
       "<PointsPill points={level.points}",
     );
-    expect(source("app/players/page.tsx")).toContain("level: true");
+    expect(source("app/players/page.tsx")).toMatch(/level:\s*(true|{\s*select:)/);
     expect(source("app/players/page.tsx")).toContain(
       "pointsAwarded: calculateCurrentLevelPoints(record.level)",
     );

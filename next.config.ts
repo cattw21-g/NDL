@@ -23,10 +23,28 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg"],
   async headers() {
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://translate.google.com https://translate.googleapis.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://translate.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data: blob: https://*.vercel-storage.com https://*.public.blob.vercel-storage.com https://img.youtube.com https://i.ytimg.com https://cdn.discordapp.com https://www.google.com https://translate.google.com https://translate.googleapis.com",
+      "media-src 'self' blob: https://*.vercel-storage.com https://*.public.blob.vercel-storage.com",
+      "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.twitch.tv https://translate.google.com",
+      "frame-ancestors 'self'",
+      "connect-src 'self' https://translate.googleapis.com https://*.vercel-storage.com https://*.public.blob.vercel-storage.com",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join("; ");
+
     return [
       {
         source: "/:path*",
         headers: [
+          {
+            key: "Content-Security-Policy",
+            value: csp,
+          },
           {
             key: "X-Frame-Options",
             value: "SAMEORIGIN",

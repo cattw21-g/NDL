@@ -5,10 +5,9 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { isAdminRole } from "@/lib/permissions";
 
-export async function toggleRecordVisibilityAction(formData: FormData): Promise<{ success: boolean; message: string }> {
+export async function deleteRecordAction(formData: FormData): Promise<{ success: boolean; message: string }> {
   const user = await requireUser();
   const recordId = String(formData.get("recordId") || "");
-  const actionType = String(formData.get("actionType") || "hide"); // hide or restore
 
   if (!recordId) {
     return { success: false, message: "Missing record ID" };
@@ -30,18 +29,23 @@ export async function toggleRecordVisibilityAction(formData: FormData): Promise<
   const isAdmin = isAdminRole(user.role, user.playerName);
 
   if (!isOwner && !isAdmin) {
-    return { success: false, message: "Unauthorized to modify this record. Only the record owner or an Admin can alter visibility." };
+    return { success: false, message: "Unauthorized to remove this record. Only the record owner or an Admin can delete records." };
   }
 
-  // Create audit record
-  await prisma.moderationAction.create({
-    data: {
-      actorId: user.id,
-      type: "SUBMISSION_ACCEPTED",
-      targetType: "Record",
-      targetId: record.id,
-      summary: `${user.displayName} ${actionType === "hide" ? "unlisted" : "restored"} record for ${record.level.name}.`,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.record.delete({
+      where: { id: record.id },
+    });
+
+    await tx.moderationAction.create({
+      data: {
+        actorId: user.id,
+        type: "SUBMISSION_REJECTED",
+        targetType: "Record",
+        targetId: record.id,
+        summary: `${user.displayName} removed record for ${record.level.name}.`,
+      },
+    });
   });
 
   revalidatePath(`/levels/${record.level.slug}`);
@@ -51,8 +55,6 @@ export async function toggleRecordVisibilityAction(formData: FormData): Promise<
 
   return {
     success: true,
-    message: actionType === "hide"
-      ? "Record has been unlisted from public rankings."
-      : "Record has been restored to public rankings.",
+    message: "Record has been removed from public rankings.",
   };
 }

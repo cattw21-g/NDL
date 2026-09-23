@@ -35,24 +35,42 @@ export default async function CountriesPage({ searchParams }: Props) {
   const { continent = "All" } = await searchParams;
 
   // 1. Fetch records and players
-  const records = await prisma.record.findMany({
-    where: publicRecordWhere(),
-    select: {
-      playerId: true,
-      pointsAwarded: true,
-      levelId: true,
-      acceptedAt: true,
-      progress: true,
-      player: {
-        select: {
-          id: true,
-          playerName: true,
-          displayName: true,
-          countryCode: true,
+  let records: Array<{
+    playerId: string;
+    pointsAwarded: number;
+    levelId: string;
+    acceptedAt: Date;
+    progress: number;
+    player: {
+      id: string;
+      playerName: string;
+      displayName: string;
+      countryCode: string | null;
+    };
+  }> = [];
+
+  try {
+    records = (await prisma.record.findMany({
+      where: publicRecordWhere(),
+      select: {
+        playerId: true,
+        pointsAwarded: true,
+        levelId: true,
+        acceptedAt: true,
+        progress: true,
+        player: {
+          select: {
+            id: true,
+            playerName: true,
+            displayName: true,
+            countryCode: true,
+          },
         },
       },
-    },
-  });
+    })) as typeof records;
+  } catch (err) {
+    console.warn("Database unavailable on /countries, using fallback:", err);
+  }
 
   const leaderboardRecords: LeaderboardRecord[] = records.map((r) => ({
     playerId: r.player.id,

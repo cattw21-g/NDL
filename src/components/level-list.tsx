@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, SlidersHorizontal } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { LevelCard, type LevelCardLevel } from "@/components/level-card";
 import { cx, EmptyState, inputClass, SectionPanel } from "@/components/ui";
@@ -25,70 +25,118 @@ const tierChips: Array<{ value: TierFilter; label: string }> = [
 ];
 
 export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
-  const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<TabMode>("MAIN");
-  const [tier, setTier] = useState<TierFilter>("ALL");
+  const [query, setQuery] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("q") ?? "";
+  });
+  const [tab, setTab] = useState<TabMode>(() => {
+    if (typeof window === "undefined") return "MAIN";
+    const val = new URLSearchParams(window.location.search).get("tab")?.toUpperCase();
+    return val && ["MAIN", "EXTENDED", "LEGACY", "ALL"].includes(val) ? (val as TabMode) : "MAIN";
+  });
+  const [tier, setTier] = useState<TierFilter>(() => {
+    if (typeof window === "undefined") return "ALL";
+    const val = new URLSearchParams(window.location.search).get("tier")?.toUpperCase();
+    return val && ["ALL", "TOP_10", "TOP_50"].includes(val) ? (val as TierFilter) : "ALL";
+  });
   const [sort, setSort] = useState<SortMode>("rank");
 
+  const tabButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const { submissionsBySlug, dismissedIds, dismissBadge } = useUserSubmissions();
 
-  const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
+  const updateUrlParams = useCallback((newTab: TabMode, newTier: TierFilter, newQuery: string) => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (newTab !== "MAIN") url.searchParams.set("tab", newTab);
+    else url.searchParams.delete("tab");
 
-    return levels
-      .filter((level) => {
-        let matchesTab = true;
-        if (tab === "MAIN") {
-          matchesTab =
-            level.status === "RANKED" &&
-            level.rank !== null &&
-            level.rank <= 75;
-        } else if (tab === "EXTENDED") {
-          matchesTab =
-            level.status === "RANKED" &&
-            level.rank !== null &&
-            level.rank > 75 &&
-            level.rank <= 150;
-        } else if (tab === "LEGACY") {
-          matchesTab =
-            level.status === "LEGACY" ||
-            (level.rank !== null && level.rank > 150);
-        }
+    if (newTier !== "ALL") url.searchParams.set("tier", newTier);
+    else url.searchParams.delete("tier");
 
-        let matchesTier = true;
-        if (tier === "TOP_10") {
-          matchesTier = level.rank !== null && level.rank <= 10;
-        } else if (tier === "TOP_50") {
-          matchesTier = level.rank !== null && level.rank <= 50;
-        }
+    if (newQuery.trim()) url.searchParams.set("q", newQuery.trim());
+    else url.searchParams.delete("q");
 
-        const haystack = [
-          level.name,
-          level.originalName,
-          level.nerfCreator,
-          level.verifier,
-          level.publisher,
-          level.gdLevelId,
-        ]
-          .join(" ")
-          .toLowerCase();
+    window.history.replaceState({}, "", url.toString());
+  }, []);
 
-        return matchesTab && matchesTier && (!needle || haystack.includes(needle));
-      })
-      .toSorted((a, b) => {
-        if (sort === "points") {
-          return b.points - a.points;
-        }
-        if (sort === "records") {
-          return (b._count?.records ?? 0) - (a._count?.records ?? 0);
-        }
-        if (sort === "name") {
-          return a.name.localeCompare(b.name);
-        }
+  const handleTabKeyDown = (index: number, e: React.KeyboardEvent<HTMLButtonElement>) => {
+    let nextIndex = index;
+    if (e.key === "ArrowRight") {
+      nextIndex = (index + 1) % tabs.length;
+    } else if (e.key === "ArrowLeft") {
+      nextIndex = (index - 1 + tabs.length) % tabs.length;
+    } else if (e.key === "Home") {
+      nextIndex = 0;
+    } else if (e.key === "End") {
+      nextIndex = tabs.length - 1;
+    } else {
+      return;
+    }
+    e.preventDefault();
+    const nextTab = tabs[nextIndex].value;
+    setTab(nextTab);
+    const nextTier = nextTab === "EXTENDED" || nextTab === "LEGACY" ? "ALL" : tier;
+    if (nextTab === "EXTENDED" || nextTab === "LEGACY") {
+      setTier("ALL");
+    }
+    updateUrlParams(nextTab, nextTier, query);
+    tabButtonRefs.current[nextIndex]?.focus();
+  };
 
-        return (a.rank ?? 9999) - (b.rank ?? 9999);
-      });
-  }, [levels, query, tab, tier, sort]);
+  const needle = query.trim().toLowerCase();
+  const filtered = levels
+    .filter((level) => {
+      let matchesTab = true;
+      if (tab === "MAIN") {
+        matchesTab =
+          level.status === "RANKED" &&
+          level.rank !== null &&
+          level.rank <= 75;
+      } else if (tab === "EXTENDED") {
+        matchesTab =
+          level.status === "RANKED" &&
+          level.rank !== null &&
+          level.rank > 75 &&
+          level.rank <= 150;
+      } else if (tab === "LEGACY") {
+        matchesTab =
+          level.status === "LEGACY" ||
+          (level.rank !== null && level.rank > 150);
+      }
+
+      let matchesTier = true;
+      if (tier === "TOP_10") {
+        matchesTier = level.rank !== null && level.rank <= 10;
+      } else if (tier === "TOP_50") {
+        matchesTier = level.rank !== null && level.rank <= 50;
+      }
+
+      const haystack = [
+        level.name,
+        level.originalName,
+        level.nerfCreator,
+        level.verifier,
+        level.publisher,
+        level.gdLevelId,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return matchesTab && matchesTier && (!needle || haystack.includes(needle));
+    })
+    .toSorted((a, b) => {
+      if (sort === "points") {
+        return b.points - a.points;
+      }
+      if (sort === "records") {
+        return (b._count?.records ?? 0) - (a._count?.records ?? 0);
+      }
+      if (sort === "name") {
+        return a.name.localeCompare(b.name);
+      }
+
+      return (a.rank ?? 9999) - (b.rank ?? 9999);
+    });
 
   return (
     <SectionPanel className="overflow-hidden">
@@ -96,22 +144,29 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
         {/* Primary Scope Tabs */}
         <div className="flex overflow-x-auto border-b border-zinc-200/80 p-2 sm:p-3 dark:border-zinc-800/80 [scrollbar-width:none]">
           <div role="tablist" aria-label="Level scopes" className="inline-flex rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
-            {tabs.map((item) => {
+            {tabs.map((item, index) => {
               const isActive = tab === item.value;
               return (
                 <button
                   key={item.value}
+                  ref={(el) => {
+                    tabButtonRefs.current[index] = el;
+                  }}
                   type="button"
                   role="tab"
+                  tabIndex={isActive ? 0 : -1}
                   aria-selected={isActive}
+                  onKeyDown={(e) => handleTabKeyDown(index, e)}
                   onClick={() => {
                     setTab(item.value);
+                    const nextTier = item.value === "EXTENDED" || item.value === "LEGACY" ? "ALL" : tier;
                     if (item.value === "EXTENDED" || item.value === "LEGACY") {
                       setTier("ALL");
                     }
+                    updateUrlParams(item.value, nextTier, query);
                   }}
                   className={cx(
-                    "rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold transition-all whitespace-nowrap",
+                    "rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold transition-all whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-cyan-400",
                     isActive
                       ? "bg-white text-zinc-950 shadow-sm dark:bg-zinc-800 dark:text-white"
                       : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white",
@@ -130,7 +185,11 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                const nextQuery = event.target.value;
+                setQuery(nextQuery);
+                updateUrlParams(tab, tier, nextQuery);
+              }}
               placeholder="Search demons, creators, verifiers, GD ID..."
               aria-label="Search demons by name, creator, verifier, or GD ID"
               className={`${inputClass} w-full pl-9 text-xs sm:text-sm`}
@@ -146,7 +205,10 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
                     key={chip.value}
                     type="button"
                     aria-pressed={tier === chip.value}
-                    onClick={() => setTier(chip.value)}
+                    onClick={() => {
+                      setTier(chip.value);
+                      updateUrlParams(tab, chip.value, query);
+                    }}
                     className={cx(
                       "rounded-md px-2.5 py-1 text-xs font-semibold transition-all",
                       tier === chip.value
