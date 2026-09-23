@@ -135,56 +135,56 @@ export default async function ArchivePage({ searchParams }: Props) {
       </div>
 
       {/* Snapshot Summary Cards */}
-      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-          <p className="text-xs text-zinc-400">Archive Date</p>
-          <p className="mt-1 text-base font-bold text-amber-400 truncate">{formattedDate}</p>
+      <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">Archive Date</p>
+          <p className="mt-1 text-base font-bold text-amber-600 dark:text-amber-400 truncate">{formattedDate}</p>
         </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-          <p className="text-xs text-zinc-400">Demons on List</p>
-          <p className="mt-1 text-xl font-bold text-white">{state.stats.totalDemons}</p>
+        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">Demons on List</p>
+          <p className="mt-1 text-xl font-bold text-zinc-900 dark:text-white">{state.stats.totalDemons}</p>
         </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-          <p className="text-xs text-zinc-400">Top #1 Demon</p>
-          <p className="mt-1 text-sm font-bold text-white truncate">
+        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">Top #1 Demon</p>
+          <p className="mt-1 text-sm font-bold text-zinc-900 dark:text-white truncate">
             {state.stats.topDemonName || "None"}
           </p>
         </div>
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-          <p className="text-xs text-zinc-400">#1 Victor</p>
-          <p className="mt-1 text-sm font-bold text-emerald-400 truncate">
+        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">#1 Victor</p>
+          <p className="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-400 truncate">
             {state.stats.topPlayerName || "None"}
           </p>
         </div>
       </div>
 
       {/* Two Column Layout: Historical Demons & Historical Leaderboard */}
-      <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-3">
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left 2 Cols: Historical Level List */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
               Historical Rankings ({state.levels.length})
             </h2>
             <span className="text-xs text-zinc-500">As of {formattedDate}</span>
           </div>
 
           {state.levels.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-800 p-8 text-center text-zinc-400">
+            <div className="rounded-xl border border-dashed border-zinc-200 p-8 text-center text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
               No levels were ranked on this date yet. Try picking a more recent date!
             </div>
           ) : (
-            <div className="divide-y divide-zinc-800/60 rounded-xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
+            <div className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white overflow-hidden shadow-xs dark:divide-zinc-800/60 dark:border-zinc-800 dark:bg-zinc-900/40">
               {state.levels.map((lvl) => (
                 <div
                   key={lvl.id}
-                  className="flex items-center justify-between p-4 hover:bg-zinc-800/30 transition-colors gap-4"
+                  className="flex items-center justify-between p-3.5 hover:bg-zinc-50 transition-colors gap-3 dark:hover:bg-zinc-800/30"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-800 text-sm font-bold text-zinc-200 border border-zinc-700">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-xs font-bold text-zinc-700 border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
                       #{lvl.rank ?? "—"}
                     </span>
-                    <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded-md border border-zinc-800">
+                    <div className="relative h-11 w-18 shrink-0 overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-800">
                       <SafeThumbnail
                         src={resolveLevelThumbnail(lvl.slug, lvl.name, lvl.showcaseUrl, lvl.thumbnailUrl)}
                         alt={lvl.name}
@@ -194,18 +194,18 @@ export default async function ArchivePage({ searchParams }: Props) {
                     <div className="min-w-0">
                       <Link
                         href={`/levels/${lvl.slug}`}
-                        className="font-semibold text-white hover:text-amber-400 transition-colors truncate block"
+                        className="font-semibold text-zinc-900 hover:text-amber-600 transition-colors truncate block dark:text-white dark:hover:text-amber-400"
                       >
                         {lvl.name}
                       </Link>
-                      <p className="text-xs text-zinc-400 truncate">
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
                         By {lvl.nerfCreator || lvl.publisher} • Verifier: {lvl.verifier}
                       </p>
                     </div>
                   </div>
 
                   <div className="text-right shrink-0">
-                    <span className="rounded-md bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-400 border border-amber-500/20">
+                    <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-xs font-bold text-amber-700 border border-amber-500/20 dark:text-amber-400">
                       {lvl.points} pts
                     </span>
                   </div>
@@ -216,35 +216,35 @@ export default async function ArchivePage({ searchParams }: Props) {
         </div>
 
         {/* Right 1 Col: Historical Player Leaderboard */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
               Historical Standings
             </h2>
             <span className="text-xs text-zinc-500">Top Players</span>
           </div>
 
           {state.leaderboard.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-800 p-8 text-center text-zinc-400">
+            <div className="rounded-xl border border-dashed border-zinc-200 p-8 text-center text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
               No accepted records existed on this date.
             </div>
           ) : (
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 divide-y divide-zinc-800/60 overflow-hidden">
+            <div className="rounded-xl border border-zinc-200 bg-white divide-y divide-zinc-200 overflow-hidden shadow-xs dark:border-zinc-800 dark:bg-zinc-900/40 dark:divide-zinc-800/60">
               {state.leaderboard.slice(0, 20).map((player) => (
                 <div
                   key={player.playerId}
-                  className="flex items-center justify-between p-3.5 hover:bg-zinc-800/30 transition-colors"
+                  className="flex items-center justify-between p-3 hover:bg-zinc-50 transition-colors dark:hover:bg-zinc-800/30"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     <span
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                         player.rank === 1
-                          ? "bg-amber-500 text-zinc-950 shadow-sm shadow-amber-500/50"
+                          ? "bg-amber-500 text-zinc-950 shadow-xs"
                           : player.rank === 2
-                            ? "bg-zinc-300 text-zinc-950"
+                            ? "bg-zinc-300 text-zinc-950 font-bold"
                             : player.rank === 3
-                              ? "bg-amber-700 text-white"
-                              : "bg-zinc-800 text-zinc-400"
+                              ? "bg-amber-700 text-white font-bold"
+                              : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
                       }`}
                     >
                       {player.rank}
@@ -252,14 +252,14 @@ export default async function ArchivePage({ searchParams }: Props) {
                     <div className="min-w-0">
                       <Link
                         href={`/players/${player.playerName}`}
-                        className="font-medium text-sm text-white hover:text-amber-400 transition-colors truncate block"
+                        className="font-medium text-sm text-zinc-900 hover:text-amber-600 transition-colors truncate block dark:text-white dark:hover:text-amber-400"
                       >
                         {player.displayName}
                       </Link>
-                      <p className="text-xs text-zinc-500">{player.recordsCount} record(s)</p>
+                      <p className="text-[11px] text-zinc-500">{player.recordsCount} record(s)</p>
                     </div>
                   </div>
-                  <span className="font-semibold text-sm text-emerald-400">
+                  <span className="font-semibold text-xs text-emerald-600 dark:text-emerald-400">
                     {player.points} pts
                   </span>
                 </div>

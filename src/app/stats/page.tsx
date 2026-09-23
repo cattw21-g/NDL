@@ -212,12 +212,12 @@ export default async function StatsPage() {
       {/* Two Column Section: Difficulty Breakdown & Hardware Adoption */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Difficulty Tier Distribution */}
-        <SectionPanel className="p-5 space-y-4 border-zinc-800 bg-zinc-900/70">
-          <div className="flex items-center gap-2 border-b border-zinc-800 pb-3">
-            <Award className="h-5 w-5 text-amber-400" />
-            <h2 className="text-lg font-extrabold text-white">Difficulty Distribution</h2>
+        <SectionPanel className="p-5 space-y-4">
+          <div className="flex items-center gap-2 border-b border-zinc-200 pb-3 dark:border-zinc-800">
+            <Award className="h-5 w-5 text-amber-500" />
+            <h2 className="text-lg font-extrabold text-zinc-900 dark:text-white">Difficulty Distribution</h2>
           </div>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
             Categorization of ranked and legacy demons across official list tiers.
           </p>
           <div className="space-y-2.5">
@@ -226,10 +226,10 @@ export default async function StatsPage() {
               return (
                 <div key={cat} className="space-y-1">
                   <div className="flex items-center justify-between text-xs font-bold">
-                    <span className="text-zinc-200">{cat}</span>
-                    <span className="text-zinc-400">{count} demons ({pct}%)</span>
+                    <span className="text-zinc-700 dark:text-zinc-200">{cat}</span>
+                    <span className="text-zinc-500 dark:text-zinc-400">{count} demons ({pct}%)</span>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
+                  <div className="h-2 w-full rounded-full bg-zinc-100 overflow-hidden dark:bg-zinc-800">
                     <div
                       className="h-full bg-gradient-to-r from-cyan-500 to-amber-500 rounded-full"
                       style={{ width: `${pct}%` }}
@@ -242,35 +242,35 @@ export default async function StatsPage() {
         </SectionPanel>
 
         {/* Hardware & Physics Metrics */}
-        <SectionPanel className="p-5 space-y-4 border-zinc-800 bg-zinc-900/70">
-          <div className="flex items-center gap-2 border-b border-zinc-800 pb-3">
-            <Cpu className="h-5 w-5 text-cyan-400" />
-            <h2 className="text-lg font-extrabold text-white">Hardware & Physics Metrics</h2>
+        <SectionPanel className="p-5 space-y-4">
+          <div className="flex items-center gap-2 border-b border-zinc-200 pb-3 dark:border-zinc-800">
+            <Cpu className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+            <h2 className="text-lg font-extrabold text-zinc-900 dark:text-white">Hardware & Physics Metrics</h2>
           </div>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
             Record submission settings, CBF adoption rate, and player display refresh rates.
           </p>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-4 text-center">
-              <p className="text-3xl font-black text-purple-300">{cbfPercentage}%</p>
-              <p className="text-xs font-bold text-purple-200/80 mt-1">CBF Adoption Rate</p>
-              <p className="text-[11px] text-zinc-400 mt-0.5">{cbfTrueCount} of {records.length} runs</p>
+            <div className="rounded-xl border border-purple-500/20 bg-purple-50 p-4 text-center dark:border-purple-500/30 dark:bg-purple-500/10">
+              <p className="text-3xl font-black text-purple-700 dark:text-purple-300">{cbfPercentage}%</p>
+              <p className="text-xs font-bold text-purple-900 dark:text-purple-200/80 mt-1">CBF Adoption Rate</p>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">{cbfTrueCount} of {records.length} runs</p>
             </div>
-            <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4 text-center">
-              <p className="text-3xl font-black text-cyan-300">{completions100.length}</p>
-              <p className="text-xs font-bold text-cyan-200/80 mt-1">100% Victories</p>
-              <p className="text-[11px] text-zinc-400 mt-0.5">{progressRecords.length} qualifying progress</p>
+            <div className="rounded-xl border border-cyan-500/20 bg-cyan-50 p-4 text-center dark:border-cyan-500/30 dark:bg-cyan-500/10">
+              <p className="text-3xl font-black text-cyan-700 dark:text-cyan-300">{completions100.length}</p>
+              <p className="text-xs font-bold text-cyan-900 dark:text-cyan-200/80 mt-1">100% Victories</p>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">{progressRecords.length} qualifying progress</p>
             </div>
           </div>
 
-          <div className="space-y-1.5 border-t border-zinc-800/80 pt-3">
-            <p className="text-xs font-bold text-zinc-300">Top Refresh Rates (FPS):</p>
+          <div className="space-y-1.5 border-t border-zinc-200 pt-3 dark:border-zinc-800/80">
+            <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Top Refresh Rates (FPS):</p>
             <div className="grid grid-cols-3 gap-2">
               {sortedFps.map((item) => (
-                <div key={item.fps} className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-2 text-center">
-                  <p className="font-mono text-sm font-black text-white">{item.fps} FPS</p>
-                  <p className="text-[11px] text-zinc-400">{item.count} records</p>
+                <div key={item.fps} className="rounded-lg border border-zinc-200 bg-zinc-50 p-2 text-center dark:border-zinc-800 dark:bg-zinc-950/60">
+                  <p className="font-mono text-sm font-black text-zinc-900 dark:text-white">{item.fps} FPS</p>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">{item.count} records</p>
                 </div>
               ))}
             </div>
@@ -278,16 +278,16 @@ export default async function StatsPage() {
         </SectionPanel>
       </div>
 
-      {/* Regional Activity & Geographic Filter (Pointercrate Style) */}
+      {/* Regional Activity & Geographic Filter */}
       <section className="space-y-4">
-        <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <div className="flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
           <div className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-blue-400" />
-            <h2 className="text-xl font-extrabold text-white">Geographic & Regional Activity</h2>
+            <Globe className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+            <h2 className="text-xl font-extrabold text-zinc-900 dark:text-white">Geographic & Regional Activity</h2>
           </div>
           <Link
             href="/countries"
-            className="text-xs font-bold text-cyan-400 hover:underline"
+            className="text-xs font-bold text-cyan-700 hover:underline dark:text-cyan-400"
           >
             Explore Interactive World Map &rarr;
           </Link>
@@ -298,11 +298,11 @@ export default async function StatsPage() {
             <Link
               key={r.region}
               href={`/countries?continent=${encodeURIComponent(r.region)}`}
-              className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3.5 transition hover:border-zinc-700 hover:bg-zinc-850"
+              className="rounded-xl border border-zinc-200 bg-white p-3.5 transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-zinc-700"
             >
-              <p className="text-xs font-bold text-zinc-400 truncate">{r.region}</p>
-              <p className="mt-1 text-base font-black text-white">{r.points.toLocaleString()} pts</p>
-              <p className="text-[11px] text-zinc-500">{r.players} {r.players === 1 ? "player" : "players"}</p>
+              <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 truncate">{r.region}</p>
+              <p className="mt-1 text-base font-black text-zinc-900 dark:text-white">{r.points.toLocaleString()} pts</p>
+              <p className="text-[11px] text-zinc-400 dark:text-zinc-500">{r.players} {r.players === 1 ? "player" : "players"}</p>
             </Link>
           ))}
         </div>
@@ -310,48 +310,48 @@ export default async function StatsPage() {
 
       {/* Top Players Leaderboard Snapshot */}
       <section className="space-y-4">
-        <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <div className="flex items-center justify-between border-b border-zinc-200 pb-3 dark:border-zinc-800">
           <div className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-amber-400" />
-            <h2 className="text-xl font-extrabold text-white">Top 10 Player Standings</h2>
+            <Trophy className="h-5 w-5 text-amber-500" />
+            <h2 className="text-xl font-extrabold text-zinc-900 dark:text-white">Top 10 Player Standings</h2>
           </div>
           <Link
             href="/players"
-            className="text-xs font-bold text-cyan-400 hover:underline"
+            className="text-xs font-bold text-cyan-700 hover:underline dark:text-cyan-400"
           >
             View Full Leaderboard &rarr;
           </Link>
         </div>
 
-        <div className="divide-y divide-zinc-800 rounded-xl border border-zinc-800 bg-zinc-900/60 overflow-hidden">
+        <div className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white overflow-hidden shadow-xs dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900/60">
           {topPlayers.map((player, index) => {
             const countryCode = userCountryMap.get(player.playerId);
             const country = countryCode ? getCountryMeta(countryCode) : null;
             return (
               <div
                 key={player.playerId}
-                className="grid gap-2 p-3.5 sm:grid-cols-[3rem_minmax(0,1fr)_6rem_6rem] sm:items-center hover:bg-zinc-850 transition"
+                className="grid gap-2 p-3.5 sm:grid-cols-[3rem_minmax(0,1fr)_6rem_6rem] sm:items-center hover:bg-zinc-50 transition dark:hover:bg-zinc-850"
               >
-                <span className="font-black text-slate-400 text-sm">
+                <span className="font-black text-zinc-400 text-sm">
                   #{index + 1}
                 </span>
                 <div className="min-w-0">
                   <Link
                     href={`/players/${player.playerName}`}
-                    className="font-black text-white hover:text-cyan-400 transition"
+                    className="font-black text-zinc-900 hover:text-cyan-600 transition dark:text-white dark:hover:text-cyan-400"
                   >
                     {player.displayName}
                   </Link>
                   {country ? (
-                    <span className="ml-2 text-xs text-zinc-400">
+                    <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-400">
                       {country.flag} {country.name}
                     </span>
                   ) : null}
                 </div>
-                <span className="text-xs text-zinc-400 sm:text-right">
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 sm:text-right">
                   {player.records} {player.records === 1 ? "Record" : "Records"}
                 </span>
-                <span className="text-right font-mono font-black text-cyan-400">
+                <span className="text-right font-mono font-black text-cyan-600 dark:text-cyan-400">
                   {player.points} pts
                 </span>
               </div>
@@ -363,18 +363,18 @@ export default async function StatsPage() {
       {/* Top Verifiers & Top Nerf Creators */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Top Verifiers */}
-        <SectionPanel className="p-5 space-y-3 border-zinc-800 bg-zinc-900/70">
-          <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
-            <ShieldCheck className="h-5 w-5 text-emerald-400" />
-            <h3 className="text-base font-extrabold text-white">Top List Verifiers</h3>
+        <SectionPanel className="p-5 space-y-3">
+          <div className="flex items-center gap-2 border-b border-zinc-200 pb-2 dark:border-zinc-800">
+            <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <h3 className="text-base font-extrabold text-zinc-900 dark:text-white">Top List Verifiers</h3>
           </div>
-          <div className="divide-y divide-zinc-800/80">
+          <div className="divide-y divide-zinc-200/80 dark:divide-zinc-800/80">
             {topVerifiers.map((v, i) => (
               <div key={v.name} className="flex items-center justify-between py-2 text-xs">
-                <span className="font-bold text-zinc-200">
+                <span className="font-bold text-zinc-800 dark:text-zinc-200">
                   #{i + 1} {v.name}
                 </span>
-                <span className="font-mono text-emerald-400 font-bold">
+                <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
                   {v.count} {v.count === 1 ? "Demon" : "Demons"}
                 </span>
               </div>
@@ -383,18 +383,18 @@ export default async function StatsPage() {
         </SectionPanel>
 
         {/* Top Nerf Creators */}
-        <SectionPanel className="p-5 space-y-3 border-zinc-800 bg-zinc-900/70">
-          <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
-            <Flame className="h-5 w-5 text-amber-400" />
-            <h3 className="text-base font-extrabold text-white">Top Nerf Creators</h3>
+        <SectionPanel className="p-5 space-y-3">
+          <div className="flex items-center gap-2 border-b border-zinc-200 pb-2 dark:border-zinc-800">
+            <Flame className="h-5 w-5 text-amber-500" />
+            <h3 className="text-base font-extrabold text-zinc-900 dark:text-white">Top Nerf Creators</h3>
           </div>
-          <div className="divide-y divide-zinc-800/80">
+          <div className="divide-y divide-zinc-200/80 dark:divide-zinc-800/80">
             {topCreators.map((c, i) => (
               <div key={c.name} className="flex items-center justify-between py-2 text-xs">
-                <span className="font-bold text-zinc-200">
+                <span className="font-bold text-zinc-800 dark:text-zinc-200">
                   #{i + 1} {c.name}
                 </span>
-                <span className="font-mono text-amber-400 font-bold">
+                <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">
                   {c.count} {c.count === 1 ? "Demon" : "Demons"}
                 </span>
               </div>

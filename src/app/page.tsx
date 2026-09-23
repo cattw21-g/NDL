@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
-  BookOpen,
-  ClipboardCheck,
   Newspaper,
   Trophy,
   Upload,
@@ -114,7 +112,6 @@ export default async function Home() {
   }
 
   const rankedCount = levels.filter((level) => level.status === "RANKED").length;
-  const legacyCount = levels.filter((level) => level.status === "LEGACY").length;
 
   return (
     <div className="space-y-6">
@@ -178,40 +175,58 @@ export default async function Home() {
           />
         </main>
 
-        <aside className="space-y-3">
+        <aside className="space-y-4">
+          {/* Latest News & Announcements Hub */}
           <SidebarCard
-            icon={<ClipboardCheck className="h-5 w-5 text-cyan-700" />}
-            title="NDL status"
+            icon={<Newspaper className="h-4 w-4 text-cyan-500" />}
+            title="Latest update"
           >
-            <dl className="grid grid-cols-2 gap-2 text-sm">
-              <SidebarStat label="Ranked" value={rankedCount} />
-              <SidebarStat label="Records" value={acceptedCount} />
-              <SidebarStat label="Legacy" value={legacyCount} />
-              <SidebarStat label="Pending" value={pendingCount} />
-            </dl>
+            {latestPost ? (
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded bg-cyan-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-400">
+                    {changelogCategoryLabel(latestPost.category)}
+                  </span>
+                  <span className="text-xs text-zinc-400">
+                    {formatDate(latestPost.publishedAt)}
+                  </span>
+                </div>
+                <Link
+                  href={`/changelog/${latestPost.slug}`}
+                  className="mt-2 block font-extrabold text-zinc-950 transition hover:text-cyan-600 dark:text-white dark:hover:text-cyan-400"
+                >
+                  {latestPost.title}
+                </Link>
+                <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                  {latestPost.summary}
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-zinc-500">
+                Staff updates and list news will appear here.
+              </p>
+            )}
+
+            <div className="mt-4 flex items-center gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+              <Link
+                href="/changelog"
+                className="inline-flex min-h-8 flex-1 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-xs font-bold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                All News
+              </Link>
+              <Link
+                href="/rules"
+                className="inline-flex min-h-8 flex-1 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-xs font-bold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                List Rules
+              </Link>
+            </div>
           </SidebarCard>
 
+          {/* Recent Records Hub */}
           <SidebarCard
-            icon={<BookOpen className="h-5 w-5 text-cyan-700" />}
-            title="Submission rules"
-          >
-            <ul className="space-y-2 text-sm leading-6 text-slate-600">
-              <li>Submit the accepted NDL version only.</li>
-              <li>Use public video and raw footage links.</li>
-              <li>Keep FPS, CBF, click audio, and input details clear.</li>
-              <li>Macros and replay bots are banned for records.</li>
-            </ul>
-            <Link
-              href="/rules"
-              className="mt-3 inline-flex min-h-9 w-full items-center justify-center rounded-md border border-cyan-300 bg-white px-3 text-sm font-black text-cyan-800 transition hover:bg-cyan-50 dark:border-cyan-500/50 dark:bg-slate-950/60 dark:text-cyan-100 dark:hover:bg-cyan-950/50"
-            >
-              Read rules
-            </Link>
-          </SidebarCard>
-
-          <SidebarCard
-            icon={<Trophy className="h-5 w-5 text-cyan-700" />}
-            title="Latest accepted"
+            icon={<Trophy className="h-4 w-4 text-amber-500" />}
+            title="Latest Accepted Runs"
           >
             {latestRecords.length > 0 ? (
               <div className="space-y-2">
@@ -224,82 +239,36 @@ export default async function Home() {
                       href={record.videoUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="block rounded-md border border-slate-300 bg-white px-3 py-2 text-sm transition hover:border-cyan-400 hover:bg-cyan-50 dark:border-slate-700 dark:bg-slate-950/60 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
+                      className="group flex items-center justify-between rounded-lg border border-zinc-200/80 bg-zinc-50/50 p-2.5 transition hover:border-cyan-400 hover:bg-cyan-50/50 dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:border-cyan-500/50 dark:hover:bg-cyan-950/30"
                     >
-                      <span className="block truncate font-black text-slate-900 dark:text-slate-100">
-                        {record.player.displayName}
-                      </span>
-                      <span className="block truncate text-xs font-bold text-slate-500 dark:text-slate-400">
-                        {record.level.rank ? `#${record.level.rank} ` : ""}
-                        {record.level.name} - {recordPoints} pts
+                      <div className="min-w-0 pr-2">
+                        <span className="block truncate text-xs font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
+                          {record.player.displayName}
+                        </span>
+                        <span className="block truncate text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                          {record.level.rank ? `#${record.level.rank} ` : ""}
+                          {record.level.name}
+                        </span>
+                      </div>
+                      <span className="shrink-0 rounded bg-cyan-500/10 px-2 py-0.5 text-xs font-bold text-cyan-700 dark:text-cyan-400">
+                        +{recordPoints}
                       </span>
                     </a>
                   );
                 })}
               </div>
             ) : (
-              <div className="space-y-3">
-                <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  No accepted records yet. Submit a record to appear here after
-                  review.
-                </p>
-                <Link
-                  href="/submit"
-                  className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-cyan-800 bg-cyan-800 px-3 text-sm font-black text-white transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-300"
-                >
-                  Submit a record
-                </Link>
-              </div>
-            )}
-          </SidebarCard>
-
-          <SidebarCard
-            icon={<Upload className="h-5 w-5 text-cyan-700" />}
-            title="How ranking works"
-          >
-            <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Ranked entries use computed points from their current position.
-              Accepted records inherit that value, and rank changes update the
-              leaderboard.
-            </p>
-            <Link
-              href="/submit"
-              className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-md border border-cyan-800 bg-cyan-800 px-3 text-sm font-black text-white transition hover:bg-cyan-700"
-            >
-              Submit a record
-            </Link>
-          </SidebarCard>
-
-          <SidebarCard
-            icon={<Newspaper className="h-5 w-5 text-cyan-700" />}
-            title="Latest update"
-          >
-            {latestPost ? (
-              <div>
-                <p className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">
-                  {changelogCategoryLabel(latestPost.category)} -{" "}
-                  {formatDate(latestPost.publishedAt)}
-                </p>
-                <Link
-                  href={`/changelog/${latestPost.slug}`}
-                  className="mt-1 block rounded-sm font-black text-slate-950 transition hover:text-cyan-800 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:text-slate-50 dark:hover:text-cyan-200"
-                >
-                  {latestPost.title}
-                </Link>
-                <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  {latestPost.summary}
-                </p>
-              </div>
-            ) : (
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                Launch notes and staff updates will appear here.
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                No accepted records yet. Submit a record to appear here after review.
               </p>
             )}
+
             <Link
-              href="/changelog"
-              className="mt-3 inline-flex min-h-9 w-full items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
+              href="/submit"
+              className="mt-3.5 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-cyan-600 px-3 text-xs font-bold text-white shadow-md shadow-cyan-500/20 transition hover:bg-cyan-500"
             >
-              View changelog
+              <Upload className="h-3.5 w-3.5" />
+              <span>Submit a Record</span>
             </Link>
           </SidebarCard>
         </aside>
@@ -318,31 +287,12 @@ function SidebarCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white/90 p-5 shadow-xl backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/60">
-      <div className="mb-4 flex items-center gap-2 border-b border-zinc-200 pb-3 dark:border-zinc-800">
+    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
+      <div className="mb-3 flex items-center gap-2 border-b border-zinc-100 pb-2.5 dark:border-zinc-800">
         {icon}
-        <h2 className="font-bold text-zinc-900 dark:text-white">{title}</h2>
+        <h2 className="text-sm font-bold text-zinc-900 dark:text-white">{title}</h2>
       </div>
       {children}
-    </div>
-  );
-}
-
-function SidebarStat({
-  label,
-  value,
-}: {
-  label: string;
-  value: number | string;
-}) {
-  return (
-    <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-2.5 dark:border-zinc-800 dark:bg-zinc-950/60">
-      <dt className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-        {label}
-      </dt>
-      <dd className="mt-1 text-lg font-black text-zinc-900 dark:text-white">
-        {value}
-      </dd>
     </div>
   );
 }

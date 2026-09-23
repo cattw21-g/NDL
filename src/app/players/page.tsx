@@ -1,4 +1,4 @@
-import { BookOpen, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
 import { LeaderboardView } from "@/components/leaderboard-view";
@@ -132,31 +132,30 @@ export default async function PlayersPage() {
           <LeaderboardView rows={leaderboardRows} />
         </main>
 
-        <aside className="space-y-3">
-          <SectionPanel className="p-5">
+        <aside className="space-y-4">
+          <SectionPanel className="p-4 sm:p-5">
             <div className="flex items-center gap-2 border-b border-zinc-200 pb-3 font-bold text-zinc-900 dark:border-zinc-800 dark:text-white">
-              <ShieldCheck className="h-5 w-5 text-amber-500" />
-              Scoring Mechanics
+              <ShieldCheck className="h-4 w-4 text-amber-500" />
+              <span>Leaderboard & Scoring</span>
             </div>
-            <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-              Ranked and legacy records grant points based on difficulty curve. Main List progress runs earn partial points. Position shifts automatically recalculate points in real-time.
+            <p className="mt-3 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+              Points are awarded automatically based on demon difficulty and rank placement. Position shifts recalculate player standings in real-time.
             </p>
-          </SectionPanel>
 
-          <SectionPanel className="p-5">
-            <div className="flex items-center gap-2 border-b border-zinc-200 pb-3 font-bold text-zinc-900 dark:border-zinc-800 dark:text-white">
-              <BookOpen className="h-5 w-5 text-cyan-500" />
-              Submitting Records
+            <div className="mt-4 flex flex-col gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+              <Link
+                href="/submit"
+                className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg bg-cyan-600 px-3 text-xs font-bold text-white shadow-md shadow-cyan-500/20 transition hover:bg-cyan-500"
+              >
+                Submit a Record
+              </Link>
+              <Link
+                href="/rules"
+                className="inline-flex min-h-8 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-xs font-bold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                Ranking Rules
+              </Link>
             </div>
-            <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-              Records must include legitimate proof footage, click audio, FPS, and CBF settings for staff review.
-            </p>
-            <Link
-              href="/submit"
-              className="mt-4 inline-flex min-h-9 w-full items-center justify-center rounded-lg bg-cyan-600 px-3 text-sm font-bold text-white shadow-md shadow-cyan-500/20 transition hover:bg-cyan-500"
-            >
-              Submit a record
-            </Link>
           </SectionPanel>
         </aside>
       </div>

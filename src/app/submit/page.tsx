@@ -84,14 +84,14 @@ export default async function SubmitPage({
         successMessage="Record submitted for review. Staff may request more proof."
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-purple-500/30 bg-purple-500/10 p-4 text-sm">
-        <div className="text-zinc-200">
-          <span className="font-bold text-purple-300">Want to submit a new or unverified nerfed demon instead?</span>{" "}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-purple-500/20 bg-purple-50/80 p-3.5 text-sm dark:border-purple-500/30 dark:bg-purple-500/10">
+        <div className="text-zinc-700 dark:text-zinc-200 text-xs sm:text-sm">
+          <span className="font-bold text-purple-700 dark:text-purple-300">Want to submit a new or unverified demon?</span>{" "}
           To submit a new level candidate or open-verification demon, use the level suggestion form.
         </div>
         <Link
           href="/suggest-level"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-purple-500 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-purple-500 transition-colors"
         >
           Suggest a Level →
         </Link>
@@ -119,35 +119,26 @@ export default async function SubmitPage({
           <SectionPanel className="p-5">
             <div className="flex items-center gap-2 border-b border-zinc-200 pb-3 font-bold text-zinc-900 dark:border-zinc-800 dark:text-white">
               <ShieldAlert className="h-5 w-5 text-sky-500" />
-              Proof Requirements
+              Proof & Guidelines
             </div>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-              <li>Click audio is required for serious records.</li>
-              <li>Fake or added click sounds are banned.</li>
-              <li>Separate mic/click track proof is required for high-ranked levels.</li>
-              <li>Raw footage is required for high-ranked records.</li>
-              <li>FPS overlay, CPS counter, and endscreen must be visible.</li>
-              <li>Progress runs must be at least 30% and meet demon requirement (Extended & Legacy require 100%).</li>
-              <li>Macros and replay bots are strictly banned.</li>
+            <ul className="mt-3 space-y-1.5 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+              <li>• Click audio is required for serious records.</li>
+              <li>• Fake or added clicks will result in an immediate ban.</li>
+              <li>• Separate mic/click track proof required for top levels.</li>
+              <li>• Raw unedited footage required for high-ranked records.</li>
+              <li>• FPS overlay, CPS counter, and endscreen must be visible.</li>
+              <li>• Progress runs must be &ge; 30% on Main List (Extended/Legacy: 100%).</li>
+              <li>• Accepted runs award points directly to profile and country.</li>
             </ul>
-            <div className="mt-4 rounded-lg border border-sky-500/30 bg-sky-500/10 p-3 text-xs font-semibold text-sky-400">
-              Public video links (YouTube, Twitch, Medal, TikTok) are preferred.
+            <div className="mt-3 rounded-lg border border-sky-500/20 bg-sky-50/80 p-2.5 text-xs font-medium text-sky-900 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-300">
+              Public links (YouTube, Twitch, Medal) are preferred for fast review.
             </div>
             <Link
               href="/rules"
-              className="mt-4 inline-flex min-h-9 w-full items-center justify-center rounded-lg bg-sky-600 px-3 text-sm font-bold text-white shadow-md shadow-sky-500/20 transition hover:bg-sky-500"
+              className="mt-3.5 inline-flex min-h-8.5 w-full items-center justify-center rounded-lg bg-sky-600 px-3 text-xs font-bold text-white shadow-xs transition hover:bg-sky-500"
             >
-              Read full rules
+              Read Full Rules →
             </Link>
-          </SectionPanel>
-
-          <SectionPanel className="p-5">
-            <h2 className="border-b border-zinc-200 pb-3 font-bold text-zinc-900 dark:border-zinc-800 dark:text-white">
-              Submission Guidelines
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-              Accepted records instantly award points to your profile and country ranking. Pending, rejected, and needs-changes runs remain private to you and staff.
-            </p>
           </SectionPanel>
         </aside>
       </div>

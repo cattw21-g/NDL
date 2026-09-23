@@ -187,50 +187,62 @@ export function LevelCard({
               </div>
             ) : null}
 
-            <Link
-              href={`/levels/${level.slug}`}
-              className={cx(
-                "block truncate text-lg font-black leading-tight text-zinc-950 transition hover:text-cyan-600 dark:text-white dark:hover:text-cyan-400",
-                level.status !== "RANKED" && !activeSubmission && "mt-1.5",
-              )}
-            >
-              {level.name}
-            </Link>
-            <dl className="mt-1.5 grid gap-x-4 gap-y-1 text-sm leading-5 text-zinc-600 dark:text-zinc-400 sm:grid-cols-2">
-              <Meta label="Original" value={level.originalName} />
-              <Meta label="Verified by" value={level.verifier} />
-              <Meta label="Hosted by" value={level.publisher} />
-              <Meta label="Nerf by" value={level.nerfCreator} />
-            </dl>
+            <div className="flex flex-wrap items-baseline gap-2">
+              <Link
+                href={`/levels/${level.slug}`}
+                className={cx(
+                  "truncate text-lg font-black leading-tight text-zinc-950 transition hover:text-cyan-600 dark:text-white dark:hover:text-cyan-400",
+                  level.status !== "RANKED" && !activeSubmission && "mt-1",
+                )}
+              >
+                {level.name}
+              </Link>
+              {level.originalName && level.originalName.toLowerCase() !== level.name.toLowerCase() ? (
+                <span className="truncate rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-semibold text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-400">
+                  Original: {level.originalName}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400 sm:text-sm">
+              <span>
+                Nerfed by <strong className="font-semibold text-zinc-900 dark:text-zinc-200">{level.nerfCreator}</strong>
+              </span>
+              <span className="text-zinc-300 dark:text-zinc-700">•</span>
+              <span>
+                Verified by <strong className="font-semibold text-zinc-900 dark:text-zinc-200">{level.verifier || "Open"}</strong>
+              </span>
+              {level.publisher && level.publisher !== level.nerfCreator ? (
+                <>
+                  <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                  <span className="text-zinc-500 dark:text-zinc-400">
+                    Host: <span className="text-zinc-700 dark:text-zinc-300">{level.publisher}</span>
+                  </span>
+                </>
+              ) : null}
+            </div>
           </div>
         </div>
 
-        {/* Col 4: Points, Records, Details Button */}
-        <div className="col-span-2 grid grid-cols-3 gap-2 border-t border-zinc-200 bg-zinc-50/80 p-2.5 dark:border-zinc-800 dark:bg-zinc-950/60 md:col-auto md:grid-cols-1 md:border-l md:border-t-0 md:self-stretch">
-          <PointsPill points={level.points} />
-          <span className="inline-flex min-h-8 items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-800 tabular-nums dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
-            {level._count?.records ?? 0} records
+        {/* Col 4: Points, Records, Details Link */}
+        <div className="col-span-2 grid grid-cols-3 items-center gap-2 border-t border-zinc-100 bg-zinc-50/50 px-3 py-2 dark:border-zinc-800/60 dark:bg-zinc-950/40 md:flex md:flex-col md:items-end md:justify-center md:border-l md:border-t-0 md:px-3 md:py-2.5 md:self-stretch">
+          <div className="flex items-center justify-center md:w-full md:justify-end">
+            <PointsPill points={level.points} />
+          </div>
+          <span className="text-center text-xs font-semibold text-zinc-500 tabular-nums dark:text-zinc-400 md:text-right">
+            {level._count?.records ?? 0} {level._count?.records === 1 ? "record" : "records"}
           </span>
-          <Link
-            href={`/levels/${level.slug}`}
-            className="inline-flex min-h-8 items-center justify-center gap-2 rounded-lg bg-cyan-600 px-3 text-sm font-bold text-white shadow-md shadow-cyan-500/20 transition hover:bg-cyan-500"
-          >
-            Details
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+          <div className="flex items-center justify-center md:w-full md:justify-end">
+            <Link
+              href={`/levels/${level.slug}`}
+              className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-bold text-cyan-600 transition hover:bg-cyan-50 hover:text-cyan-700 dark:text-cyan-400 dark:hover:bg-cyan-950/50 dark:hover:text-cyan-300 md:mt-1"
+            >
+              <span>Details</span>
+              <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+            </Link>
+          </div>
         </div>
       </div>
     </article>
-  );
-}
-
-function Meta({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <dt className="inline text-xs font-bold uppercase text-slate-500 dark:text-slate-400">
-        {label}:{" "}
-      </dt>
-      <dd className="inline font-semibold text-slate-800 dark:text-slate-200">{value}</dd>
-    </div>
   );
 }

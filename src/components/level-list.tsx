@@ -92,79 +92,89 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
 
   return (
     <SectionPanel className="overflow-hidden">
-      <div className="border-b border-zinc-200 bg-zinc-50/80 dark:border-zinc-800 dark:bg-zinc-950/60">
-        {/* Main List Tier Filter (Matching Country & Creator Rankings) */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 bg-zinc-100/70 p-3 dark:border-zinc-800 dark:bg-zinc-950/70">
-          {tabs.map((item) => {
-            const isActive = tab === item.value;
-            return (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() => setTab(item.value)}
-                className={cx(
-                  "rounded-lg px-4 py-2 text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-cyan-300",
-                  isActive
-                    ? "bg-cyan-600 text-white shadow-md shadow-cyan-500/25 border border-cyan-500/50"
-                    : "border border-zinc-300 bg-white text-zinc-700 hover:border-cyan-400 hover:text-cyan-900 dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-white",
-                )}
-              >
-                {item.label}
-              </button>
-            );
-          })}
+      <div className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        {/* Primary Scope Tabs */}
+        <div className="flex overflow-x-auto border-b border-zinc-200/80 p-2 sm:p-3 dark:border-zinc-800/80 [scrollbar-width:none]">
+          <div className="inline-flex rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
+            {tabs.map((item) => {
+              const isActive = tab === item.value;
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => {
+                    setTab(item.value);
+                    if (item.value === "EXTENDED" || item.value === "LEGACY") {
+                      setTier("ALL");
+                    }
+                  }}
+                  className={cx(
+                    "rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold transition-all whitespace-nowrap",
+                    isActive
+                      ? "bg-white text-zinc-950 shadow-sm dark:bg-zinc-800 dark:text-white"
+                      : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white",
+                  )}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Search & Sort Controls */}
-        <div className="grid gap-3 p-3 lg:grid-cols-[1fr_auto] lg:items-center">
-          <label className="relative block">
+        {/* Search, Filter & Sort Bar */}
+        <div className="flex flex-col gap-2.5 p-2.5 sm:flex-row sm:items-center sm:justify-between sm:p-3">
+          <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search levels, originals, creators, verifiers, GD ID"
-              className={`${inputClass} w-full pl-9`}
+              placeholder="Search demons, creators, verifiers, GD ID..."
+              className={`${inputClass} w-full pl-9 text-xs sm:text-sm`}
             />
-          </label>
-          <label className="flex items-center gap-2">
-            <SlidersHorizontal className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-            <select
-              value={sort}
-              onChange={(event) => setSort(event.target.value as SortMode)}
-              className={inputClass}
-            >
-              <option value="rank">Sort by rank</option>
-              <option value="points">Sort by points</option>
-              <option value="records">Sort by records</option>
-              <option value="name">Sort by name</option>
-            </select>
-          </label>
-        </div>
-
-        {/* Tier Quick Filter Chips */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-200 bg-zinc-50/60 px-3 py-2 text-xs dark:border-zinc-800 dark:bg-zinc-950/40">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-bold text-zinc-500 mr-1">Tier:</span>
-            {tierChips.map((chip) => (
-              <button
-                key={chip.value}
-                type="button"
-                onClick={() => setTier(chip.value)}
-                className={cx(
-                  "rounded-md border px-2.5 py-1 text-xs font-bold transition-all",
-                  tier === chip.value
-                    ? "border-cyan-500 bg-cyan-600 text-white shadow-sm dark:bg-cyan-500 dark:text-zinc-950"
-                    : "border-zinc-300 bg-white text-zinc-700 hover:border-cyan-300 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-700",
-                )}
-              >
-                {chip.label}
-              </button>
-            ))}
           </div>
 
-          <span className="font-bold text-zinc-500 dark:text-zinc-400">
-            Showing {filtered.length} of {levels.length} {levels.length === 1 ? "level" : "levels"}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Tier Filter Chips (only active on Main List or All) */}
+            {(tab === "MAIN" || tab === "ALL") && (
+              <div className="inline-flex rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-900">
+                {tierChips.map((chip) => (
+                  <button
+                    key={chip.value}
+                    type="button"
+                    onClick={() => setTier(chip.value)}
+                    className={cx(
+                      "rounded-md px-2.5 py-1 text-xs font-semibold transition-all",
+                      tier === chip.value
+                        ? "bg-white text-cyan-700 shadow-sm dark:bg-zinc-800 dark:text-cyan-400 font-bold"
+                        : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white",
+                    )}
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Sort Select */}
+            <div className="flex items-center gap-1.5">
+              <SlidersHorizontal className="h-3.5 w-3.5 text-zinc-400" />
+              <select
+                value={sort}
+                onChange={(event) => setSort(event.target.value as SortMode)}
+                className={`${inputClass} py-1 text-xs font-medium`}
+              >
+                <option value="rank">Rank</option>
+                <option value="points">Points</option>
+                <option value="records">Records</option>
+                <option value="name">Name</option>
+              </select>
+            </div>
+
+            <span className="text-xs font-medium text-zinc-400">
+              {filtered.length} {filtered.length === 1 ? "demon" : "demons"}
+            </span>
+          </div>
         </div>
       </div>
 

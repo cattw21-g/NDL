@@ -98,84 +98,87 @@ export function UpcomingView({
         </div>
       </div>
 
-      {/* Sub-Tabs Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 pb-4 dark:border-zinc-800">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab("verifying")}
-            className={cx(
-              "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all",
-              activeTab === "verifying"
-                ? "bg-amber-600 text-white shadow-md shadow-amber-500/25 border border-amber-500/50"
-                : "border border-zinc-300 bg-white text-zinc-700 hover:border-amber-400 hover:text-amber-900 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-white",
-            )}
-          >
-            <Flame className="h-4 w-4 text-amber-400" />
-            Currently Verifying ({currentlyVerifying.length})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("waiting")}
-            className={cx(
-              "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-all",
-              activeTab === "waiting"
-                ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/25 border border-emerald-500/50"
-                : "border border-zinc-300 bg-white text-zinc-700 hover:border-emerald-400 hover:text-emerald-900 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-white",
-            )}
-          >
-            <Hourglass className="h-4 w-4 text-emerald-400" />
-            Open Verification ({waitingLevels.length})
-          </button>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {isAdmin ? (
-            <Link
-              href="/admin/upcoming"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-400 hover:bg-amber-500/20 transition-colors"
-            >
-              Admin Queue Manager
-            </Link>
-          ) : null}
-          <Link
-            href="/suggest-level"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-3 py-1.5 text-xs font-bold text-cyan-400 hover:bg-cyan-500/20 transition-colors"
-          >
-            Suggest a Level →
-          </Link>
-        </div>
-      </div>
-
-      {/* Filter and Search Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="relative min-w-[18rem] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={`Search ${activeTab === "verifying" ? "verifying" : "waiting"} levels by name, player, or GD ID...`}
-            className={`${inputClass} w-full pl-9`}
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
-          {["ALL", "EXTREME", "MYTHIC", "ADVANCED", "ENTRY"].map((diff) => (
+      {/* Unified Scope & Search Toolbar */}
+      <div className="rounded-xl border border-zinc-200 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Segmented Scope Pill */}
+          <div className="inline-flex rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
             <button
-              key={diff}
               type="button"
-              onClick={() => setSelectedDifficulty(diff)}
+              onClick={() => setActiveTab("verifying")}
               className={cx(
-                "rounded-lg border px-3 py-1.5 transition-all",
-                selectedDifficulty === diff
-                  ? "border-cyan-500 bg-cyan-600 text-white shadow-sm dark:bg-cyan-500 dark:text-zinc-950"
-                  : "border-zinc-300 bg-white text-zinc-700 hover:border-cyan-300 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:border-zinc-700",
+                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold transition-all",
+                activeTab === "verifying"
+                  ? "bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-white"
+                  : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white",
               )}
             >
-              {diff === "ALL" ? "All Tiers" : diff}
+              <Flame className="h-3.5 w-3.5 text-amber-500" />
+              Verifying ({currentlyVerifying.length})
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => setActiveTab("waiting")}
+              className={cx(
+                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold transition-all",
+                activeTab === "waiting"
+                  ? "bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-white"
+                  : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white",
+              )}
+            >
+              <Hourglass className="h-3.5 w-3.5 text-emerald-500" />
+              Open ({waitingLevels.length})
+            </button>
+          </div>
+
+          {/* Quick Action Links */}
+          <div className="flex items-center gap-2">
+            {isAdmin ? (
+              <Link
+                href="/admin/upcoming"
+                className="inline-flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-700 hover:bg-amber-500/20 dark:text-amber-400 transition-colors"
+              >
+                Queue Manager
+              </Link>
+            ) : null}
+            <Link
+              href="/suggest-level"
+              className="inline-flex items-center gap-1 rounded-lg bg-cyan-700 px-3 py-1 text-xs font-bold text-white hover:bg-cyan-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 transition-colors"
+            >
+              Suggest Level →
+            </Link>
+          </div>
+        </div>
+
+        {/* Search & Tier Row */}
+        <div className="mt-3 flex flex-col gap-2.5 pt-3 border-t border-zinc-200/80 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800/80">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search demon name, verifier, creator..."
+              className={`${inputClass} w-full pl-8.5 py-1 text-xs sm:text-sm`}
+            />
+          </div>
+
+          <div className="inline-flex rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-900">
+            {["ALL", "EXTREME", "MYTHIC", "ADVANCED", "ENTRY"].map((diff) => (
+              <button
+                key={diff}
+                type="button"
+                onClick={() => setSelectedDifficulty(diff)}
+                className={cx(
+                  "rounded-md px-2.5 py-1 text-xs font-semibold transition-all",
+                  selectedDifficulty === diff
+                    ? "bg-white text-cyan-700 shadow-xs dark:bg-zinc-800 dark:text-cyan-400 font-bold"
+                    : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white",
+                )}
+              >
+                {diff === "ALL" ? "All Tiers" : diff}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -428,34 +431,21 @@ function UpcomingCard({
           )}
         </div>
 
-        {/* Info Box */}
-        <div className="grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-950/40 sm:grid-cols-2">
-          <div>
-            <span className="font-bold text-slate-500 dark:text-slate-400">
-              {activeTab === "verifying" ? "Verifier:" : "Status:"}
-            </span>
-            <p className="font-black text-slate-900 dark:text-slate-100">
-              {lvl.verifier || "Open for Verification"}
-            </p>
-          </div>
-          <div>
-            <span className="font-bold text-slate-500 dark:text-slate-400">Nerf Creator:</span>
-            <p className="font-black text-slate-900 dark:text-slate-100">
-              {lvl.nerfCreator}
-            </p>
-          </div>
-          <div>
-            <span className="font-bold text-slate-500 dark:text-slate-400">Publisher:</span>
-            <p className="font-bold text-slate-700 dark:text-slate-300">
-              {lvl.publisher}
-            </p>
-          </div>
-          <div>
-            <span className="font-bold text-slate-500 dark:text-slate-400">GD Level ID:</span>
-            <p className="font-mono font-bold text-slate-700 dark:text-slate-300">
-              {lvl.gdLevelId || "Unreleased"}
-            </p>
-          </div>
+        {/* Level Details & Credits */}
+        <div className="space-y-1 text-xs text-slate-600 dark:text-slate-400">
+          <p>
+            Nerfed by <strong className="text-slate-900 dark:text-slate-100">{lvl.nerfCreator}</strong>
+            {lvl.publisher && lvl.publisher !== lvl.nerfCreator ? ` • Published by ${lvl.publisher}` : ""}
+          </p>
+          <p>
+            {activeTab === "verifying" ? (
+              <>
+                Verifier: <strong className="text-slate-900 dark:text-slate-100">{lvl.verifier}</strong>
+              </>
+            ) : (
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">Open for Verification</span>
+            )}
+          </p>
         </div>
 
         {lvl.description ? (

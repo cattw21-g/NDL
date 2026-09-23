@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   ArrowLeft,
-  BookOpen,
   ExternalLink,
   History,
   ShieldCheck,
@@ -260,17 +259,20 @@ export default async function LevelPage({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-2">
-        <NavAction href="/" icon={<ArrowLeft className="h-4 w-4" />}>
-          Back to ranked list
-        </NavAction>
-        <NavAction href="/submit" icon={<Upload className="h-4 w-4" />}>
-          Submit a record
-        </NavAction>
-        <NavAction href="/rules" icon={<BookOpen className="h-4 w-4" />}>
-          Rules
-        </NavAction>
-        <NavAction href="/suggest-level">Suggest correction</NavAction>
+      <div className="flex items-center justify-between text-xs sm:text-sm">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 font-bold text-zinc-600 transition hover:text-cyan-600 dark:text-zinc-400 dark:hover:text-cyan-400"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to List</span>
+        </Link>
+        <Link
+          href="/suggest-level"
+          className="text-xs font-semibold text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400"
+        >
+          Suggest level correction
+        </Link>
       </div>
 
       <SectionPanel className="overflow-hidden">
@@ -368,34 +370,10 @@ export default async function LevelPage({
           />
 
           <SectionPanel className="p-4 sm:p-5">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-300 pb-4 dark:border-slate-700">
-              <h2 className="text-2xl font-black text-slate-950 dark:text-slate-50">
-                Level metadata
+            <div className="mb-4 border-b border-slate-200 pb-3 dark:border-slate-800">
+              <h2 className="text-xl font-black text-slate-950 dark:text-slate-50">
+                Level Information & Attributes
               </h2>
-              <div className="flex flex-wrap gap-2">
-                {level.verificationVideoUrl ? (
-                  <a
-                    href={level.verificationVideoUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-amber-400 bg-amber-50 px-3 text-sm font-black text-amber-900 transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-300 dark:border-amber-500/50 dark:bg-amber-950/40 dark:text-amber-200"
-                  >
-                    Verification proof
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                ) : null}
-                {level.showcaseUrl ? (
-                  <a
-                    href={level.showcaseUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-cyan-800 bg-cyan-800 px-3 text-sm font-black text-white transition hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-300"
-                  >
-                    Showcase URL
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                ) : null}
-              </div>
             </div>
             <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <MetaTile label="Original level" value={level.originalName} />
