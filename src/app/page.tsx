@@ -73,6 +73,8 @@ export default async function Home() {
   let latestPost: ChangelogItem | null = null;
   let isDegraded = false;
 
+  let fallbackMeta: ReturnType<typeof getLastKnownGoodLevels> | null = null;
+
   try {
     const results = await Promise.all([
       prisma.level.findMany({
@@ -145,8 +147,8 @@ export default async function Home() {
   } catch (err) {
     isDegraded = true;
     console.warn("Database unavailable, falling back to cached/fallback level data:", err);
-    const fallback = getLastKnownGoodLevels();
-    levels = fallback.levels.map((lvl) => ({
+    fallbackMeta = getLastKnownGoodLevels();
+    levels = fallbackMeta.levels.map((lvl) => ({
       ...lvl,
       _count: { records: lvl.recordCount },
     }));
@@ -156,8 +158,10 @@ export default async function Home() {
 
   if (levels.length === 0) {
     isDegraded = true;
-    const fallback = getLastKnownGoodLevels();
-    levels = fallback.levels.map((lvl) => ({
+    if (!fallbackMeta) {
+      fallbackMeta = getLastKnownGoodLevels();
+    }
+    levels = fallbackMeta.levels.map((lvl) => ({
       ...lvl,
       _count: { records: lvl.recordCount },
     }));
@@ -178,8 +182,8 @@ export default async function Home() {
           <div className="text-xs">
             <p className="text-sm font-bold">Notice: Database in Maintenance Mode</p>
             <p className="mt-0.5 leading-relaxed text-amber-800 dark:text-amber-300">
-              {getLastKnownGoodLevels().source === "live-cache"
-                ? "The live database is temporarily offline for maintenance. Currently displaying the latest cached real Demonlist snapshot. Submissions, account actions, and live leaderboard updates will resume automatically once connection is restored."
+              {fallbackMeta?.source === "live-cache" || fallbackMeta?.source === "durable-disk"
+                ? `Live database is temporarily offline for maintenance. Showing the latest saved list${fallbackMeta.lastHealthyAt ? ` from ${fallbackMeta.lastHealthyAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}. Submissions and account actions will resume automatically once connection is restored.`
                 : "The live database is temporarily offline for maintenance. Currently displaying static fallback list data. Submissions, account actions, and live leaderboard updates will resume automatically once the database connection is restored."}
             </p>
           </div>

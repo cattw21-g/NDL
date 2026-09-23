@@ -332,6 +332,107 @@ describe("rate limiting", () => {
     expect(remaining.length).toBe(15);
   });
 
+  it("safely enforces limit under a 100-request single-key burst", async () => {
+    const sharedAttempts: Attempt[] = [];
+    const client = createClient(sharedAttempts);
+    const key = userRateLimitKey("burst-100-user");
+    const now = new Date("2026-05-31T12:00:00.000Z");
+
+    const decisions = await Promise.all(
+      Array.from({ length: 100 }, () =>
+        checkRateLimit(client, "profile-update", key, now),
+      ),
+    );
+
+    const allowed = decisions.filter((d) => d.allowed);
+    const rejected = decisions.filter((d) => !d.allowed);
+
+    expect(allowed.length).toBe(15);
+    expect(rejected.length).toBe(85);
+  });
+
+  it("safely enforces limit under an intense 250-request single-key burst", async () => {
+    const sharedAttempts: Attempt[] = [];
+    const client = createClient(sharedAttempts);
+    const key = emailRateLimitKey("burst-250@example.com");
+    const now = new Date("2026-05-31T12:00:00.000Z");
+
+    const decisions = await Promise.all(
+      Array.from({ length: 250 }, () =>
+        checkRateLimit(client, "login", key, now),
+      ),
+    );
+
+    const allowed = decisions.filter((d) => d.allowed);
+    const rejected = decisions.filter((d) => !d.allowed);
+
+    // login limit is 10
+    expect(allowed.length).toBe(10);
+    expect(rejected.length).toBe(240);
+  });
+
+  it("handles 500 concurrent requests across distinct keys without interference", async () => {
+    const sharedAttempts: Attempt[] = [];
+    const client = createClient(sharedAttempts);
+    const now = new Date("2026-05-31T12:00:00.000Z");
+
+    const requests = Array.from({ length: 500 }, (_, i) =>
+      checkRateLimit(client, "profile-update", userRateLimitKey(`user-${i}`), now),
+    );
+
+    const results = await Promise.all(requests);
+    // Every distinct user is making their 1st request (well under limit 15), all 500 should succeed
+    expect(results.every((r) => r.allowed)).toBe(true);
+    expect(sharedAttempts.length).toBe(500);
+  });
+
+  it("cleans up inProcessKeyLocks Map completely across 10,000 unique keys (zero memory leak)", async () => {
+    const sharedAttempts: Attempt[] = [];
+    const client = createClient(sharedAttempts);
+    const now = new Date("2026-05-31T12:00:00.000Z");
+
+    // Execute 10,000 distinct operations in batches
+    const batchSize = 1000;
+    for (let b = 0; b < 10; b++) {
+      const batch = Array.from({ length: batchSize }, (_, i) => {
+        const key = `user-mem-test-${b * batchSize + i}`;
+        return checkRateLimit(client, "profile-update", userRateLimitKey(key), now);
+      });
+      await Promise.all(batch);
+    }
+
+    // Verify memory map is fully drained
+    const { getActiveMutexCount } = await import("../lib/rate-limit");
+    expect(getActiveMutexCount()).toBe(0);
+  });
+
+  it("releases inProcessKeyLocks mutex when an operation throws an exception", async () => {
+    const errorClient = {
+      rateLimitAttempt: {
+        count: async () => {
+          throw new Error("Simulated database failure during count");
+        },
+        create: async () => {
+          throw new Error("Simulated database failure during create");
+        },
+      },
+    } as unknown as Parameters<typeof checkRateLimit>[0];
+
+    const key = userRateLimitKey("error-user");
+    await expect(
+      checkRateLimit(errorClient, "profile-update", key),
+    ).rejects.toThrow("Simulated database failure");
+
+    // Verify lock is released and subsequent valid request on same key executes
+    const healthyAttempts: Attempt[] = [];
+    const healthyClient = createClient(healthyAttempts);
+    const result = await checkRateLimit(healthyClient, "profile-update", key);
+    expect(result.allowed).toBe(true);
+
+    const { getActiveMutexCount } = await import("../lib/rate-limit");
+    expect(getActiveMutexCount()).toBe(0);
+  });
+
   it("enforces identical limits across multiple distributed server instances", async () => {
     // Shared database state accessible across multiple serverless/server instances
     const sharedDb: Attempt[] = [];

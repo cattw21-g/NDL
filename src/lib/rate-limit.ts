@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { headers } from "next/headers";
 
 import { extractClientIp } from "./anti-alt";
@@ -49,28 +50,39 @@ export type RateLimitClient = {
   $executeRaw?: unknown;
 };
 
-const inProcessKeyLocks = new Map<string, Promise<void>>();
+const inProcessKeyLocks = new Map<string, Promise<unknown>>();
+
+export function getActiveMutexCount(): number {
+  return inProcessKeyLocks.size;
+}
+
+export function resetMutexStateForTest(): void {
+  inProcessKeyLocks.clear();
+}
+
+export function deriveAdvisoryLockId(mutexKey: string): bigint {
+  const hash = crypto.createHash("sha256").update(mutexKey).digest();
+  return hash.readBigInt64BE(0);
+}
 
 async function withKeyMutex<T>(key: string, fn: () => Promise<T>): Promise<T> {
-  while (inProcessKeyLocks.has(key)) {
-    try {
-      await inProcessKeyLocks.get(key);
-    } catch {
-      // ignore rejection from previous holder
-    }
-  }
+  const currentLock = inProcessKeyLocks.get(key) ?? Promise.resolve();
 
-  let release: () => void = () => {};
-  const lockPromise = new Promise<void>((resolve) => {
-    release = resolve;
+  let releaseCurrent: () => void = () => {};
+  const nextLock = new Promise<void>((resolve) => {
+    releaseCurrent = resolve;
   });
-  inProcessKeyLocks.set(key, lockPromise);
+
+  inProcessKeyLocks.set(key, nextLock);
 
   try {
+    await currentLock.catch(() => {});
     return await fn();
   } finally {
-    inProcessKeyLocks.delete(key);
-    release();
+    if (inProcessKeyLocks.get(key) === nextLock) {
+      inProcessKeyLocks.delete(key);
+    }
+    releaseCurrent();
   }
 }
 
@@ -151,11 +163,13 @@ export async function checkRateLimit(
       // across multiple Vercel serverless lambdas sharing the database
       if (typeof tx.$executeRaw === "function") {
         try {
+          const lockId = deriveAdvisoryLockId(mutexKey);
           const rawQuery = tx.$executeRaw as (
             query: TemplateStringsArray,
             ...values: unknown[]
           ) => Promise<unknown>;
-          await rawQuery`SELECT pg_advisory_xact_lock(hashtext(${mutexKey}));`;
+          await rawQuery`SET LOCAL lock_timeout = '2000ms';`;
+          await rawQuery`SELECT pg_advisory_xact_lock(${lockId});`;
         } catch {
           // ignore if raw query unsupported or mocked
         }

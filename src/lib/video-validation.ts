@@ -36,6 +36,15 @@ export function normalizeVideoUrl(rawInput: string): VideoNormalizationResult {
 
   const trimmed = rawInput.trim();
 
+  if (trimmed.length > 2048) {
+    return {
+      isValid: false,
+      normalizedUrl: "",
+      provider: "invalid",
+      error: "URL exceeds maximum length of 2048 characters.",
+    };
+  }
+
   // Allow internal/local upload paths
   if (trimmed.startsWith("/uploads/") || trimmed.startsWith("/completion-videos/")) {
     return {
@@ -213,6 +222,15 @@ export function normalizeVideoUrl(rawInput: string): VideoNormalizationResult {
   }
 
   // 8. Google Drive or generic video hosts / direct files
+  if (!host.includes(".") || host.endsWith(".") || host.length < 4) {
+    return {
+      isValid: false,
+      normalizedUrl: trimmed,
+      provider: "invalid",
+      error: "Invalid hostname for video URL.",
+    };
+  }
+
   parsed.protocol = protocol;
   parsed.search = paramsToKeep.toString() ? `?${paramsToKeep.toString()}` : "";
   return {

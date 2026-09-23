@@ -37,26 +37,24 @@ export async function linkDiscordWithCodeAction(
     };
   }
 
-  // 2. Clear any other account with this discordUserId
-  await prisma.user.updateMany({
-    where: { discordUserId: token.discordUserId },
-    data: { discordUserId: null, discordUsername: null, discordLinkedAt: null },
-  });
-
-  // 3. Link account to current user
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      discordUserId: token.discordUserId,
-      discordUsername: token.discordUsername,
-      discordLinkedAt: new Date(),
-    },
-  });
-
-  // 4. Delete used token
-  await prisma.discordLinkToken.delete({
-    where: { id: token.id },
-  }).catch(() => {});
+  // 2-4. Atomic transaction: clear previous account, link current user, and delete used token
+  await prisma.$transaction([
+    prisma.user.updateMany({
+      where: { discordUserId: token.discordUserId },
+      data: { discordUserId: null, discordUsername: null, discordLinkedAt: null },
+    }),
+    prisma.user.update({
+      where: { id: user.id },
+      data: {
+        discordUserId: token.discordUserId,
+        discordUsername: token.discordUsername,
+        discordLinkedAt: new Date(),
+      },
+    }),
+    prisma.discordLinkToken.delete({
+      where: { id: token.id },
+    }),
+  ]);
 
   // 5. Automatically sync Discord roles immediately
   const syncRes = await syncDiscordRolesForUser(user.id);

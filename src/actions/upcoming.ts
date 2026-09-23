@@ -294,38 +294,38 @@ export async function promoteUpcomingLevelAction(formData: FormData) {
       rank,
     });
 
-    if (verifierUser && finalVideo) {
-      const points = calculateLevelPoints(rank, LevelStatus.RANKED);
-      await tx.record.create({
-        data: {
-          playerId: verifierUser.id,
-          levelId: existingLevel.id,
-          progress: 100,
-          isVerifier: true,
-          videoUrl: finalVideo,
-          fps: 360,
-          cbfUsed: false,
-          pointsAwarded: points,
-          isDemo: Boolean(existingLevel.isDemo),
-          acceptedAt: new Date(),
-        },
-      });
-    }
-  });
+      if (verifierUser && finalVideo) {
+        const points = calculateLevelPoints(rank, LevelStatus.RANKED);
+        await tx.record.create({
+          data: {
+            playerId: verifierUser.id,
+            levelId: existingLevel.id,
+            progress: 100,
+            isVerifier: true,
+            videoUrl: finalVideo,
+            fps: 360,
+            cbfUsed: false,
+            pointsAwarded: points,
+            isDemo: Boolean(existingLevel.isDemo),
+            acceptedAt: new Date(),
+          },
+        });
+      }
 
-  await writeAuditLog(prisma, {
-    actor: {
-      id: admin.id,
-      playerName: admin.playerName,
-      displayName: admin.displayName,
-      role: admin.role,
-    },
-    action: "UPCOMING_LEVEL_PROMOTED",
-    entityType: "Level",
-    entityId: existingLevel.id,
-    entityLabel: `${existingLevel.name} ranked #${rank}`,
-    note: `Promoted from upcoming queue to main ranked list at #${rank}`,
-  });
+      await writeAuditLog(tx, {
+        actor: {
+          id: admin.id,
+          playerName: admin.playerName,
+          displayName: admin.displayName,
+          role: admin.role,
+        },
+        action: "UPCOMING_LEVEL_PROMOTED",
+        entityType: "Level",
+        entityId: existingLevel.id,
+        entityLabel: `${existingLevel.name} ranked #${rank}`,
+        note: `Promoted from upcoming queue to main ranked list at #${rank}`,
+      });
+    });
 
   const points = calculateLevelPoints(rank, LevelStatus.RANKED);
   await notifyLevelRanked({

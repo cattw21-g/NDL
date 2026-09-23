@@ -147,6 +147,7 @@ export function LevelCard({
               <SafeThumbnail
                 src={resolveLevelThumbnail(level.slug, level.name, undefined, level.thumbnailUrl)}
                 alt={`${level.name} thumbnail`}
+                priority={level.rank !== null && level.rank <= 2}
                 className="block h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
               />
               {isDemo ? (
