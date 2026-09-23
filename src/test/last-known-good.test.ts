@@ -232,16 +232,36 @@ describe("Durable Last-Known-Good Snapshot System", () => {
         }),
       };
 
-      // Mock @vercel/blob
-      const mockHead = vi.fn(async () => {
-        if (!storeBlob) throw new Error("404 Not Found");
+      // Mock @vercel/blob get and put with private access verification
+      const mockGet = vi.fn(async (key: string, options: { access: string; useCache?: boolean }) => {
+        expect(options.access).toBe("private");
+        expect(options.useCache).toBe(false);
+        if (!storeBlob) return null;
         return {
-          etag: storeBlob.etag,
-          url: storeBlob.url,
+          statusCode: 200,
+          stream: new ReadableStream({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode(storeBlob!.content));
+              controller.close();
+            },
+          }),
+          headers: new Headers(),
+          blob: {
+            url: storeBlob.url,
+            downloadUrl: storeBlob.url,
+            pathname: key,
+            contentType: "application/json",
+            contentDisposition: "",
+            cacheControl: "no-cache",
+            size: storeBlob.content.length,
+            uploadedAt: new Date(),
+            etag: storeBlob.etag,
+          },
         };
       });
 
-      const mockPut = vi.fn(async (_key: string, body: string, options: { ifMatch?: string }) => {
+      const mockPut = vi.fn(async (_key: string, body: string, options: { access: string; ifMatch?: string }) => {
+        expect(options.access).toBe("private");
         if (storeBlob && options.ifMatch && options.ifMatch !== storeBlob.etag) {
           const err = new Error("Precondition Failed");
           err.name = "BlobPreconditionFailedError";
@@ -259,23 +279,9 @@ describe("Durable Last-Known-Good Snapshot System", () => {
       });
 
       vi.doMock("@vercel/blob", () => ({
-        head: mockHead,
+        get: mockGet,
         put: mockPut,
       }));
-
-      // Mock global fetch to return current storeBlob content
-      const originalFetch = globalThis.fetch;
-      globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
-        const urlStr = String(input);
-        if (urlStr.includes("snapshots/demonlist-latest.json") && storeBlob) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => JSON.parse(storeBlob!.content),
-          } as Response;
-        }
-        return originalFetch(input);
-      });
 
       try {
         const originalToken = process.env.BLOB_READ_WRITE_TOKEN;
@@ -329,46 +335,50 @@ describe("Durable Last-Known-Good Snapshot System", () => {
 
         process.env.BLOB_READ_WRITE_TOKEN = originalToken;
       } finally {
-        globalThis.fetch = originalFetch;
         vi.doUnmock("@vercel/blob");
       }
     });
 
     it("verifies consistency-sensitive read always returns newest overwritten snapshot B", async () => {
-      const storeBlob: { url: string; content: string } = {
-        url: "https://blob.example.com/snapshots/demonlist-latest.json",
-        content: JSON.stringify({
-          metadata: {
-            schemaVersion: SNAPSHOT_SCHEMA_VERSION,
-            generatedAt: "2026-09-23T10:00:00.000Z",
-            lastHealthyAt: "2026-09-23T10:00:00.000Z",
-            contentHash: "hash-a",
-          },
-          levels: [createSampleLevel({ name: "Snapshot A" })],
-        }),
-      };
+      let currentContent = JSON.stringify({
+        metadata: {
+          schemaVersion: SNAPSHOT_SCHEMA_VERSION,
+          generatedAt: "2026-09-23T10:00:00.000Z",
+          lastHealthyAt: "2026-09-23T10:00:00.000Z",
+          contentHash: "hash-a",
+        },
+        levels: [createSampleLevel({ name: "Snapshot A" })],
+      });
 
-      const mockHead = vi.fn(async () => ({
-        etag: "etag-current",
-        url: storeBlob.url,
-      }));
+      const mockGet = vi.fn(async (key: string, options: { access: string; useCache?: boolean }) => {
+        expect(options.access).toBe("private");
+        expect(options.useCache).toBe(false);
+        return {
+          statusCode: 200,
+          stream: new ReadableStream({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode(currentContent));
+              controller.close();
+            },
+          }),
+          headers: new Headers(),
+          blob: {
+            url: "https://blob.example.com/snapshots/demonlist-latest.json",
+            downloadUrl: "https://blob.example.com/snapshots/demonlist-latest.json",
+            pathname: key,
+            contentType: "application/json",
+            contentDisposition: "",
+            cacheControl: "no-cache",
+            size: currentContent.length,
+            uploadedAt: new Date(),
+            etag: "etag-fixed",
+          },
+        };
+      });
 
       vi.doMock("@vercel/blob", () => ({
-        head: mockHead,
+        get: mockGet,
       }));
-
-      const originalFetch = globalThis.fetch;
-      globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
-        const urlStr = String(input);
-        if (urlStr.includes("snapshots/demonlist-latest.json")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => JSON.parse(storeBlob.content),
-          } as Response;
-        }
-        return originalFetch(input);
-      });
 
       try {
         const originalToken = process.env.BLOB_READ_WRITE_TOKEN;
@@ -380,7 +390,7 @@ describe("Durable Last-Known-Good Snapshot System", () => {
         expect(readA.levels[0].name).toBe("Snapshot A");
 
         // Overwrite in store with B
-        storeBlob.content = JSON.stringify({
+        currentContent = JSON.stringify({
           metadata: {
             schemaVersion: SNAPSHOT_SCHEMA_VERSION,
             generatedAt: "2026-09-23T11:00:00.000Z",
@@ -397,7 +407,6 @@ describe("Durable Last-Known-Good Snapshot System", () => {
 
         process.env.BLOB_READ_WRITE_TOKEN = originalToken;
       } finally {
-        globalThis.fetch = originalFetch;
         vi.doUnmock("@vercel/blob");
       }
     });

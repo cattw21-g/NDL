@@ -188,31 +188,23 @@ function readLocalScratchSnapshot(): DurableDemonlistSnapshot | null {
 }
 
 export function getBlobAuthMode(): "OIDC" | "legacy token" | "unavailable" {
-  if (process.env.VERCEL_OIDC_TOKEN?.trim() && process.env.BLOB_STORE_ID?.trim()) {
-    return "OIDC";
-  }
   if (process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
     return "legacy token";
+  }
+  if (process.env.VERCEL || process.env.BLOB_STORE_ID || process.env.VERCEL_OIDC_TOKEN) {
+    return "OIDC";
   }
   return "unavailable";
 }
 
 export function getBlobAuthOptions(): {
   token?: string;
-  oidcToken?: string;
-  storeId?: string;
 } {
-  const oidcToken = process.env.VERCEL_OIDC_TOKEN?.trim();
-  const storeId = process.env.BLOB_STORE_ID?.trim();
-  if (oidcToken && storeId) {
-    return { oidcToken, storeId };
-  }
-
   const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
   if (token) {
     return { token };
   }
-
+  // Modern Vercel OIDC: SDK automatically resolves store credentials
   return {};
 }
 
@@ -248,34 +240,32 @@ export async function syncSnapshotToDurableBlob(
       let currentEtag: string | undefined = undefined;
 
       try {
-        const existingHead = await blobModule.head(blobKey, authOptions);
-        if (existingHead) {
-          currentEtag = existingHead.etag;
+        // Strongly consistent latest-snapshot read using @vercel/blob private storage mechanism
+        const existingGet = await blobModule.get(blobKey, {
+          access: "private",
+          useCache: false,
+          ...authOptions,
+        });
 
-          // Consistency read: fetch directly from origin with cache-buster and no-store
-          const res = await fetch(`${existingHead.url}?t=${Date.now()}`, {
-            cache: "no-store",
-            headers: { "Cache-Control": "no-cache, no-store" },
-          });
+        if (existingGet && existingGet.statusCode === 200 && existingGet.stream) {
+          currentEtag = existingGet.blob.etag;
+          const text = await new Response(existingGet.stream).text();
+          const existing = JSON.parse(text) as DurableDemonlistSnapshot;
+          const existingTime = existing?.metadata?.generatedAt
+            ? new Date(existing.metadata.generatedAt).getTime()
+            : 0;
 
-          if (res.ok) {
-            const existing = (await res.json()) as DurableDemonlistSnapshot;
-            const existingTime = existing?.metadata?.generatedAt
-              ? new Date(existing.metadata.generatedAt).getTime()
-              : 0;
+          if (existingTime >= candidateTime) {
+            logger.info("LastKnownGood", "Skipped Blob write: existing snapshot is newer or identical", {
+              existingTime: existing.metadata.generatedAt,
+              candidateTime: snapshot.metadata.generatedAt,
+            });
+            return { success: false, skippedReason: "stale_snapshot" };
+          }
 
-            if (existingTime >= candidateTime) {
-              logger.info("LastKnownGood", "Skipped Blob write: existing snapshot is newer or identical", {
-                existingTime: existing.metadata.generatedAt,
-                candidateTime: snapshot.metadata.generatedAt,
-              });
-              return { success: false, skippedReason: "stale_snapshot" };
-            }
-
-            if (existing?.metadata?.contentHash === snapshot.metadata.contentHash) {
-              lastSyncedContentHash = snapshot.metadata.contentHash;
-              return { success: true, skippedReason: "content_unchanged" };
-            }
+          if (existing?.metadata?.contentHash === snapshot.metadata.contentHash) {
+            lastSyncedContentHash = snapshot.metadata.contentHash;
+            return { success: true, skippedReason: "content_unchanged" };
           }
         }
       } catch {
@@ -286,11 +276,10 @@ export async function syncSnapshotToDurableBlob(
       try {
         // Atomic conditional write with ifMatch (ETag compare-and-swap)
         await blobModule.put(blobKey, JSON.stringify(snapshot, null, 2), {
-          access: "public",
+          access: "private",
           addRandomSuffix: false,
           allowOverwrite: true,
           contentType: "application/json",
-          cacheControlMaxAge: 60,
           ...(currentEtag ? { ifMatch: currentEtag } : {}),
           ...authOptions,
         });
@@ -349,25 +338,32 @@ async function fetchDurableBlobSnapshot(): Promise<DurableDemonlistSnapshot | nu
 
   try {
     const blobModule = await import("@vercel/blob");
-    const headResult = await blobModule.head(blobKey, authOptions);
-    if (!headResult?.url) {
-      return null;
-    }
-
-    // Direct origin read using cache-buster and no-store headers for maximum consistency
-    const res = await fetch(`${headResult.url}?t=${Date.now()}`, {
-      cache: "no-store",
-      headers: { "Cache-Control": "no-cache, no-store" },
+    // Strongly consistent private read from origin without CDN cache
+    const getResult = await blobModule.get(blobKey, {
+      access: "private",
+      useCache: false,
+      ...authOptions,
     });
-    if (!res.ok) {
+
+    if (!getResult || getResult.statusCode !== 200 || !getResult.stream) {
       return null;
     }
 
-    const parsed = (await res.json()) as DurableDemonlistSnapshot;
+    const text = await new Response(getResult.stream).text();
+    const parsed = JSON.parse(text) as DurableDemonlistSnapshot;
     if (
       parsed?.metadata?.schemaVersion === SNAPSHOT_SCHEMA_VERSION &&
       isValidLevelsData(parsed.levels)
     ) {
+      logger.info(
+        "LastKnownGood",
+        "Successfully retrieved durable Demonlist snapshot from Vercel Blob via consistent private read",
+        {
+          levelCount: parsed.levels.length,
+          generatedAt: parsed.metadata.generatedAt,
+          etag: getResult.blob.etag,
+        },
+      );
       return parsed;
     }
     return null;
