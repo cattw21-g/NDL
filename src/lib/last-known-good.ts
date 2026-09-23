@@ -52,13 +52,54 @@ function getLocalScratchLocation(): { dir: string; file: string; isEphemeralTmp:
 }
 
 /**
- * Computes a stable content hash for a level list to detect genuine ranking/level changes.
+ * Deterministically canonicalizes any JSON-serializable value by sorting object keys recursively.
+ * Ensures consistent serialization regardless of key insertion order.
  */
-export function computeDemonlistContentHash(levels: FallbackLevel[]): string {
-  const data = levels
-    .map((l) => `${l.id}:${l.rank}:${l.points}:${l.status}:${l.recordCount}`)
-    .join("|");
-  return crypto.createHash("sha256").update(data).digest("hex");
+export function canonicalizeJson(value: unknown): string {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => canonicalizeJson(item)).join(",")}]`;
+  }
+
+  const obj = value as Record<string, unknown>;
+  const sortedKeys = Object.keys(obj).sort();
+  const entries = sortedKeys.map((key) => `${JSON.stringify(key)}:${canonicalizeJson(obj[key])}`);
+  return `{${entries.join(",")}}`;
+}
+
+/**
+ * Computes a stable, canonical content hash for the complete public Demonlist snapshot.
+ * Normalizes all 16 restored public level fields and excludes volatile timestamps (generatedAt, lastHealthyAt).
+ */
+export function computeDemonlistContentHash(
+  input: FallbackLevel[] | { levels: FallbackLevel[]; metadata?: Record<string, unknown> },
+): string {
+  const levels = Array.isArray(input) ? input : input.levels;
+
+  const normalizedLevels = levels.map((lvl) => ({
+    description: String(lvl.description ?? ""),
+    difficulty: String(lvl.difficulty ?? "EXTREME"),
+    gdLevelId: String(lvl.gdLevelId ?? ""),
+    id: String(lvl.id ?? ""),
+    name: String(lvl.name ?? ""),
+    nerfCreator: String(lvl.nerfCreator ?? ""),
+    originalName: String(lvl.originalName ?? ""),
+    points: Number(lvl.points ?? 0),
+    publisher: String(lvl.publisher ?? ""),
+    rank: Number(lvl.rank ?? 0),
+    recordCount: Number(lvl.recordCount ?? 0),
+    showcaseUrl: String(lvl.showcaseUrl ?? ""),
+    slug: String(lvl.slug ?? ""),
+    status: String(lvl.status ?? "RANKED"),
+    thumbnailUrl: String(lvl.thumbnailUrl ?? ""),
+    verifier: String(lvl.verifier ?? ""),
+  }));
+
+  const canonicalString = canonicalizeJson(normalizedLevels);
+  return crypto.createHash("sha256").update(canonicalString).digest("hex");
 }
 
 /**
@@ -146,17 +187,48 @@ function readLocalScratchSnapshot(): DurableDemonlistSnapshot | null {
   }
 }
 
+export function getBlobAuthMode(): "OIDC" | "legacy token" | "unavailable" {
+  if (process.env.VERCEL_OIDC_TOKEN?.trim() && process.env.BLOB_STORE_ID?.trim()) {
+    return "OIDC";
+  }
+  if (process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
+    return "legacy token";
+  }
+  return "unavailable";
+}
+
+export function getBlobAuthOptions(): {
+  token?: string;
+  oidcToken?: string;
+  storeId?: string;
+} {
+  const oidcToken = process.env.VERCEL_OIDC_TOKEN?.trim();
+  const storeId = process.env.BLOB_STORE_ID?.trim();
+  if (oidcToken && storeId) {
+    return { oidcToken, storeId };
+  }
+
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  if (token) {
+    return { token };
+  }
+
+  return {};
+}
+
 /**
  * Persists snapshot to Vercel Blob (Durable Tier 3).
  * Enforces:
  * 1. Content-hash change detection (skips upload if identical)
- * 2. Stale instance overwrite protection (ensures monotonic timestamps)
+ * 2. Atomic Compare-And-Swap (CAS) with ifMatch (ETag validation)
+ * 3. Monotonic generatedAt timestamp ordering (stale worker can never overwrite newer snapshot)
  */
 export async function syncSnapshotToDurableBlob(
   snapshot: DurableDemonlistSnapshot,
+  maxRetries = 3,
 ): Promise<{ success: boolean; skippedReason?: string }> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token && !process.env.VERCEL) {
+  const authMode = getBlobAuthMode();
+  if (authMode === "unavailable" && !process.env.VERCEL) {
     return { success: false, skippedReason: "no_blob_configured" };
   }
 
@@ -165,51 +237,96 @@ export async function syncSnapshotToDurableBlob(
     return { success: true, skippedReason: "content_unchanged" };
   }
 
+  const candidateTime = new Date(snapshot.metadata.generatedAt).getTime();
+  const authOptions = getBlobAuthOptions();
+  const blobKey = "snapshots/demonlist-latest.json";
+
   try {
     const blobModule = await import("@vercel/blob");
-    const blobKey = "snapshots/demonlist-latest.json";
 
-    // Stale instance overwrite protection: inspect existing blob metadata if accessible
-    try {
-      const existingHead = await blobModule.head(blobKey, token ? { token } : undefined);
-      if (existingHead) {
-        // Read existing snapshot directly from origin (useCache: false) to prevent stale CDN reads
-        const res = await fetch(existingHead.url, { cache: "no-store" });
-        if (res.ok) {
-          const existing = (await res.json()) as DurableDemonlistSnapshot;
-          if (
-            existing?.metadata?.generatedAt &&
-            new Date(existing.metadata.generatedAt).getTime() >=
-              new Date(snapshot.metadata.generatedAt).getTime()
-          ) {
-            logger.info("LastKnownGood", "Skipped Blob write: existing snapshot is newer or identical", {
-              existingTime: existing.metadata.generatedAt,
-              candidateTime: snapshot.metadata.generatedAt,
-            });
-            return { success: true, skippedReason: "stale_instance_prevented" };
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      let currentEtag: string | undefined = undefined;
+
+      try {
+        const existingHead = await blobModule.head(blobKey, authOptions);
+        if (existingHead) {
+          currentEtag = existingHead.etag;
+
+          // Consistency read: fetch directly from origin with cache-buster and no-store
+          const res = await fetch(`${existingHead.url}?t=${Date.now()}`, {
+            cache: "no-store",
+            headers: { "Cache-Control": "no-cache, no-store" },
+          });
+
+          if (res.ok) {
+            const existing = (await res.json()) as DurableDemonlistSnapshot;
+            const existingTime = existing?.metadata?.generatedAt
+              ? new Date(existing.metadata.generatedAt).getTime()
+              : 0;
+
+            if (existingTime >= candidateTime) {
+              logger.info("LastKnownGood", "Skipped Blob write: existing snapshot is newer or identical", {
+                existingTime: existing.metadata.generatedAt,
+                candidateTime: snapshot.metadata.generatedAt,
+              });
+              return { success: false, skippedReason: "stale_snapshot" };
+            }
+
+            if (existing?.metadata?.contentHash === snapshot.metadata.contentHash) {
+              lastSyncedContentHash = snapshot.metadata.contentHash;
+              return { success: true, skippedReason: "content_unchanged" };
+            }
           }
         }
+      } catch {
+        // Blob does not exist yet (404); proceed with initial creation (no ifMatch)
+        currentEtag = undefined;
       }
-    } catch {
-      // head check failed (e.g. object doesn't exist yet); proceed to put
+
+      try {
+        // Atomic conditional write with ifMatch (ETag compare-and-swap)
+        await blobModule.put(blobKey, JSON.stringify(snapshot, null, 2), {
+          access: "public",
+          addRandomSuffix: false,
+          allowOverwrite: true,
+          contentType: "application/json",
+          cacheControlMaxAge: 60,
+          ...(currentEtag ? { ifMatch: currentEtag } : {}),
+          ...authOptions,
+        });
+
+        lastSyncedContentHash = snapshot.metadata.contentHash;
+        logger.info("LastKnownGood", "Successfully published durable Demonlist snapshot to Vercel Blob", {
+          levelCount: snapshot.levels.length,
+          contentHash: snapshot.metadata.contentHash,
+          generatedAt: snapshot.metadata.generatedAt,
+        });
+
+        return { success: true };
+      } catch (putErr: unknown) {
+        // Check if error is BlobPreconditionFailedError (status 412 / ETag mismatch)
+        const isPreconditionFailed =
+          (putErr instanceof Error &&
+            (putErr.name === "BlobPreconditionFailedError" ||
+              putErr.message.includes("precondition") ||
+              putErr.message.includes("412"))) ||
+          (typeof putErr === "object" &&
+            putErr !== null &&
+            "status" in putErr &&
+            (putErr as { status?: unknown }).status === 412);
+
+        if (isPreconditionFailed && attempt < maxRetries - 1) {
+          logger.warn("LastKnownGood", "Blob CAS conflict detected, retrying with newest head snapshot", {
+            attempt: attempt + 1,
+          });
+          continue; // Re-read head in next iteration
+        }
+
+        throw putErr;
+      }
     }
 
-    // Atomic upload to latest pointer
-    await blobModule.put(blobKey, JSON.stringify(snapshot, null, 2), {
-      access: "public",
-      addRandomSuffix: false,
-      contentType: "application/json",
-      ...(token ? { token } : {}),
-    });
-
-    lastSyncedContentHash = snapshot.metadata.contentHash;
-    logger.info("LastKnownGood", "Successfully published durable Demonlist snapshot to Vercel Blob", {
-      levelCount: snapshot.levels.length,
-      contentHash: snapshot.metadata.contentHash,
-      generatedAt: snapshot.metadata.generatedAt,
-    });
-
-    return { success: true };
+    return { success: false, skippedReason: "cas_retry_exhausted" };
   } catch (err) {
     logger.warn("LastKnownGood", "Failed to sync snapshot to Vercel Blob", {
       error: err instanceof Error ? err.message : String(err),
@@ -222,20 +339,26 @@ export async function syncSnapshotToDurableBlob(
  * Attempts to read durable snapshot from Vercel Blob during an outage or fresh cold start.
  */
 async function fetchDurableBlobSnapshot(): Promise<DurableDemonlistSnapshot | null> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token && !process.env.VERCEL) {
+  const authMode = getBlobAuthMode();
+  if (authMode === "unavailable" && !process.env.VERCEL) {
     return null;
   }
 
+  const authOptions = getBlobAuthOptions();
+  const blobKey = "snapshots/demonlist-latest.json";
+
   try {
     const blobModule = await import("@vercel/blob");
-    const headResult = await blobModule.head("snapshots/demonlist-latest.json", token ? { token } : undefined);
+    const headResult = await blobModule.head(blobKey, authOptions);
     if (!headResult?.url) {
       return null;
     }
 
-    // Fetch directly from origin without CDN caching for maximum consistency during an outage
-    const res = await fetch(headResult.url, { cache: "no-store" });
+    // Direct origin read using cache-buster and no-store headers for maximum consistency
+    const res = await fetch(`${headResult.url}?t=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache, no-store" },
+    });
     if (!res.ok) {
       return null;
     }
@@ -336,7 +459,13 @@ export function recordHealthyLevelSnapshot(
 
   // Return background task for Tier 3 Blob sync (can be passed to Next.js `after()`)
   const persistTask = (async () => {
-    await syncSnapshotToDurableBlob(snapshot).catch(() => {});
+    try {
+      await syncSnapshotToDurableBlob(snapshot);
+    } catch (err) {
+      logger.warn("LastKnownGood", "Snapshot persistence background task caught error", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   })();
 
   return { snapshot, persistTask };

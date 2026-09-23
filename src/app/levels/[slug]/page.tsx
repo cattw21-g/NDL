@@ -281,6 +281,7 @@ export default async function LevelPage({
             <SafeThumbnail
               src={resolveLevelThumbnail(level.slug, level.name, level.showcaseUrl, level.thumbnailUrl)}
               alt={`${level.name} thumbnail`}
+              priority={true}
               className="h-full w-full object-contain"
             />
             <div className="absolute inset-0 bg-[linear-gradient(150deg,rgba(255,255,255,0.08),rgba(8,145,178,0.2))]" />

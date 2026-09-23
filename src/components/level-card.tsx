@@ -148,6 +148,7 @@ export function LevelCard({
                 src={resolveLevelThumbnail(level.slug, level.name, undefined, level.thumbnailUrl)}
                 alt={`${level.name} thumbnail`}
                 priority={level.rank === 1}
+                sizes="(max-width: 640px) 144px, (max-width: 768px) 176px, (max-width: 1024px) 208px, 224px"
                 className="block h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
               />
               {isDemo ? (

@@ -13,6 +13,7 @@ export function SafeThumbnail({
   allowObjectUrl = false,
   fallbackSrc,
   priority = false,
+  sizes,
 }: {
   src: string | null | undefined;
   alt: string;
@@ -20,6 +21,7 @@ export function SafeThumbnail({
   allowObjectUrl?: boolean;
   fallbackSrc?: string | null;
   priority?: boolean;
+  sizes?: string;
 }) {
   const initialSrc = useMemo(
     () => safeThumbnailSrc(src, { allowObjectUrl }),
@@ -45,6 +47,7 @@ export function SafeThumbnail({
     <img
       src={imageSrc}
       alt={alt}
+      sizes={sizes}
       loading={priority ? "eager" : "lazy"}
       fetchPriority={priority ? "high" : "auto"}
       decoding="async"

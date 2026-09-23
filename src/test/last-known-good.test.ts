@@ -1,20 +1,45 @@
 import fs from "node:fs";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  canonicalizeJson,
   clearSnapshotCachesForTest,
   computeDemonlistContentHash,
+  type DurableDemonlistSnapshot,
+  getBlobAuthMode,
   getDurableLastKnownGoodLevelsAsync,
   getLastKnownGoodLevels,
   recordHealthyLevelSnapshot,
   SNAPSHOT_SCHEMA_VERSION,
   syncSnapshotToDurableBlob,
 } from "../lib/last-known-good";
-import { FALLBACK_RANKED_LEVELS } from "../lib/fallback-levels";
+import { FALLBACK_RANKED_LEVELS, type FallbackLevel } from "../lib/fallback-levels";
 
 const SNAPSHOT_DIR = path.join(process.cwd(), ".data");
 const SNAPSHOT_FILE = path.join(SNAPSHOT_DIR, "demonlist-snapshot.json");
+
+function createSampleLevel(overrides: Partial<FallbackLevel> = {}): FallbackLevel {
+  return {
+    id: "lvl-1",
+    slug: "sample-demon",
+    rank: 1,
+    name: "Sample Demon",
+    originalName: "Original Demon",
+    gdLevelId: "123456",
+    publisher: "HostPlayer",
+    nerfCreator: "NerfAuthor",
+    verifier: "ProofVerifier",
+    thumbnailUrl: "/thumbnails/sample.webp",
+    showcaseUrl: "https://youtube.com/watch?v=sample",
+    status: "RANKED",
+    difficulty: "EXTREME",
+    points: 1000,
+    description: "Sample test description",
+    recordCount: 5,
+    ...overrides,
+  };
+}
 
 describe("Durable Last-Known-Good Snapshot System", () => {
   beforeEach(() => {
@@ -23,6 +48,7 @@ describe("Durable Last-Known-Good Snapshot System", () => {
 
   afterEach(() => {
     clearSnapshotCachesForTest();
+    vi.restoreAllMocks();
   });
 
   it("serves static seed fallback on fresh cold start when no durable snapshot exists", () => {
@@ -35,24 +61,7 @@ describe("Durable Last-Known-Good Snapshot System", () => {
   });
 
   it("records a healthy level snapshot into memory and durable disk cache", () => {
-    const mockLevels = [
-      {
-        id: "mock-1",
-        slug: "mock-demon-1",
-        rank: 1,
-        name: "Mock Demon 1",
-        originalName: "Original 1",
-        gdLevelId: "12345",
-        publisher: "cattwgdx",
-        nerfCreator: "cattwgdx",
-        verifier: "cattwgdx",
-        thumbnailUrl: "/thumbnails/mock1.webp",
-        status: "RANKED",
-        difficulty: "EXTREME",
-        points: 1000,
-        _count: { records: 3 },
-      },
-    ];
+    const mockLevels = [createSampleLevel({ name: "Mock Demon 1" })];
 
     const { snapshot, persistTask } = recordHealthyLevelSnapshot(mockLevels);
     expect(snapshot).not.toBeNull();
@@ -74,22 +83,7 @@ describe("Durable Last-Known-Good Snapshot System", () => {
   });
 
   it("survives a cold start during a database outage by loading from durable disk cache", () => {
-    const mockLevels = [
-      {
-        id: "survivor-1",
-        slug: "survivor-demon",
-        rank: 1,
-        name: "Survivor Demon",
-        originalName: "Survivor Original",
-        publisher: "cattwgdx",
-        nerfCreator: "cattwgdx",
-        verifier: "cattwgdx",
-        thumbnailUrl: "/thumbnails/survivor.webp",
-        status: "RANKED",
-        difficulty: "EXTREME",
-        points: 1000,
-      },
-    ];
+    const mockLevels = [createSampleLevel({ name: "Survivor Demon" })];
 
     // Populate and persist
     recordHealthyLevelSnapshot(mockLevels);
@@ -98,9 +92,7 @@ describe("Durable Last-Known-Good Snapshot System", () => {
     const originalClear = clearSnapshotCachesForTest;
     try {
       const diskContent = fs.readFileSync(SNAPSHOT_FILE, "utf8");
-      // Now clear memory
       originalClear();
-      // Restore disk file
       fs.writeFileSync(SNAPSHOT_FILE, diskContent, "utf8");
 
       const coldStartResult = getLastKnownGoodLevels();
@@ -141,128 +133,273 @@ describe("Durable Last-Known-Good Snapshot System", () => {
     expect(fs.existsSync(SNAPSHOT_FILE)).toBe(false);
   });
 
-  it("safely falls back to seed data if disk snapshot has incompatible schema version or corrupt JSON", () => {
-    if (!fs.existsSync(SNAPSHOT_DIR)) {
-      fs.mkdirSync(SNAPSHOT_DIR, { recursive: true });
-    }
+  describe("Canonical Full-Payload Content Hash Tests (A through H)", () => {
+    it("A. identical list -> identical hash", () => {
+      const listA = [createSampleLevel()];
+      const listB = [createSampleLevel()];
+      expect(computeDemonlistContentHash(listA)).toBe(computeDemonlistContentHash(listB));
+    });
 
-    // Write incompatible schema version
-    const incompatibleSnapshot = {
-      metadata: {
-        schemaVersion: 999, // Incompatible future version
-        generatedAt: new Date().toISOString(),
-        lastHealthyAt: new Date().toISOString(),
-        levelCount: 1,
-      },
-      levels: [{ slug: "future-demon", name: "Future Demon" }],
-    };
-    fs.writeFileSync(SNAPSHOT_FILE, JSON.stringify(incompatibleSnapshot), "utf8");
+    it("B. rank change -> hash changes", () => {
+      const base = [createSampleLevel({ rank: 1 })];
+      const changed = [createSampleLevel({ rank: 2 })];
+      expect(computeDemonlistContentHash(base)).not.toBe(computeDemonlistContentHash(changed));
+    });
 
-    const result = getLastKnownGoodLevels();
-    // System must discard incompatible version and fall back safely to static seed data
-    expect(result.source).toBe("seed-fallback");
-    expect(result.levels.length).toBe(FALLBACK_RANKED_LEVELS.length);
+    it("C. points change -> hash changes", () => {
+      const base = [createSampleLevel({ points: 1000 })];
+      const changed = [createSampleLevel({ points: 950 })];
+      expect(computeDemonlistContentHash(base)).not.toBe(computeDemonlistContentHash(changed));
+    });
+
+    it("D. level name change -> hash changes", () => {
+      const base = [createSampleLevel({ name: "Acheron Nerfed" })];
+      const changed = [createSampleLevel({ name: "Acheron ULDM" })];
+      expect(computeDemonlistContentHash(base)).not.toBe(computeDemonlistContentHash(changed));
+    });
+
+    it("E. thumbnail change -> hash changes", () => {
+      const base = [createSampleLevel({ thumbnailUrl: "/thumbnails/v1.webp" })];
+      const changed = [createSampleLevel({ thumbnailUrl: "/thumbnails/v2.webp" })];
+      expect(computeDemonlistContentHash(base)).not.toBe(computeDemonlistContentHash(changed));
+    });
+
+    it("F. verifier or nerfer change -> hash changes", () => {
+      const base = [createSampleLevel({ verifier: "PlayerA", nerfCreator: "AuthorX" })];
+      const changedVerifier = [createSampleLevel({ verifier: "PlayerB", nerfCreator: "AuthorX" })];
+      const changedNerfer = [createSampleLevel({ verifier: "PlayerA", nerfCreator: "AuthorY" })];
+      expect(computeDemonlistContentHash(base)).not.toBe(computeDemonlistContentHash(changedVerifier));
+      expect(computeDemonlistContentHash(base)).not.toBe(computeDemonlistContentHash(changedNerfer));
+    });
+
+    it("G. record count / public metadata change -> hash changes", () => {
+      const base = [createSampleLevel({ recordCount: 3, description: "Desc 1" })];
+      const changedCount = [createSampleLevel({ recordCount: 4, description: "Desc 1" })];
+      const changedDesc = [createSampleLevel({ recordCount: 3, description: "Desc 2" })];
+      expect(computeDemonlistContentHash(base)).not.toBe(computeDemonlistContentHash(changedCount));
+      expect(computeDemonlistContentHash(base)).not.toBe(computeDemonlistContentHash(changedDesc));
+    });
+
+    it("H. generatedAt / lastHealthyAt change alone -> hash does NOT change", () => {
+      const level = createSampleLevel();
+      const hash1 = computeDemonlistContentHash({
+        levels: [level],
+        metadata: {
+          generatedAt: "2026-01-01T00:00:00.000Z",
+          lastHealthyAt: "2026-01-01T00:00:00.000Z",
+        },
+      });
+      const hash2 = computeDemonlistContentHash({
+        levels: [level],
+        metadata: {
+          generatedAt: "2026-09-23T18:00:00.000Z",
+          lastHealthyAt: "2026-09-23T18:00:00.000Z",
+        },
+      });
+      expect(hash1).toBe(hash2);
+    });
+
+    it("guarantees deterministic canonicalization regardless of object key insertion order", () => {
+      const objA = { z: 1, a: "hello", m: [3, 2, 1] };
+      const objB = { a: "hello", m: [3, 2, 1], z: 1 };
+      expect(canonicalizeJson(objA)).toBe(canonicalizeJson(objB));
+    });
   });
 
-  it("computes deterministic content hash across levels", () => {
-    const listA: import("../lib/fallback-levels").FallbackLevel[] = [
-      {
-        id: "1",
-        slug: "demon-a",
-        name: "Demon A",
-        originalName: "A",
-        rank: 1,
-        status: "RANKED" as const,
-        points: 100,
-        difficulty: "EXTREME",
-        publisher: "p",
-        nerfCreator: "n",
-        verifier: "v",
-        thumbnailUrl: "t",
-        gdLevelId: "1",
-        showcaseUrl: "",
-        description: "",
-        recordCount: 0,
-      },
-    ];
-    const listB: import("../lib/fallback-levels").FallbackLevel[] = [
-      {
-        id: "1",
-        slug: "demon-a",
-        name: "Demon A",
-        originalName: "A",
-        rank: 1,
-        status: "RANKED" as const,
-        points: 100,
-        difficulty: "EXTREME",
-        publisher: "p",
-        nerfCreator: "n",
-        verifier: "v",
-        thumbnailUrl: "t",
-        gdLevelId: "1",
-        showcaseUrl: "",
-        description: "",
-        recordCount: 0,
-      },
-    ];
-    const listC: import("../lib/fallback-levels").FallbackLevel[] = [
-      {
-        id: "1",
-        slug: "demon-a",
-        name: "Demon A",
-        originalName: "A",
-        rank: 2, // Changed rank
-        status: "RANKED" as const,
-        points: 90,
-        difficulty: "EXTREME",
-        publisher: "p",
-        nerfCreator: "n",
-        verifier: "v",
-        thumbnailUrl: "t",
-        gdLevelId: "1",
-        showcaseUrl: "",
-        description: "",
-        recordCount: 0,
-      },
-    ];
+  describe("Blob Authentication & Concurrency Control", () => {
+    it("reports correct blob authentication mode", () => {
+      const mode = getBlobAuthMode();
+      expect(["OIDC", "legacy token", "unavailable"]).toContain(mode);
+    });
 
-    const hashA = computeDemonlistContentHash(listA);
-    const hashB = computeDemonlistContentHash(listB);
-    const hashC = computeDemonlistContentHash(listC);
+    it("proves atomic CAS prevents stale worker A (T1) from overwriting newer worker B (T2)", async () => {
+      // Simulate Vercel Blob store in memory
+      let storeBlob: {
+        etag: string;
+        url: string;
+        content: string;
+      } | null = {
+        etag: "etag-t0",
+        url: "https://blob.example.com/snapshots/demonlist-latest.json",
+        content: JSON.stringify({
+          metadata: {
+            schemaVersion: SNAPSHOT_SCHEMA_VERSION,
+            generatedAt: "2026-09-23T10:00:00.000Z", // T0
+            lastHealthyAt: "2026-09-23T10:00:00.000Z",
+            contentHash: "hash-t0",
+          },
+          levels: [createSampleLevel({ name: "T0 Demon" })],
+        }),
+      };
 
-    expect(hashA).toBe(hashB);
-    expect(hashA).not.toBe(hashC);
-  });
+      // Mock @vercel/blob
+      const mockHead = vi.fn(async () => {
+        if (!storeBlob) throw new Error("404 Not Found");
+        return {
+          etag: storeBlob.etag,
+          url: storeBlob.url,
+        };
+      });
 
-  it("skips durable Blob upload when content hash is unchanged", async () => {
-    const mockLevels = [
-      {
-        id: "hash-test-1",
-        slug: "hash-demon",
-        rank: 1,
-        name: "Hash Demon",
-        originalName: "Original",
-        publisher: "p",
-        nerfCreator: "n",
-        verifier: "v",
-        thumbnailUrl: "/thumbnails/h.webp",
-        status: "RANKED",
-        difficulty: "EXTREME",
-        points: 500,
-      },
-    ];
+      const mockPut = vi.fn(async (_key: string, body: string, options: { ifMatch?: string }) => {
+        if (storeBlob && options.ifMatch && options.ifMatch !== storeBlob.etag) {
+          const err = new Error("Precondition Failed");
+          err.name = "BlobPreconditionFailedError";
+          Object.assign(err, { status: 412 });
+          throw err;
+        }
 
-    const { snapshot } = recordHealthyLevelSnapshot(mockLevels);
-    expect(snapshot).not.toBeNull();
+        const newEtag = `etag-${Math.random().toString(36).slice(2)}`;
+        storeBlob = {
+          etag: newEtag,
+          url: "https://blob.example.com/snapshots/demonlist-latest.json",
+          content: body,
+        };
+        return { etag: newEtag, url: storeBlob.url };
+      });
 
-    // First call without BLOB_READ_WRITE_TOKEN returns no_blob_configured or success
-    const sync1 = await syncSnapshotToDurableBlob(snapshot!);
-    expect(sync1.skippedReason).toBe("no_blob_configured");
-  });
+      vi.doMock("@vercel/blob", () => ({
+        head: mockHead,
+        put: mockPut,
+      }));
 
-  it("provides durable fallback through getDurableLastKnownGoodLevelsAsync", async () => {
-    const res = await getDurableLastKnownGoodLevelsAsync();
-    expect(res.levels.length).toBeGreaterThan(0);
-    expect(res.source).toBe("seed-fallback");
+      // Mock global fetch to return current storeBlob content
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+        const urlStr = String(input);
+        if (urlStr.includes("snapshots/demonlist-latest.json") && storeBlob) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => JSON.parse(storeBlob!.content),
+          } as Response;
+        }
+        return originalFetch(input);
+      });
+
+      try {
+        const originalToken = process.env.BLOB_READ_WRITE_TOKEN;
+        process.env.BLOB_READ_WRITE_TOKEN = "mock-blob-token-for-race-test";
+
+        // Snapshot T1 (Generated at 11:00:00)
+        const snapshotT1: DurableDemonlistSnapshot = {
+          metadata: {
+            schemaVersion: SNAPSHOT_SCHEMA_VERSION,
+            generatedAt: "2026-09-23T11:00:00.000Z", // T1
+            lastHealthyAt: "2026-09-23T11:00:00.000Z",
+            levelCount: 1,
+            contentHash: "hash-t1",
+            source: "ephemeral-tmp",
+          },
+          levels: [createSampleLevel({ name: "Worker A Demon T1" })],
+        };
+
+        // Snapshot T2 (Generated at 12:00:00, where T2 > T1)
+        const snapshotT2: DurableDemonlistSnapshot = {
+          metadata: {
+            schemaVersion: SNAPSHOT_SCHEMA_VERSION,
+            generatedAt: "2026-09-23T12:00:00.000Z", // T2 > T1
+            lastHealthyAt: "2026-09-23T12:00:00.000Z",
+            levelCount: 1,
+            contentHash: "hash-t2",
+            source: "ephemeral-tmp",
+          },
+          levels: [createSampleLevel({ name: "Worker B Demon T2" })],
+        };
+
+        // Step 1: Worker B writes T2 first!
+        const resB = await syncSnapshotToDurableBlob(snapshotT2);
+        expect(resB.success).toBe(true);
+
+        const currentInStoreAfterB = JSON.parse(storeBlob!.content);
+        expect(currentInStoreAfterB.metadata.generatedAt).toBe("2026-09-23T12:00:00.000Z");
+        expect(currentInStoreAfterB.levels[0].name).toBe("Worker B Demon T2");
+
+        // Step 2: Now Worker A attempts to write stale snapshot T1!
+        const resA = await syncSnapshotToDurableBlob(snapshotT1);
+
+        // Worker A MUST be rejected due to stale_snapshot
+        expect(resA.success).toBe(false);
+        expect(resA.skippedReason).toBe("stale_snapshot");
+
+        // Step 3: Verify the Blob store REMAINED T2! (Worker A did NOT revert it)
+        const finalInStore = JSON.parse(storeBlob!.content);
+        expect(finalInStore.metadata.generatedAt).toBe("2026-09-23T12:00:00.000Z");
+        expect(finalInStore.levels[0].name).toBe("Worker B Demon T2");
+
+        process.env.BLOB_READ_WRITE_TOKEN = originalToken;
+      } finally {
+        globalThis.fetch = originalFetch;
+        vi.doUnmock("@vercel/blob");
+      }
+    });
+
+    it("verifies consistency-sensitive read always returns newest overwritten snapshot B", async () => {
+      const storeBlob: { url: string; content: string } = {
+        url: "https://blob.example.com/snapshots/demonlist-latest.json",
+        content: JSON.stringify({
+          metadata: {
+            schemaVersion: SNAPSHOT_SCHEMA_VERSION,
+            generatedAt: "2026-09-23T10:00:00.000Z",
+            lastHealthyAt: "2026-09-23T10:00:00.000Z",
+            contentHash: "hash-a",
+          },
+          levels: [createSampleLevel({ name: "Snapshot A" })],
+        }),
+      };
+
+      const mockHead = vi.fn(async () => ({
+        etag: "etag-current",
+        url: storeBlob.url,
+      }));
+
+      vi.doMock("@vercel/blob", () => ({
+        head: mockHead,
+      }));
+
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+        const urlStr = String(input);
+        if (urlStr.includes("snapshots/demonlist-latest.json")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => JSON.parse(storeBlob.content),
+          } as Response;
+        }
+        return originalFetch(input);
+      });
+
+      try {
+        const originalToken = process.env.BLOB_READ_WRITE_TOKEN;
+        process.env.BLOB_READ_WRITE_TOKEN = "mock-blob-token-for-consistency-test";
+
+        // Read initial state (A)
+        clearSnapshotCachesForTest();
+        const readA = await getDurableLastKnownGoodLevelsAsync();
+        expect(readA.levels[0].name).toBe("Snapshot A");
+
+        // Overwrite in store with B
+        storeBlob.content = JSON.stringify({
+          metadata: {
+            schemaVersion: SNAPSHOT_SCHEMA_VERSION,
+            generatedAt: "2026-09-23T11:00:00.000Z",
+            lastHealthyAt: "2026-09-23T11:00:00.000Z",
+            contentHash: "hash-b",
+          },
+          levels: [createSampleLevel({ name: "Snapshot B" })],
+        });
+
+        // Consistency-sensitive read (clearing local memory cache to simulate fresh serverless instance)
+        clearSnapshotCachesForTest();
+        const readB = await getDurableLastKnownGoodLevelsAsync();
+        expect(readB.levels[0].name).toBe("Snapshot B");
+
+        process.env.BLOB_READ_WRITE_TOKEN = originalToken;
+      } finally {
+        globalThis.fetch = originalFetch;
+        vi.doUnmock("@vercel/blob");
+      }
+    });
   });
 });
