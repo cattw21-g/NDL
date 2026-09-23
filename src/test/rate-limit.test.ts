@@ -8,16 +8,20 @@ import {
 import { EMAIL_RESEND_COOLDOWN_MESSAGE } from "../lib/email-cooldown";
 
 type Attempt = {
+  id?: string;
   action: string;
   key: string;
   occurredAt: Date;
 };
+
+let attemptIdCounter = 0;
 
 function createClient(attempts: Attempt[] = []) {
   return {
     rateLimitAttempt: {
       deleteMany: async (args?: {
         where?: {
+          id?: string;
           action?: string;
           key?: string;
           occurredAt?: Date | { lte?: Date };
@@ -25,9 +29,10 @@ function createClient(attempts: Attempt[] = []) {
       }) => {
         let removed = 0;
         if (args?.where) {
-          const { action, key, occurredAt } = args.where;
+          const { id, action, key, occurredAt } = args.where;
           for (let i = attempts.length - 1; i >= 0; i--) {
             const a = attempts[i];
+            const matchId = !id || a.id === id;
             const matchAction = !action || a.action === action;
             const matchKey = !key || a.key === key;
             const matchTime =
@@ -35,7 +40,7 @@ function createClient(attempts: Attempt[] = []) {
               (occurredAt instanceof Date
                 ? a.occurredAt.getTime() === occurredAt.getTime()
                 : !occurredAt.lte || a.occurredAt <= occurredAt.lte);
-            if (matchAction && matchKey && matchTime) {
+            if (matchId && matchAction && matchKey && matchTime) {
               attempts.splice(i, 1);
               removed++;
             }
@@ -61,8 +66,12 @@ function createClient(attempts: Attempt[] = []) {
               (args.where.occurredAt.gt ?? args.where.occurredAt.gte!),
         ).length,
       create: async (args: { data: Attempt }) => {
-        attempts.push(args.data);
-        return args.data;
+        const item = {
+          ...args.data,
+          id: args.data.id ?? `att-${++attemptIdCounter}`,
+        };
+        attempts.push(item);
+        return item;
       },
     },
   } as unknown as Parameters<typeof checkRateLimit>[0];
@@ -295,5 +304,60 @@ describe("rate limiting", () => {
     // Both cannot succeed to exceed the limit
     expect(allowedCount).toBeLessThanOrEqual(1);
     expect(blockedCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it("safely enforces limit when 50 simultaneous requests hit the same key", async () => {
+    const sharedAttempts: Attempt[] = [];
+    const client = createClient(sharedAttempts);
+    const key = userRateLimitKey("heavy-concurrency-user");
+    const now = new Date("2026-05-31T12:00:00.000Z");
+
+    // Launch 50 truly simultaneous requests for profile-update (limit = 15)
+    const decisions = await Promise.all(
+      Array.from({ length: 50 }, () =>
+        checkRateLimit(client, "profile-update", key, now),
+      ),
+    );
+
+    const allowed = decisions.filter((d) => d.allowed);
+    const rejected = decisions.filter((d) => !d.allowed);
+
+    expect(allowed.length).toBe(15);
+    expect(rejected.length).toBe(35);
+
+    // Persisted state in database should contain exactly 15 records (clean pruning of rejects)
+    const remaining = sharedAttempts.filter(
+      (a) => a.action === "profile-update" && a.key === key,
+    );
+    expect(remaining.length).toBe(15);
+  });
+
+  it("enforces identical limits across multiple distributed server instances", async () => {
+    // Shared database state accessible across multiple serverless/server instances
+    const sharedDb: Attempt[] = [];
+
+    // Simulate 5 independent server instances
+    const serverInstances = Array.from({ length: 5 }, () => createClient(sharedDb));
+    const key = userRateLimitKey("distributed-player");
+    const now = new Date("2026-05-31T12:00:00.000Z");
+
+    // Each instance receives 5 concurrent requests (25 total) for record-submission (limit = 8)
+    const requests = serverInstances.flatMap((instance) =>
+      Array.from({ length: 5 }, () =>
+        checkRateLimit(instance, "record-submission", key, now),
+      ),
+    );
+
+    const results = await Promise.all(requests);
+    const allowed = results.filter((r) => r.allowed);
+    const rejected = results.filter((r) => !r.allowed);
+
+    expect(allowed.length).toBe(8);
+    expect(rejected.length).toBe(17);
+
+    const remaining = sharedDb.filter(
+      (a) => a.action === "record-submission" && a.key === key,
+    );
+    expect(remaining.length).toBe(8);
   });
 });

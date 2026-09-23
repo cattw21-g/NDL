@@ -18,7 +18,10 @@ import {
 } from "@/lib/demo-visibility";
 import { formatDate } from "@/lib/format";
 import { calculateCurrentLevelPoints, type ScoredLevelStatus } from "@/lib/points";
-import { FALLBACK_RANKED_LEVELS } from "@/lib/fallback-levels";
+import {
+  getLastKnownGoodLevels,
+  recordHealthyLevelSnapshot,
+} from "@/lib/last-known-good";
 import { resolveLevelThumbnail } from "@/lib/media";
 
 export const revalidate = 60;
@@ -138,10 +141,12 @@ export default async function Home() {
     acceptedCount = results[2];
     latestRecords = results[3];
     latestPost = results[4];
+    recordHealthyLevelSnapshot(levels);
   } catch (err) {
     isDegraded = true;
-    console.warn("Database unavailable, falling back to static level data:", err);
-    levels = FALLBACK_RANKED_LEVELS.map((lvl) => ({
+    console.warn("Database unavailable, falling back to cached/fallback level data:", err);
+    const fallback = getLastKnownGoodLevels();
+    levels = fallback.levels.map((lvl) => ({
       ...lvl,
       _count: { records: lvl.recordCount },
     }));
@@ -151,7 +156,8 @@ export default async function Home() {
 
   if (levels.length === 0) {
     isDegraded = true;
-    levels = FALLBACK_RANKED_LEVELS.map((lvl) => ({
+    const fallback = getLastKnownGoodLevels();
+    levels = fallback.levels.map((lvl) => ({
       ...lvl,
       _count: { records: lvl.recordCount },
     }));
@@ -172,7 +178,9 @@ export default async function Home() {
           <div className="text-xs">
             <p className="text-sm font-bold">Notice: Database in Maintenance Mode</p>
             <p className="mt-0.5 leading-relaxed text-amber-800 dark:text-amber-300">
-              The live database is temporarily offline for maintenance. Currently displaying static fallback list data. Submissions, account actions, and live leaderboard updates will resume automatically once the database connection is restored.
+              {getLastKnownGoodLevels().source === "live-cache"
+                ? "The live database is temporarily offline for maintenance. Currently displaying the latest cached real Demonlist snapshot. Submissions, account actions, and live leaderboard updates will resume automatically once connection is restored."
+                : "The live database is temporarily offline for maintenance. Currently displaying static fallback list data. Submissions, account actions, and live leaderboard updates will resume automatically once the database connection is restored."}
             </p>
           </div>
         </div>

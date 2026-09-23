@@ -28,7 +28,7 @@ describe("LevelCard", () => {
     expect(markup).toContain("/uploads/thumbnails/uploaded-thumb.webp");
     expect(markup).toContain("aspect-video");
     expect(markup).toContain("sm:w-44 md:w-52 lg:w-56");
-    expect(markup).toContain("sm:flex");
+    expect(markup).toContain("lg:flex-row");
     expect(markup).toContain("320 pts");
     expect(markup).toContain("2 records");
     expect(markup).not.toContain("Reviewed list entry");
@@ -48,7 +48,7 @@ describe("LevelCard", () => {
     );
 
     expect(markup).toContain("min-w-0");
-    expect(markup).toContain("truncate");
+    expect(markup).toContain("line-clamp-2");
   });
 
   it("keeps thumbnail sources safe across common list row cases", () => {

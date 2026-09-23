@@ -53,4 +53,19 @@ describe("Record Deletion Data Safety & Full Restoration", () => {
     expect(adminRecordsPage).toContain("Recently Deleted Records (Recovery Available)");
     expect(adminRecordsPage).toContain("Restore Record");
   });
+
+  it("safeguards against state conflicts and duplicate records during restoration", () => {
+    const adminActions = source("actions/admin.ts");
+
+    // Rejects restoration if player already has an active record on the level
+    expect(adminActions).toContain("competingRecord");
+    expect(adminActions).toContain("Resolve the newer record first to prevent conflicting entries");
+
+    // Idempotent double-restore handling
+    expect(adminActions).toContain("if (existingRecord)");
+    expect(adminActions).toContain("isPrismaUniqueConstraintError(error)");
+
+    // Double-delete race safety
+    expect(adminActions).toContain("isPrismaRecordNotFoundError(error)");
+  });
 });

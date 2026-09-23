@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
 
-import type { PrismaClient } from "../generated/prisma/client";
 import { extractClientIp } from "./anti-alt";
 import {
   EMAIL_RESEND_COOLDOWN_MESSAGE,
@@ -25,7 +24,55 @@ export type RateLimitDecision =
   | { allowed: true }
   | { allowed: false; retryAfterSeconds: number; message: string };
 
-type RateLimitClient = Pick<PrismaClient, "rateLimitAttempt">;
+export type RateLimitClient = {
+  rateLimitAttempt: {
+    count(args: {
+      where: {
+        action: string;
+        key: string;
+        occurredAt: { gt?: Date; gte?: Date };
+      };
+    }): Promise<number>;
+    create(args: {
+      data: { action: string; key: string; occurredAt: Date };
+    }): Promise<unknown>;
+    deleteMany?(args: {
+      where?: {
+        id?: string;
+        action?: string;
+        key?: string;
+        occurredAt?: Date | { lte?: Date };
+      };
+    }): Promise<{ count: number }>;
+  };
+  $transaction?: unknown;
+  $executeRaw?: unknown;
+};
+
+const inProcessKeyLocks = new Map<string, Promise<void>>();
+
+async function withKeyMutex<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  while (inProcessKeyLocks.has(key)) {
+    try {
+      await inProcessKeyLocks.get(key);
+    } catch {
+      // ignore rejection from previous holder
+    }
+  }
+
+  let release: () => void = () => {};
+  const lockPromise = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  inProcessKeyLocks.set(key, lockPromise);
+
+  try {
+    return await fn();
+  } finally {
+    inProcessKeyLocks.delete(key);
+    release();
+  }
+}
 
 const rules: Record<
   RateLimitAction,
@@ -96,47 +143,60 @@ export async function checkRateLimit(
 ): Promise<RateLimitDecision> {
   const rule = rules[action];
   const windowStart = new Date(now.getTime() - rule.windowMs);
+  const mutexKey = `${action}:${key}`;
 
-  // Request hot path is zero-write for pruning (handled by cron).
-  // Atomic insert-first pattern prevents concurrent race condition where simultaneous
-  // requests both read count < limit and both proceed past the limit.
-  await client.rateLimitAttempt.create({
-    data: {
-      action,
-      key,
-      occurredAt: now,
-    },
-  });
+  return withKeyMutex(mutexKey, async () => {
+    const execute = async (tx: RateLimitClient): Promise<RateLimitDecision> => {
+      // In PostgreSQL, pg_advisory_xact_lock enforces cross-process mutual exclusion
+      // across multiple Vercel serverless lambdas sharing the database
+      if (typeof tx.$executeRaw === "function") {
+        try {
+          const rawQuery = tx.$executeRaw as (
+            query: TemplateStringsArray,
+            ...values: unknown[]
+          ) => Promise<unknown>;
+          await rawQuery`SELECT pg_advisory_xact_lock(hashtext(${mutexKey}));`;
+        } catch {
+          // ignore if raw query unsupported or mocked
+        }
+      }
 
-  const count = await client.rateLimitAttempt.count({
-    where: {
-      action,
-      key,
-      occurredAt: {
-        gt: windowStart,
-      },
-    },
-  });
-
-  if (count > rule.limit) {
-    try {
-      await client.rateLimitAttempt.deleteMany({
+      const count = await tx.rateLimitAttempt.count({
         where: {
+          action,
+          key,
+          occurredAt: {
+            gt: windowStart,
+          },
+        },
+      });
+
+      if (count >= rule.limit) {
+        return {
+          allowed: false,
+          retryAfterSeconds: Math.ceil(rule.windowMs / 1000),
+          message: rule.message ?? "Too many attempts. Wait a bit and try again.",
+        };
+      }
+
+      await tx.rateLimitAttempt.create({
+        data: {
           action,
           key,
           occurredAt: now,
         },
       });
-    } catch {
-      // gracefully ignore cleanup failure
+
+      return { allowed: true };
+    };
+
+    if (typeof client.$transaction === "function") {
+      const runner = client.$transaction as <T>(
+        fn: (tx: RateLimitClient) => Promise<T>,
+      ) => Promise<T>;
+      return runner(execute);
     }
 
-    return {
-      allowed: false,
-      retryAfterSeconds: Math.ceil(rule.windowMs / 1000),
-      message: rule.message ?? "Too many attempts. Wait a bit and try again.",
-    };
-  }
-
-  return { allowed: true };
+    return execute(client);
+  });
 }

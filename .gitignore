@@ -54,3 +54,4 @@ next-env.d.ts
 .env*
 /ndl-v1-stable-tiktok-raw/
 /scratch/
+/.visual-qa/

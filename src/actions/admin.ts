@@ -458,6 +458,15 @@ function isPrismaUniqueConstraintError(error: unknown) {
   );
 }
 
+function isPrismaRecordNotFoundError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2025"
+  );
+}
+
 export async function updateUserRoleAction(formData: FormData) {
   const admin = await requireAdmin();
   const parsed = userRoleSchema.safeParse(formDataToObject(formData));
@@ -1566,38 +1575,52 @@ export async function deleteAdminRecordAction(formData: FormData) {
     createdAt: record.createdAt.toISOString(),
   };
 
-  await prisma.$transaction(async (tx) => {
-    if (record.submissionId) {
-      await tx.recordSubmission.update({
-        where: { id: record.submissionId },
-        data: {
-          status: "REJECTED",
-          moderatorNotes: `Record revoked by admin ${admin.displayName}: removed from rankings.`,
-          reviewedAt: new Date(),
-          reviewerId: admin.id,
-        },
+  try {
+    await prisma.$transaction(async (tx) => {
+      const current = await tx.record.findUnique({
+        where: { id: recordId },
       });
+      if (!current) {
+        return;
+      }
+
+      if (record.submissionId) {
+        await tx.recordSubmission.update({
+          where: { id: record.submissionId },
+          data: {
+            status: "REJECTED",
+            moderatorNotes: `Record revoked by admin ${admin.displayName}: removed from rankings.`,
+            reviewedAt: new Date(),
+            reviewerId: admin.id,
+          },
+        });
+      }
+
+      await tx.record.delete({
+        where: { id: recordId },
+      });
+
+      await writeAuditLog(tx, {
+        actor: {
+          id: admin.id,
+          playerName: admin.playerName,
+          displayName: admin.displayName,
+          role: admin.role,
+        },
+        action: "RECORD_DELETED",
+        entityType: "Record",
+        entityId: recordId,
+        entityLabel: `${record.player.displayName} on ${record.level.name}`,
+        note: `Admin deleted record (${record.progress}%, video: ${record.videoUrl}, points: ${record.pointsAwarded})`,
+        before: recordSnapshot,
+      });
+    });
+  } catch (error) {
+    if (isPrismaRecordNotFoundError(error)) {
+      return;
     }
-
-    await tx.record.delete({
-      where: { id: recordId },
-    });
-
-    await writeAuditLog(tx, {
-      actor: {
-        id: admin.id,
-        playerName: admin.playerName,
-        displayName: admin.displayName,
-        role: admin.role,
-      },
-      action: "RECORD_DELETED",
-      entityType: "Record",
-      entityId: recordId,
-      entityLabel: `${record.player.displayName} on ${record.level.name}`,
-      note: `Admin deleted record (${record.progress}%, video: ${record.videoUrl}, points: ${record.pointsAwarded})`,
-      before: recordSnapshot,
-    });
-  });
+    throw error;
+  }
 
   revalidatePath("/");
   revalidatePath(`/levels/${record.level.slug}`);
@@ -1654,14 +1677,28 @@ export async function restoreAdminRecordAction(formData: FormData) {
     throw new Error("Invalid or corrupted record snapshot in audit log.");
   }
 
-  const [existingRecord, level, player] = await Promise.all([
+  const [existingRecord, level, player, competingRecord] = await Promise.all([
     prisma.record.findUnique({ where: { id: snapshot.id } }),
     prisma.level.findUnique({ where: { id: snapshot.levelId } }),
     prisma.user.findUnique({ where: { id: snapshot.playerId } }),
+    prisma.record.findFirst({
+      where: {
+        playerId: snapshot.playerId,
+        levelId: snapshot.levelId,
+        id: { not: snapshot.id },
+      },
+    }),
   ]);
 
   if (existingRecord) {
-    throw new Error("A record with this ID already exists in the database.");
+    // Already restored (idempotent)
+    return;
+  }
+
+  if (competingRecord) {
+    throw new Error(
+      `Cannot restore record: player already has an active record on this level (${competingRecord.progress}%). Resolve the newer record first to prevent conflicting entries.`
+    );
   }
 
   if (!level) {
@@ -1678,56 +1715,64 @@ export async function restoreAdminRecordAction(formData: FormData) {
       })
     : null;
 
-  await prisma.$transaction(async (tx) => {
-    await tx.record.create({
-      data: {
-        id: snapshot.id,
-        playerId: snapshot.playerId,
-        levelId: snapshot.levelId,
-        submissionId: submission ? snapshot.submissionId : null,
-        progress: snapshot.progress,
-        isVerifier: Boolean(snapshot.isVerifier),
-        videoUrl: snapshot.videoUrl,
-        rawFootageUrl:
-          snapshot.rawFootageUrl && snapshot.rawFootageUrl !== "[redacted]"
-            ? snapshot.rawFootageUrl
-            : submission?.rawFootageUrl ?? null,
-        fps: snapshot.fps ?? 360,
-        cbfUsed: Boolean(snapshot.cbfUsed),
-        pointsAwarded: snapshot.pointsAwarded,
-        isDemo: Boolean(snapshot.isDemo),
-        acceptedAt: snapshot.acceptedAt ? new Date(snapshot.acceptedAt) : new Date(),
-        createdAt: snapshot.createdAt ? new Date(snapshot.createdAt) : undefined,
-      },
-    });
-
-    if (submission) {
-      await tx.recordSubmission.update({
-        where: { id: submission.id },
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.record.create({
         data: {
-          status: "ACCEPTED",
-          moderatorNotes: `Record restored by admin ${admin.displayName}.`,
-          reviewedAt: snapshot.acceptedAt ? new Date(snapshot.acceptedAt) : new Date(),
-          reviewerId: admin.id,
+          id: snapshot.id,
+          playerId: snapshot.playerId,
+          levelId: snapshot.levelId,
+          submissionId: submission ? snapshot.submissionId : null,
+          progress: snapshot.progress,
+          isVerifier: Boolean(snapshot.isVerifier),
+          videoUrl: snapshot.videoUrl,
+          rawFootageUrl:
+            snapshot.rawFootageUrl && snapshot.rawFootageUrl !== "[redacted]"
+              ? snapshot.rawFootageUrl
+              : submission?.rawFootageUrl ?? null,
+          fps: snapshot.fps ?? 360,
+          cbfUsed: Boolean(snapshot.cbfUsed),
+          pointsAwarded: snapshot.pointsAwarded,
+          isDemo: Boolean(snapshot.isDemo),
+          acceptedAt: snapshot.acceptedAt ? new Date(snapshot.acceptedAt) : new Date(),
+          createdAt: snapshot.createdAt ? new Date(snapshot.createdAt) : undefined,
         },
       });
-    }
 
-    await writeAuditLog(tx, {
-      actor: {
-        id: admin.id,
-        playerName: admin.playerName,
-        displayName: admin.displayName,
-        role: admin.role,
-      },
-      action: "RECORD_RESTORED",
-      entityType: "Record",
-      entityId: snapshot.id,
-      entityLabel: `${player.displayName} on ${level.name} (${snapshot.progress}%)`,
-      note: `Admin restored deleted record (${snapshot.progress}%, video: ${snapshot.videoUrl}, points: ${snapshot.pointsAwarded})`,
-      after: snapshot,
+      if (submission) {
+        await tx.recordSubmission.update({
+          where: { id: submission.id },
+          data: {
+            status: "ACCEPTED",
+            moderatorNotes: `Record restored by admin ${admin.displayName}.`,
+            reviewedAt: snapshot.acceptedAt ? new Date(snapshot.acceptedAt) : new Date(),
+            reviewerId: admin.id,
+          },
+        });
+      }
+
+      await writeAuditLog(tx, {
+        actor: {
+          id: admin.id,
+          playerName: admin.playerName,
+          displayName: admin.displayName,
+          role: admin.role,
+        },
+        action: "RECORD_RESTORED",
+        entityType: "Record",
+        entityId: snapshot.id,
+        entityLabel: `${player.displayName} on ${level.name} (${snapshot.progress}%)`,
+        note: `Admin restored deleted record (${snapshot.progress}%, video: ${snapshot.videoUrl}, points: ${snapshot.pointsAwarded})`,
+        after: snapshot,
+      });
     });
-  });
+  } catch (error) {
+    if (isPrismaUniqueConstraintError(error)) {
+      // Handled concurrent double-restore race cleanly
+      return;
+    }
+    throw error;
+  }
 
   revalidatePath("/");
   revalidatePath(`/levels/${level.slug}`);

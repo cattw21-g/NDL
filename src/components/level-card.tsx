@@ -128,7 +128,7 @@ export function LevelCard({
       ) : null}
 
       {/* Main Level Card Row (prominent Pointercrate-style layout) */}
-      <div className="flex flex-col gap-3.5 p-3.5 sm:flex-row sm:items-center sm:gap-4 sm:p-4 md:gap-5">
+      <div className="flex flex-col gap-3.5 p-3.5 lg:flex-row lg:items-center lg:gap-5 lg:p-4">
         {/* Left: Rank & Thumbnail */}
         <div className="flex shrink-0 items-center gap-3 sm:gap-4">
           {/* 1. Rank */}
@@ -140,7 +140,7 @@ export function LevelCard({
           <div className="shrink-0">
             <Link
               href={`/levels/${level.slug}`}
-              className="relative block aspect-video w-32 overflow-hidden rounded-lg border border-zinc-200/90 bg-zinc-100 shadow-sm transition group-hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:group-hover:border-zinc-700 sm:w-44 md:w-52 lg:w-56"
+              className="relative block aspect-video w-36 overflow-hidden rounded-lg border border-zinc-200/90 bg-zinc-100 shadow-sm transition group-hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:group-hover:border-zinc-700 sm:w-44 md:w-52 lg:w-56"
               tabIndex={-1}
               aria-hidden="true"
             >
@@ -159,16 +159,16 @@ export function LevelCard({
         </div>
 
         {/* Center: Title, Original, Metadata */}
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-2">
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <Link
               href={`/levels/${level.slug}`}
-              className="truncate font-black text-lg leading-snug text-zinc-950 transition hover:text-cyan-600 dark:text-white dark:hover:text-cyan-400 sm:text-xl md:text-2xl"
+              className="font-black text-lg leading-snug text-zinc-950 transition hover:text-cyan-600 dark:text-white dark:hover:text-cyan-400 sm:text-xl md:text-2xl line-clamp-2"
             >
               {level.name}
             </Link>
             {level.originalName && level.originalName.toLowerCase() !== level.name.toLowerCase() ? (
-              <span className="shrink min-w-0 truncate text-xs font-medium text-zinc-500 dark:text-zinc-400 sm:text-sm">
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 sm:text-sm">
                 (Original: {level.originalName})
               </span>
             ) : null}
@@ -179,7 +179,7 @@ export function LevelCard({
             ) : null}
           </div>
 
-          <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400 sm:mt-1.5 sm:text-sm">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400 sm:text-sm">
             <span>
               Nerfed by <strong className="font-semibold text-zinc-900 dark:text-zinc-100">{level.nerfCreator}</strong>
             </span>
@@ -199,7 +199,7 @@ export function LevelCard({
         </div>
 
         {/* Right: Points, Records, Details Button */}
-        <div className="flex shrink-0 items-center justify-between border-t border-zinc-100 pt-2.5 dark:border-zinc-800/80 sm:justify-end sm:gap-4 sm:border-t-0 sm:pt-0">
+        <div className="flex shrink-0 items-center justify-between border-t border-zinc-100 pt-2.5 dark:border-zinc-800/80 lg:border-t-0 lg:pt-0 lg:gap-4">
           <div className="flex items-center gap-2.5 sm:gap-3">
             <PointsPill points={level.points} />
             <span className="text-xs font-semibold tabular-nums text-zinc-500 dark:text-zinc-400 sm:text-sm whitespace-nowrap">
