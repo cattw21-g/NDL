@@ -10,7 +10,9 @@ import {
   LayoutDashboard,
   Lightbulb,
   Shield,
+  Sparkles,
   Trophy,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -139,6 +141,24 @@ export function AdminDropdownMenu({ badgeCount }: { badgeCount?: number } = {}) 
             >
               <FolderKanban className="h-3.5 w-3.5 text-blue-500" />
               <span>Manage Users</span>
+            </Link>
+
+            <Link
+              href="/admin/applications"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-cyan-50 hover:text-cyan-900 dark:text-slate-200 dark:hover:bg-cyan-950/40 dark:hover:text-cyan-300"
+            >
+              <Users className="h-3.5 w-3.5 text-cyan-500" />
+              <span>Staff Applications</span>
+            </Link>
+
+            <Link
+              href="/admin/beta-feedback"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-purple-50 hover:text-purple-900 dark:text-slate-200 dark:hover:bg-purple-950/40 dark:hover:text-purple-300"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+              <span>Beta Feedback</span>
             </Link>
 
             <Link

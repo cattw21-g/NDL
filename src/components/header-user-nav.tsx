@@ -1,11 +1,11 @@
-import { Settings, UserRound } from "lucide-react";
+import { Settings, UserRound, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 import { AdminDropdownMenu } from "@/components/admin-dropdown-menu";
 import { LoginButton, LogoutButton } from "@/components/app-shell-i18n";
 import { StaffNotificationCenter } from "@/components/staff-notification-center";
 import { getCurrentUser } from "@/lib/auth";
-import { isAdminRole, isModeratorRole } from "@/lib/permissions";
+import { isAdminRole, isModeratorRole, isBetaTester } from "@/lib/permissions";
 
 export function HeaderUserSkeleton() {
   return (
@@ -47,6 +47,16 @@ export async function HeaderUserNav() {
       >
         <Settings className="h-3.5 w-3.5" />
       </Link>
+      {isBetaTester(user.role) && !isUserAdmin && (
+        <Link
+          href="/beta/feedback"
+          title="Beta Feedback Hub"
+          className="inline-flex min-h-8 items-center justify-center rounded-md border border-purple-300 bg-white px-2 text-xs font-bold text-purple-700 transition hover:border-purple-400 hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-300 dark:border-purple-800 dark:bg-slate-900 dark:text-purple-300 dark:hover:bg-purple-950"
+          aria-label="Beta Feedback Hub"
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+        </Link>
+      )}
       <LogoutButton />
       {isUserAdmin && (
         <div className="ml-1 shrink-0 border-l border-slate-300 pl-2 dark:border-slate-700">

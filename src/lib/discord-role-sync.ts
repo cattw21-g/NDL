@@ -139,8 +139,9 @@ export async function syncDiscordRolesForUser(
     else if (lower.includes("level creator")) roleMap["creator"] = r.id;
     else if (lower.includes("verified member")) roleMap["verified"] = r.id;
     else if (lower.includes("admin")) roleMap["admin"] = r.id;
-    else if (lower.includes("moderator")) roleMap["mod"] = r.id;
-    else if (lower.includes("reviewer")) roleMap["reviewer"] = r.id;
+    else if (lower.includes("moderator") || lower.includes("list mod")) roleMap["mod"] = r.id;
+    else if (lower.includes("reviewer") || lower.includes("list reviewer")) roleMap["reviewer"] = r.id;
+    else if (lower.includes("beta") || lower.includes("tester")) roleMap["beta"] = r.id;
     else if (lower.includes("owner")) roleMap["owner"] = r.id;
   }
 
@@ -180,8 +181,12 @@ export async function syncDiscordRolesForUser(
   // 2. Staff Roles
   if (user.role === "ADMIN") {
     targetRoleKeys.add("admin");
-  } else if (user.role === "MODERATOR") {
+  } else if (user.role === "MODERATOR" || user.role === "LIST_MODERATOR") {
     targetRoleKeys.add("mod");
+  } else if (user.role === "LIST_REVIEWER") {
+    targetRoleKeys.add("reviewer");
+  } else if (user.role === "BETA_TESTER") {
+    targetRoleKeys.add("beta");
   }
 
   // 3. Top Player Hierarchy (Mutually exclusive: only 1 top tier role)
@@ -213,7 +218,20 @@ export async function syncDiscordRolesForUser(
   const addedRoles: string[] = [];
   const removedRoles: string[] = [];
 
-  const rolesToManage = ["top1", "top10", "top50", "top100", "victor", "player", "creator", "verified", "admin", "mod"];
+  const rolesToManage = [
+    "top1",
+    "top10",
+    "top50",
+    "top100",
+    "victor",
+    "player",
+    "creator",
+    "verified",
+    "admin",
+    "mod",
+    "reviewer",
+    "beta",
+  ];
 
   for (const key of rolesToManage) {
     const roleId = roleMap[key];
@@ -256,6 +274,103 @@ export async function syncDiscordRolesForUser(
     removedRoles,
     success: true,
   };
+}
+
+const BACKOFF_SECONDS = [30, 120, 600, 1800, 3600];
+
+export async function enqueueDiscordSyncJob(params: {
+  userId: string;
+  action: "SYNC" | "ADD_ROLE" | "REMOVE_ROLE";
+  roleKey?: string;
+  payload?: Record<string, unknown>;
+}): Promise<string> {
+  const job = await prisma.discordSyncJob.create({
+    data: {
+      userId: params.userId,
+      action: params.action,
+      roleKey: params.roleKey || "SYNC",
+      payload: params.payload ? JSON.stringify(params.payload) : null,
+      status: "PENDING",
+      attempts: 0,
+      nextAttemptAt: new Date(),
+    },
+  });
+  return job.id;
+}
+
+export async function processPendingDiscordSyncJobs(limit = 20): Promise<{
+  processed: number;
+  succeeded: number;
+  failed: number;
+}> {
+  const now = new Date();
+  const pendingJobs = await prisma.discordSyncJob.findMany({
+    where: {
+      status: "PENDING",
+      nextAttemptAt: { lte: now },
+    },
+    orderBy: { createdAt: "asc" },
+    take: limit,
+  });
+
+  if (pendingJobs.length === 0) {
+    return { processed: 0, succeeded: 0, failed: 0 };
+  }
+
+  let succeeded = 0;
+  let failed = 0;
+
+  for (const job of pendingJobs) {
+    try {
+      const syncResult = await syncDiscordRolesForUser(job.userId);
+      if (syncResult.success) {
+        await prisma.discordSyncJob.update({
+          where: { id: job.id },
+          data: {
+            status: "COMPLETED",
+            attempts: job.attempts + 1,
+            lastError: null,
+          },
+        });
+        succeeded++;
+      } else {
+        const nextAttempts = job.attempts + 1;
+        const isExhausted = nextAttempts >= job.maxAttempts;
+        const backoffSec = BACKOFF_SECONDS[Math.min(nextAttempts - 1, BACKOFF_SECONDS.length - 1)];
+        const nextAttempt = new Date(Date.now() + backoffSec * 1000);
+
+        await prisma.discordSyncJob.update({
+          where: { id: job.id },
+          data: {
+            attempts: nextAttempts,
+            status: isExhausted ? "FAILED" : "PENDING",
+            nextAttemptAt: nextAttempt,
+            lastError: syncResult.error || "Sync returned false",
+          },
+        });
+        failed++;
+      }
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      const nextAttempts = job.attempts + 1;
+      const isExhausted = nextAttempts >= job.maxAttempts;
+      const backoffSec = BACKOFF_SECONDS[Math.min(nextAttempts - 1, BACKOFF_SECONDS.length - 1)];
+      const nextAttempt = new Date(Date.now() + backoffSec * 1000);
+
+      await prisma.discordSyncJob.update({
+        where: { id: job.id },
+        data: {
+          attempts: nextAttempts,
+          status: isExhausted ? "FAILED" : "PENDING",
+          nextAttemptAt: nextAttempt,
+          lastError: errMsg.slice(0, 500),
+        },
+      });
+      failed++;
+    }
+  }
+
+  return { processed: pendingJobs.length, succeeded, failed };
 }
 
 export async function syncAllLinkedDiscordUsers(): Promise<{

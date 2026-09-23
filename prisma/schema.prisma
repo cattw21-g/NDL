@@ -10,7 +10,55 @@ datasource db {
 enum Role {
   ADMIN
   MODERATOR
+  LIST_MODERATOR
+  LIST_REVIEWER
+  BETA_TESTER
   PLAYER
+}
+
+enum ApplicationRole {
+  LIST_REVIEWER
+  LIST_MODERATOR
+  BETA_TESTER
+}
+
+enum ApplicationOpeningStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  ARCHIVED
+}
+
+enum ApplicationQuestionType {
+  SHORT_TEXT
+  LONG_TEXT
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  YES_NO
+}
+
+enum ApplicationSubmissionStatus {
+  DRAFT
+  SUBMITTED
+  WITHDRAWN
+  SHORTLISTED
+  ACCEPTED
+  REJECTED
+}
+
+enum BetaFeedbackType {
+  BUG
+  UI_UX
+  PERFORMANCE
+  SUGGESTION
+  OTHER
+}
+
+enum BetaFeedbackStatus {
+  NEW
+  REVIEWING
+  FIXED
+  WONT_FIX
 }
 
 enum LevelStatus {
@@ -107,6 +155,12 @@ model User {
   changelogPosts          ChangelogPost[]          @relation("ChangelogAuthor")
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens     PasswordResetToken[]
+  createdOpenings         ApplicationOpening[]     @relation("OpeningCreator")
+  applications            ApplicationSubmission[]  @relation("ApplicationUser")
+  decidedApplications     ApplicationSubmission[]  @relation("ApplicationDecider")
+  applicationNotes        ApplicationNote[]
+  notifications           UserNotification[]
+  betaFeedbacks           BetaFeedback[]
 
   @@index([role])
   @@index([countryCode])
@@ -438,4 +492,134 @@ model LevelPositionSnapshot {
   @@index([levelId, recordedAt])
   @@index([recordedAt])
 }
+
+model ApplicationOpening {
+  id           String                   @id @default(cuid())
+  slug         String                   @unique
+  title        String
+  role         ApplicationRole
+  description  String
+  status       ApplicationOpeningStatus @default(DRAFT)
+  openAt       DateTime?
+  deadline     DateTime?
+  maxPositions Int?
+  requirements String?
+  isPublished  Boolean                  @default(false)
+  createdById  String
+  createdBy    User                     @relation("OpeningCreator", fields: [createdById], references: [id])
+  questions    ApplicationQuestion[]
+  submissions  ApplicationSubmission[]
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+
+  @@index([slug])
+  @@index([status])
+  @@index([role])
+}
+
+model ApplicationQuestion {
+  id          String                  @id @default(cuid())
+  openingId   String
+  opening     ApplicationOpening      @relation(fields: [openingId], references: [id], onDelete: Cascade)
+  order       Int
+  prompt      String
+  description String?
+  type        ApplicationQuestionType
+  required    Boolean                 @default(true)
+  options     String?
+  placeholder String?
+  minLength   Int?
+  maxLength   Int?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  @@index([openingId, order])
+}
+
+model ApplicationSubmission {
+  id               String                      @id @default(cuid())
+  openingId        String
+  opening          ApplicationOpening          @relation(fields: [openingId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User                        @relation("ApplicationUser", fields: [userId], references: [id], onDelete: Cascade)
+  status           ApplicationSubmissionStatus @default(DRAFT)
+  answers          String                      @default("{}")
+  questionSnapshot String?
+  submittedAt      DateTime?
+  decidedAt        DateTime?
+  decidedById      String?
+  decidedBy        User?                       @relation("ApplicationDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+  decisionNotes    String?
+  rating           Int?
+  rubricScores     String?
+  notes            ApplicationNote[]
+  createdAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
+
+  @@unique([openingId, userId])
+  @@index([openingId, status])
+  @@index([userId, status])
+}
+
+model ApplicationNote {
+  id           String                @id @default(cuid())
+  submissionId String
+  submission   ApplicationSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  authorId     String
+  author       User                  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content      String
+  createdAt    DateTime              @default(now())
+
+  @@index([submissionId, createdAt])
+}
+
+model UserNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  type      String   @default("GENERAL")
+  createdAt DateTime @default(now())
+
+  @@index([userId, read, createdAt])
+}
+
+model DiscordSyncJob {
+  id            String   @id @default(cuid())
+  userId        String
+  action        String
+  roleKey       String
+  payload       String?
+  status        String   @default("PENDING")
+  attempts      Int      @default(0)
+  maxAttempts   Int      @default(5)
+  nextAttemptAt DateTime @default(now())
+  lastError     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status, nextAttemptAt])
+}
+
+model BetaFeedback {
+  id          String             @id @default(cuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        BetaFeedbackType
+  status      BetaFeedbackStatus @default(NEW)
+  title       String
+  description String
+  pageUrl     String?
+  browserInfo String?
+  adminNotes  String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}
+
 

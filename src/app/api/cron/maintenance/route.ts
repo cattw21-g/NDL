@@ -27,7 +27,11 @@ export async function POST(request: NextRequest) {
 
     try {
       if (process.env.DISCORD_BOT_TOKEN) {
-        const { syncAllLinkedDiscordUsers } = await import("@/lib/discord-role-sync");
+        const { syncAllLinkedDiscordUsers, processPendingDiscordSyncJobs } = await import("@/lib/discord-role-sync");
+        // Process queued outbox sync jobs first
+        await processPendingDiscordSyncJobs(25).catch((err) =>
+          console.error("Cron Discord outbox job processing error:", err),
+        );
         const discordSync = await syncAllLinkedDiscordUsers();
         discordSyncedCount = discordSync.totalSynced;
       }

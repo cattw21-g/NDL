@@ -28,6 +28,7 @@ const footerColumns = [
       { href: "/map", label: "World Map" },
       { href: "/stats", label: "Stats Viewer" },
       { href: "/staff", label: "Staff Directory" },
+      { href: "/applications", label: "Staff Applications" },
       { href: "/api-docs", label: "Public REST API" },
       { href: "/discord-bot", label: "Discord Bot" },
     ],
@@ -41,6 +42,7 @@ export function SiteFooter({
     playerName: string;
     isModerator: boolean;
     isAdmin: boolean;
+    isBetaTester?: boolean;
   } | null;
 }) {
   const pathname = usePathname();
@@ -53,12 +55,15 @@ export function SiteFooter({
     ? [
         { href: `/players/${user.playerName}`, label: "Profile" },
         { href: "/submit", label: "Submit Record" },
+        { href: "/applications/mine", label: "My Applications" },
+        ...(user.isBetaTester ? [{ href: "/beta/feedback", label: "Beta Feedback" }] : []),
         ...(user.isModerator ? [{ href: "/moderation", label: "Review" }] : []),
         ...(user.isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
       ]
     : [
         { href: "/login", label: "Login" },
         { href: "/register", label: "Register" },
+        { href: "/applications", label: "Apply for Staff" },
         { href: "/verify-email", label: "Verify Email" },
       ];
   const columns = [
