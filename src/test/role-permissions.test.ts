@@ -45,10 +45,12 @@ describe("NDL Role-Based Access Control (RBAC) Matrix", () => {
       expect(isModeratorRole("MODERATOR")).toBe(true);
     });
 
-    it("allows List Moderators to review Top 10 completions and manage records", () => {
+    it("allows List Moderators to review normal completions and manage records, but DENIES Top 10 final approval", () => {
       expect(canReviewSubmissions("LIST_MODERATOR")).toBe(true);
-      expect(canApproveSubmission("LIST_MODERATOR", 1)).toBe(true);
-      expect(canApproveSubmission("LIST_MODERATOR", 5)).toBe(true);
+      expect(canApproveSubmission("LIST_MODERATOR", 1)).toBe(false);
+      expect(canApproveSubmission("LIST_MODERATOR", 5)).toBe(false);
+      expect(canApproveSubmission("LIST_MODERATOR", 10)).toBe(false);
+      expect(canApproveSubmission("LIST_MODERATOR", 11)).toBe(true);
       expect(canApproveSubmission("LIST_MODERATOR", 50)).toBe(true);
       expect(canUnlistRecord("LIST_MODERATOR")).toBe(true);
       expect(canRestoreRecord("LIST_MODERATOR")).toBe(true);
@@ -95,16 +97,44 @@ describe("NDL Role-Based Access Control (RBAC) Matrix", () => {
     });
   });
 
-  describe("Regular Player Permissions", () => {
-    it("strictly blocks standard players from elevated permissions", () => {
-      expect(isListReviewerRole("PLAYER")).toBe(false);
-      expect(isListModeratorRole("PLAYER")).toBe(false);
-      expect(isAdminRole("PLAYER")).toBe(false);
-      expect(isBetaTester("PLAYER")).toBe(false);
-      expect(canReviewSubmissions("PLAYER")).toBe(false);
-      expect(canApproveSubmission("PLAYER", 20)).toBe(false);
-      expect(canUnlistRecord("PLAYER")).toBe(false);
-      expect(canManageApplications("PLAYER")).toBe(false);
+  describe("Top 10 Submission Final Approval Gates", () => {
+    it("LIST_REVIEWER -> Top 10 final approval denied", () => {
+      expect(canApproveSubmission("LIST_REVIEWER", 1)).toBe(false);
+      expect(canApproveSubmission("LIST_REVIEWER", 5)).toBe(false);
+      expect(canApproveSubmission("LIST_REVIEWER", 10)).toBe(false);
+      // Allowed for normal list levels > 10
+      expect(canApproveSubmission("LIST_REVIEWER", 11)).toBe(true);
+      expect(canApproveSubmission("LIST_REVIEWER", 25)).toBe(true);
+    });
+
+    it("LIST_MODERATOR -> Top 10 final approval denied", () => {
+      expect(canApproveSubmission("LIST_MODERATOR", 1)).toBe(false);
+      expect(canApproveSubmission("LIST_MODERATOR", 5)).toBe(false);
+      expect(canApproveSubmission("LIST_MODERATOR", 10)).toBe(false);
+      // Allowed for normal list levels > 10
+      expect(canApproveSubmission("LIST_MODERATOR", 11)).toBe(true);
+      expect(canApproveSubmission("LIST_MODERATOR", 25)).toBe(true);
+    });
+
+    it("MODERATOR (legacy) -> Top 10 final approval denied", () => {
+      expect(canApproveSubmission("MODERATOR", 1)).toBe(false);
+      expect(canApproveSubmission("MODERATOR", 10)).toBe(false);
+      expect(canApproveSubmission("MODERATOR", 15)).toBe(true);
+    });
+
+    it("ADMIN -> allowed to give final approval to Top 10 completions", () => {
+      expect(canApproveSubmission("ADMIN", 1)).toBe(true);
+      expect(canApproveSubmission("ADMIN", 5)).toBe(true);
+      expect(canApproveSubmission("ADMIN", 10)).toBe(true);
+      expect(canApproveSubmission("ADMIN", 25)).toBe(true);
+      expect(canApproveSubmission("PLAYER", 1, "cattw21")).toBe(true);
+    });
+
+    it("PLAYER and BETA_TESTER -> denied review on all levels", () => {
+      expect(canApproveSubmission("PLAYER", 1)).toBe(false);
+      expect(canApproveSubmission("PLAYER", 25)).toBe(false);
+      expect(canApproveSubmission("BETA_TESTER", 1)).toBe(false);
+      expect(canApproveSubmission("BETA_TESTER", 25)).toBe(false);
     });
   });
 });

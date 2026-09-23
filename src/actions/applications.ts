@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { canManageApplications, isBetaTester } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
-import { enqueueDiscordSyncJob } from "@/lib/discord-role-sync";
+import type { Prisma } from "@/generated/prisma/client";
 import { createUserNotification } from "@/lib/notifications";
 import { APPLICATION_TEMPLATES } from "@/lib/application-templates";
 import {
@@ -454,18 +454,17 @@ export async function shortlistApplicationAction(params: {
   return { success: true, message: "Applicant shortlisted." };
 }
 
-export async function decideApplicationAction(params: {
-  submissionId: string;
-  decision: "ACCEPTED" | "REJECTED";
-  decisionNotes?: string;
-  ignorePositionLimit?: boolean;
-}): Promise<ActionResult> {
-  const user = await getCurrentUser();
-  if (!user || !canManageApplications(user.role, user.playerName)) {
-    return { success: false, error: "Administrator authorization required." };
-  }
-
-  const submission = await prisma.applicationSubmission.findUnique({
+export async function executeApplicationDecision(
+  tx: Prisma.TransactionClient,
+  params: {
+    submissionId: string;
+    decision: "ACCEPTED" | "REJECTED";
+    adminUser: { id: string; displayName: string; role: Role; playerName: string };
+    decisionNotes?: string;
+    ignorePositionLimit?: boolean;
+  },
+) {
+  const submission = await tx.applicationSubmission.findUnique({
     where: { id: params.submissionId },
     include: {
       opening: true,
@@ -474,13 +473,17 @@ export async function decideApplicationAction(params: {
   });
 
   if (!submission) {
-    return { success: false, error: "Application submission not found." };
+    throw new Error("Application submission not found.");
+  }
+
+  if (submission.status === "ACCEPTED") {
+    throw new Error("Application has already been accepted.");
   }
 
   if (params.decision === "ACCEPTED") {
-    // Check positions limit
+    // Check positions limit INSIDE the database transaction
     if (submission.opening.maxPositions && !params.ignorePositionLimit) {
-      const acceptedCount = await prisma.applicationSubmission.count({
+      const acceptedCount = await tx.applicationSubmission.count({
         where: {
           openingId: submission.openingId,
           status: "ACCEPTED",
@@ -488,10 +491,9 @@ export async function decideApplicationAction(params: {
       });
 
       if (acceptedCount >= submission.opening.maxPositions) {
-        return {
-          success: false,
-          error: `Position limit reached (${acceptedCount}/${submission.opening.maxPositions} accepted). Check override to proceed anyway.`,
-        };
+        throw new Error(
+          `Position limit reached (${acceptedCount}/${submission.opening.maxPositions} accepted). Position is already filled.`,
+        );
       }
     }
 
@@ -504,90 +506,135 @@ export async function decideApplicationAction(params: {
 
     const targetUserRole = roleMapping[submission.opening.role];
 
-    // Atomically execute: update submission, update user role, create moderation audit log
-    await prisma.$transaction(async (tx) => {
-      await tx.applicationSubmission.update({
-        where: { id: submission.id },
-        data: {
-          status: "ACCEPTED",
-          decidedAt: new Date(),
-          decidedById: user.id,
-          decisionNotes: params.decisionNotes?.trim() || null,
-        },
-      });
-
-      // Do not demote if user is already an ADMIN
-      if (submission.user.role !== "ADMIN") {
-        await tx.user.update({
-          where: { id: submission.userId },
-          data: {
-            role: targetUserRole,
-          },
-        });
-
-        await tx.moderationAction.create({
-          data: {
-            actorId: user.id,
-            type: ModerationActionType.USER_ROLE_UPDATED,
-            targetType: "User",
-            targetId: submission.userId,
-            summary: `${user.displayName} granted ${submission.user.displayName} the ${targetUserRole} role via Staff Application acceptance.`,
-            metadata: {
-              previousRole: submission.user.role,
-              nextRole: targetUserRole,
-              openingId: submission.openingId,
-              submissionId: submission.id,
-            },
-          },
-        });
-      }
-    });
-
-    // Create user notification
-    await createUserNotification({
-      userId: submission.userId,
-      title: "Application Accepted!",
-      message: `Congratulations! Your application for "${submission.opening.title}" has been accepted, and you have been granted the ${targetUserRole} role.`,
-      link: "/applications/mine",
-      type: "ROLE_CHANGE",
-    });
-
-    // Enqueue Discord role sync job
-    await enqueueDiscordSyncJob({
-      userId: submission.userId,
-      action: "ADD_ROLE",
-      roleKey: submission.opening.role.toLowerCase(),
-      payload: { reason: "Application accepted" },
-    });
-  } else {
-    // REJECTED
-    await prisma.applicationSubmission.update({
+    // Atomically execute: update submission, update user role, create moderation audit log, notification, outbox job
+    const updatedSubmission = await tx.applicationSubmission.update({
       where: { id: submission.id },
       data: {
-        status: "REJECTED",
+        status: "ACCEPTED",
         decidedAt: new Date(),
-        decidedById: user.id,
+        decidedById: params.adminUser.id,
         decisionNotes: params.decisionNotes?.trim() || null,
       },
     });
 
-    await createUserNotification({
-      userId: submission.userId,
-      title: "Application Status Update",
-      message: `Your application for "${submission.opening.title}" has been reviewed. Thank you for your interest and time.`,
-      link: "/applications/mine",
-      type: "APPLICATION",
+    if (submission.user.role !== "ADMIN") {
+      await tx.user.update({
+        where: { id: submission.userId },
+        data: {
+          role: targetUserRole,
+        },
+      });
+
+      await tx.moderationAction.create({
+        data: {
+          actorId: params.adminUser.id,
+          type: ModerationActionType.USER_ROLE_UPDATED,
+          targetType: "User",
+          targetId: submission.userId,
+          summary: `${params.adminUser.displayName} granted ${submission.user.displayName} the ${targetUserRole} role via Staff Application acceptance.`,
+          metadata: {
+            previousRole: submission.user.role,
+            nextRole: targetUserRole,
+            openingId: submission.openingId,
+            submissionId: submission.id,
+          },
+        },
+      });
+    }
+
+    // Create UserNotification inside transaction
+    await tx.userNotification.create({
+      data: {
+        userId: submission.userId,
+        title: "Application Accepted!",
+        message: `Congratulations! Your application for "${submission.opening.title}" has been accepted, and you have been granted the ${targetUserRole} role.`,
+        link: "/applications/mine",
+        type: "ROLE_CHANGE",
+      },
     });
+
+    // Enqueue DiscordSyncJob inside transaction
+    await tx.discordSyncJob.create({
+      data: {
+        userId: submission.userId,
+        action: "ADD_ROLE",
+        roleKey: submission.opening.role.toLowerCase(),
+        payload: JSON.stringify({ reason: "Staff application accepted" }),
+        status: "PENDING",
+        attempts: 0,
+        nextAttemptAt: new Date(),
+      },
+    });
+
+    return { submission: updatedSubmission, roleGranted: targetUserRole };
+  } else {
+    // REJECTED
+    const updatedSubmission = await tx.applicationSubmission.update({
+      where: { id: submission.id },
+      data: {
+        status: "REJECTED",
+        decidedAt: new Date(),
+        decidedById: params.adminUser.id,
+        decisionNotes: params.decisionNotes?.trim() || null,
+      },
+    });
+
+    await tx.userNotification.create({
+      data: {
+        userId: submission.userId,
+        title: "Application Status Update",
+        message: `Your application for "${submission.opening.title}" has been reviewed. Thank you for your interest and time.`,
+        link: "/applications/mine",
+        type: "APPLICATION",
+      },
+    });
+
+    return { submission: updatedSubmission, roleGranted: null };
+  }
+}
+
+export async function decideApplicationAction(params: {
+  submissionId: string;
+  decision: "ACCEPTED" | "REJECTED";
+  decisionNotes?: string;
+  ignorePositionLimit?: boolean;
+}): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user || !canManageApplications(user.role, user.playerName)) {
+    return { success: false, error: "Administrator authorization required." };
   }
 
-  revalidatePath(`/admin/applications/${submission.openingId}`);
-  revalidatePath(`/admin/applications/${submission.openingId}/submissions/${submission.id}`);
-  revalidatePath("/applications/mine");
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      return executeApplicationDecision(tx, {
+        submissionId: params.submissionId,
+        decision: params.decision,
+        adminUser: {
+          id: user.id,
+          displayName: user.displayName,
+          role: user.role as Role,
+          playerName: user.playerName,
+        },
+        decisionNotes: params.decisionNotes,
+        ignorePositionLimit: params.ignorePositionLimit,
+      });
+    });
 
-  return {
-    success: true,
-    message: `Application ${params.decision.toLowerCase()}.`,
-  };
+    revalidatePath(`/admin/applications/${result.submission.openingId}`);
+    revalidatePath(`/admin/applications/${result.submission.openingId}/submissions/${result.submission.id}`);
+    revalidatePath("/applications/mine");
+
+    return {
+      success: true,
+      message: `Application ${params.decision.toLowerCase()}.`,
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      success: false,
+      error: message,
+    };
+  }
 }
 
 // ==========================================

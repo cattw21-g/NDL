@@ -38,15 +38,22 @@ export function canReviewSubmissions(role?: string | null): boolean {
 }
 
 /**
- * Top 10 record submissions require List Moderator or Admin review.
- * Levels beyond Top 10 can be reviewed and decided by List Reviewers.
+ * Top 10 record submissions require Admin final approval.
+ * List Reviewers and List Moderators CANNOT give final approval to Top 10.
+ * Submissions beyond Top 10 can be approved by List Reviewers, List Moderators, and Admins.
  */
-export function canApproveSubmission(role?: string | null, levelRank?: number | null): boolean {
-  if (!isListReviewerRole(role)) return false;
-  if (typeof levelRank === "number" && levelRank >= 1 && levelRank <= 10) {
-    return isListModeratorRole(role);
+export function canApproveSubmission(
+  role?: string | null,
+  levelRank?: number | null,
+  playerName?: string | null,
+): boolean {
+  if (isAdminRole(role, playerName)) {
+    return true;
   }
-  return true;
+  if (typeof levelRank === "number" && levelRank >= 1 && levelRank <= 10) {
+    return false;
+  }
+  return isListReviewerRole(role);
 }
 
 export function canManageLevels(role?: string | null, playerName?: string | null): boolean {

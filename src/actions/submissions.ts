@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 
 import { ModerationActionType } from "@/generated/prisma/enums";
 import { getCurrentUser, requireModerator } from "@/lib/auth";
-import { isAdminRole } from "@/lib/permissions";
+import { isAdminRole, canApproveSubmission } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
 import { normalizeVideoUrl } from "@/lib/video-validation";
 import {
@@ -526,13 +526,10 @@ export async function reviewSubmissionAction(formData: FormData) {
     redirect("/moderation?error=verification_admin_only");
   }
 
-  // Security: Top 10 Demon High-Stakes Gate (Admin Confirmation Required for 100% Completions)
+  // Security: Top 10 Demon High-Stakes Gate (Admin Confirmation Required for Top 10 Completions)
   if (
     parsed.data.status === "ACCEPTED" &&
-    submission.level.rank !== null &&
-    submission.level.rank <= 10 &&
-    (submission.progress ?? 100) === 100 &&
-    !isAdminRole(moderator.role, moderator.playerName)
+    !canApproveSubmission(moderator.role, submission.level.rank, moderator.playerName)
   ) {
     redirect("/moderation?error=top10_admin_only");
   }
