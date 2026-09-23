@@ -26,8 +26,8 @@ describe("LevelCard", () => {
 
     expect(markup).toContain("#1");
     expect(markup).toContain("/uploads/thumbnails/uploaded-thumb.webp");
-    expect(markup).toContain("w-20 sm:w-28");
     expect(markup).toContain("aspect-video");
+    expect(markup).toContain("sm:w-40 md:w-48");
     expect(markup).toContain("sm:flex");
     expect(markup).toContain("320 pts");
     expect(markup).toContain("2 records");

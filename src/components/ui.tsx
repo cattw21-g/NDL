@@ -135,7 +135,7 @@ export function RankBadge({
   return (
     <span
       className={cx(
-        "inline-flex h-8 min-w-11 items-center justify-center rounded-md border px-2 text-xs font-black tabular-nums transition-colors",
+        "inline-flex h-9 min-w-12 items-center justify-center rounded-lg border px-2.5 text-sm font-black tabular-nums transition-colors sm:h-11 sm:min-w-14 sm:text-base",
         topRank,
         className,
       )}
@@ -155,7 +155,7 @@ export function PointsPill({
   return (
     <span
       className={cx(
-        "inline-flex h-7 items-center justify-center rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 text-xs font-bold text-emerald-700 tabular-nums dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300",
+        "inline-flex h-8 items-center justify-center rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 text-xs sm:text-sm font-black text-emerald-700 tabular-nums dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300",
         className,
       )}
     >

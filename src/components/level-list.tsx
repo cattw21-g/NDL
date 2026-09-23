@@ -7,7 +7,7 @@ import { LevelCard, type LevelCardLevel } from "@/components/level-card";
 import { cx, EmptyState, inputClass, SectionPanel } from "@/components/ui";
 import { useUserSubmissions } from "@/lib/use-user-submissions";
 
-type SortMode = "rank" | "points" | "records" | "name";
+type SortMode = "rank" | "records" | "name";
 type TabMode = "MAIN" | "EXTENDED" | "LEGACY" | "ALL";
 type TierFilter = "ALL" | "TOP_10" | "TOP_50";
 
@@ -125,9 +125,6 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
       return matchesTab && matchesTier && (!needle || haystack.includes(needle));
     })
     .toSorted((a, b) => {
-      if (sort === "points") {
-        return b.points - a.points;
-      }
       if (sort === "records") {
         return (b._count?.records ?? 0) - (a._count?.records ?? 0);
       }
@@ -244,10 +241,9 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
                 aria-label="Sort demons by"
                 className={`${inputClass} py-1 text-xs font-medium`}
               >
-                <option value="rank">Rank</option>
-                <option value="points">Points</option>
-                <option value="records">Records</option>
-                <option value="name">Name</option>
+                <option value="rank">Rank (#1 First)</option>
+                <option value="records">Most Records</option>
+                <option value="name">Name (A–Z)</option>
               </select>
             </div>
 
@@ -259,7 +255,7 @@ export function LevelList({ levels }: { levels: LevelCardLevel[] }) {
       </div>
 
       {/* Level Cards List */}
-      <div className="space-y-2 bg-zinc-50/30 p-2 sm:p-3 dark:bg-zinc-950/30">
+      <div className="space-y-3 bg-zinc-50/30 p-2.5 sm:space-y-3.5 sm:p-3.5 dark:bg-zinc-950/30">
         {filtered.length > 0 ? (
           filtered.map((level) => {
             const userSub = submissionsBySlug[level.slug];
