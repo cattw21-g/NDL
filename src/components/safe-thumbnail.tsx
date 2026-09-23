@@ -6,7 +6,7 @@ import Image from "next/image";
 import { safeThumbnailSrc, FALLBACK_THUMBNAIL_SRC } from "@/lib/media";
 
 const DEFAULT_SIZES =
-  "(max-width: 640px) 144px, (max-width: 768px) 176px, (max-width: 1024px) 208px, 224px";
+  "(max-width: 639px) 144px, (max-width: 767px) 176px, (max-width: 1023px) 208px, 224px";
 
 function isOptimizableSource(src: string): boolean {
   if (!src) return false;
