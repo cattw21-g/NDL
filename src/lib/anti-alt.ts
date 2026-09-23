@@ -1,16 +1,40 @@
 import crypto from "node:crypto";
 import { isAdminRole, type AppRole } from "./permissions";
+import { isProduction } from "./production-env";
 
-const IP_KEY =
-  process.env.ANTI_ALT_SECRET ||
-  process.env.SESSION_SECRET ||
-  process.env.NEXTAUTH_SECRET ||
-  "ndl-network-security-hmac-key";
+function getAntiAltKey(): string {
+  const secret =
+    process.env.ANTI_ALT_SECRET?.trim() ||
+    process.env.SESSION_SECRET?.trim() ||
+    process.env.NEXTAUTH_SECRET?.trim();
 
-const LEGACY_SALT =
-  process.env.SESSION_SECRET ||
-  process.env.NEXTAUTH_SECRET ||
-  "ndl-network-security-salt";
+  if (!secret) {
+    if (isProduction()) {
+      throw new Error(
+        "ANTI_ALT_SECRET or SESSION_SECRET must be configured in production environment.",
+      );
+    }
+    return "ndl-network-security-hmac-key";
+  }
+  return secret;
+}
+
+function getLegacySalt(): string {
+  const secret =
+    process.env.SESSION_SECRET?.trim() ||
+    process.env.NEXTAUTH_SECRET?.trim() ||
+    process.env.ANTI_ALT_SECRET?.trim();
+
+  if (!secret) {
+    if (isProduction()) {
+      throw new Error(
+        "SESSION_SECRET or ANTI_ALT_SECRET must be configured in production environment.",
+      );
+    }
+    return "ndl-network-security-salt";
+  }
+  return secret;
+}
 
 /**
  * Normalizes an IP string by stripping IPv6 mapping prefix (::ffff:) and whitespace.
@@ -49,14 +73,14 @@ export function isLocalhostIp(ip: string): boolean {
 export function hashClientIp(rawIp: string | null | undefined): string | null {
   const ip = normalizeIp(rawIp);
   if (!ip) return null;
-  return crypto.createHmac("sha256", IP_KEY).update(ip).digest("hex");
+  return crypto.createHmac("sha256", getAntiAltKey()).update(ip).digest("hex");
 }
 
 /**
  * Backwards-compatible hash check for legacy salted SHA-256 digests.
  */
 function legacyHashClientIp(ip: string): string {
-  return crypto.createHash("sha256").update(`${ip}:${LEGACY_SALT}`).digest("hex");
+  return crypto.createHash("sha256").update(`${ip}:${getLegacySalt()}`).digest("hex");
 }
 
 /**

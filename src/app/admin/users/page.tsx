@@ -1,4 +1,4 @@
-﻿import {
+import {
   updateUserCountryAdminAction,
   updateUserRoleAction,
 } from "@/actions/admin";
@@ -6,6 +6,7 @@ import { PageMessage } from "@/components/message";
 import { StatusBadge } from "@/components/status-badge";
 import { SubmitButton } from "@/components/submit-button";
 import {
+  EmptyState,
   FactPill,
   FieldLabel,
   inputClass,
@@ -15,6 +16,7 @@ import {
 import { requireAdmin } from "@/lib/auth";
 import { getAllCountries, getCountryMeta } from "@/lib/countries";
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +28,28 @@ export default async function AdminUsersPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await requireAdmin();
-  const [params, users] = await Promise.all([
-    searchParams,
+  const params = await searchParams;
+  const q = typeof params.q === "string" ? params.q.trim() : "";
+  const roleFilter = typeof params.role === "string" ? params.role.trim().toUpperCase() : "";
+
+  const where: Prisma.UserWhereInput = {};
+  if (q) {
+    where.OR = [
+      { displayName: { contains: q, mode: "insensitive" } },
+      { playerName: { contains: q, mode: "insensitive" } },
+      { email: { contains: q, mode: "insensitive" } },
+    ];
+  }
+  if (roleFilter && roles.includes(roleFilter)) {
+    where.role = roleFilter as "ADMIN" | "MODERATOR" | "PLAYER";
+  }
+
+  const [totalUsers, users] = await Promise.all([
+    prisma.user.count({ where }),
     prisma.user.findMany({
+      where,
       orderBy: [{ role: "asc" }, { displayName: "asc" }],
+      take: 100,
     }),
   ]);
 
@@ -42,8 +62,62 @@ export default async function AdminUsersPage({
         description="Role and country changes affect leaderboards, player stats, and review access immediately."
       />
       <PageMessage searchParams={params} />
+
+      <SectionPanel className="p-4">
+        <form method="get" className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex-1">
+            <FieldLabel label="Search Users">
+              <input
+                type="text"
+                name="q"
+                defaultValue={q}
+                placeholder="Search by name, handle, or email..."
+                className={inputClass}
+              />
+            </FieldLabel>
+          </div>
+          <div className="w-full sm:w-48">
+            <FieldLabel label="Role Filter">
+              <select name="role" defaultValue={roleFilter} className={inputClass}>
+              <option value="">All Roles</option>
+              {roles.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </FieldLabel>
+        </div>
+        <div className="flex gap-2">
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center rounded-xl bg-cyan-500 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-cyan-400"
+            >
+              Filter
+            </button>
+            {(q || roleFilter) && (
+              <a
+                href="/admin/users"
+                className="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-800/60 px-4 py-2 text-sm font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
+              >
+                Reset
+              </a>
+            )}
+          </div>
+        </form>
+        <div className="mt-3 text-xs text-slate-400">
+          Showing {users.length} of {totalUsers} user{totalUsers === 1 ? "" : "s"} (capped at 100 per query)
+        </div>
+      </SectionPanel>
+
       <section className="space-y-3">
-        {users.map((user) => {
+        {users.length === 0 ? (
+          <EmptyState
+            title="No users found"
+            description="Try refining your search query or role filter."
+          />
+        ) : (
+          users.map((user) => {
           const country = getCountryMeta(user.countryCode);
           return (
             <SectionPanel
@@ -125,7 +199,7 @@ export default async function AdminUsersPage({
               </form>
             </SectionPanel>
           );
-        })}
+        }))}
       </section>
     </div>
   );

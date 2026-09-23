@@ -17,11 +17,14 @@ import {
   publicUserWhere,
 } from "@/lib/demo-visibility";
 import { formatDate } from "@/lib/format";
+import { after } from "next/server";
 import { calculateCurrentLevelPoints, type ScoredLevelStatus } from "@/lib/points";
 import {
-  getLastKnownGoodLevels,
+  getDurableLastKnownGoodLevelsAsync,
+  getSnapshotOutageNotice,
   recordHealthyLevelSnapshot,
 } from "@/lib/last-known-good";
+import type { FallbackLevel } from "@/lib/fallback-levels";
 import { resolveLevelThumbnail } from "@/lib/media";
 
 export const revalidate = 60;
@@ -72,8 +75,7 @@ export default async function Home() {
   let latestRecords: RecordItem[] = [];
   let latestPost: ChangelogItem | null = null;
   let isDegraded = false;
-
-  let fallbackMeta: ReturnType<typeof getLastKnownGoodLevels> | null = null;
+  let fallbackMeta: Awaited<ReturnType<typeof getDurableLastKnownGoodLevelsAsync>> | null = null;
 
   try {
     const results = await Promise.all([
@@ -143,12 +145,16 @@ export default async function Home() {
     acceptedCount = results[2];
     latestRecords = results[3];
     latestPost = results[4];
-    recordHealthyLevelSnapshot(levels);
+
+    const { persistTask } = recordHealthyLevelSnapshot(levels);
+    after(async () => {
+      await persistTask;
+    });
   } catch (err) {
     isDegraded = true;
     console.warn("Database unavailable, falling back to cached/fallback level data:", err);
-    fallbackMeta = getLastKnownGoodLevels();
-    levels = fallbackMeta.levels.map((lvl) => ({
+    fallbackMeta = await getDurableLastKnownGoodLevelsAsync();
+    levels = fallbackMeta.levels.map((lvl: FallbackLevel) => ({
       ...lvl,
       _count: { records: lvl.recordCount },
     }));
@@ -157,11 +163,10 @@ export default async function Home() {
   }
 
   if (levels.length === 0) {
-    isDegraded = true;
     if (!fallbackMeta) {
-      fallbackMeta = getLastKnownGoodLevels();
+      fallbackMeta = await getDurableLastKnownGoodLevelsAsync();
     }
-    levels = fallbackMeta.levels.map((lvl) => ({
+    levels = fallbackMeta.levels.map((lvl: FallbackLevel) => ({
       ...lvl,
       _count: { records: lvl.recordCount },
     }));
@@ -173,6 +178,8 @@ export default async function Home() {
 
   const rankedCount = levels.filter((level) => level.status === "RANKED").length;
 
+  const { ageText, isVeryStale } = getSnapshotOutageNotice(fallbackMeta?.lastHealthyAt);
+
   return (
     <div className="space-y-6">
       {/* Degraded / Maintenance Mode Banner */}
@@ -180,10 +187,17 @@ export default async function Home() {
         <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-amber-900 dark:text-amber-200">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
           <div className="text-xs">
-            <p className="text-sm font-bold">Notice: Database in Maintenance Mode</p>
+            <p className="text-sm font-bold">
+              {isVeryStale
+                ? "Notice: Extended Database Maintenance"
+                : "Notice: Database in Maintenance Mode"}
+            </p>
             <p className="mt-0.5 leading-relaxed text-amber-800 dark:text-amber-300">
-              {fallbackMeta?.source === "live-cache" || fallbackMeta?.source === "durable-disk"
-                ? `Live database is temporarily offline for maintenance. Showing the latest saved list${fallbackMeta.lastHealthyAt ? ` from ${fallbackMeta.lastHealthyAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}. Submissions and account actions will resume automatically once connection is restored.`
+              {fallbackMeta?.source === "live-cache" ||
+              fallbackMeta?.source === "ephemeral-tmp" ||
+              fallbackMeta?.source === "local-dev-file" ||
+              fallbackMeta?.source === "durable-blob"
+                ? `Live database is temporarily offline for maintenance. Showing latest saved list${ageText}. Submissions and account actions will resume automatically once connection is restored.`
                 : "The live database is temporarily offline for maintenance. Currently displaying static fallback list data. Submissions, account actions, and live leaderboard updates will resume automatically once the database connection is restored."}
             </p>
           </div>

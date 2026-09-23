@@ -461,4 +461,59 @@ describe("rate limiting", () => {
     );
     expect(remaining.length).toBe(8);
   });
+
+  it("derives deterministic 64-bit BigInt advisory lock IDs with minimal collision surface", async () => {
+    const { deriveAdvisoryLockId } = await import("../lib/rate-limit");
+    const lockA = deriveAdvisoryLockId("login:ip:192.168.1.1");
+    const lockB = deriveAdvisoryLockId("login:ip:192.168.1.1");
+    const lockC = deriveAdvisoryLockId("login:ip:192.168.1.2");
+
+    expect(typeof lockA).toBe("bigint");
+    expect(lockA).toBe(lockB);
+    expect(lockA).not.toBe(lockC);
+  });
+
+  it("fails fast with 429 when pg_try_advisory_xact_lock cannot acquire lock during storm", async () => {
+    const attempts: Attempt[] = [];
+    const client = {
+      ...createClient(attempts),
+      $queryRaw: async () => [{ acquired: false }],
+    };
+
+    const result = await checkRateLimit(
+      client,
+      "login",
+      emailRateLimitKey("storm-user@example.com"),
+    );
+
+    expect(result.allowed).toBe(false);
+    if (!result.allowed) {
+      expect(result.retryAfterSeconds).toBe(2);
+      expect(result.message).toContain("High traffic");
+    }
+  });
+
+  it("fails fast when raw query throws PostgreSQL lock timeout (55P03)", async () => {
+    const attempts: Attempt[] = [];
+    const client = {
+      ...createClient(attempts),
+      $executeRaw: async () => {
+        const err = new Error("canceling statement due to lock timeout; code: 55P03");
+        throw err;
+      },
+    };
+
+    const result = await checkRateLimit(
+      client,
+      "login",
+      emailRateLimitKey("timeout-user@example.com"),
+    );
+
+    expect(result.allowed).toBe(false);
+    if (!result.allowed) {
+      expect(result.retryAfterSeconds).toBe(2);
+      expect(result.message).toContain("High traffic");
+    }
+  });
 });
+

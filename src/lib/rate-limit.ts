@@ -48,6 +48,7 @@ export type RateLimitClient = {
   };
   $transaction?: unknown;
   $executeRaw?: unknown;
+  $queryRaw?: unknown;
 };
 
 const inProcessKeyLocks = new Map<string, Promise<unknown>>();
@@ -60,6 +61,19 @@ export function resetMutexStateForTest(): void {
   inProcessKeyLocks.clear();
 }
 
+/**
+ * Derives a signed 64-bit BigInt for PostgreSQL advisory locks (`pg_advisory_xact_lock(bigint)`
+ * or `pg_try_advisory_xact_lock(bigint)`).
+ *
+ * Collision Analysis:
+ * SHA-256 truncated to 64 bits yields 2^64 possible values (~1.84 x 10^19).
+ * Under the Birthday Paradox:
+ * - With 10,000 concurrent distinct rate-limit keys: collision probability is ~2.7 x 10^-12 (~1 in 370 billion).
+ * - With 1,000,000 concurrent distinct keys: collision probability is ~2.7 x 10^-8 (~1 in 37 million).
+ * Even if two unrelated keys theoretically collide, the only consequence is brief mutual serialization
+ * of their rate-limit checks (each key's window and counter remain completely isolated in the database table),
+ * with zero risk of data corruption or authentication bypass.
+ */
 export function deriveAdvisoryLockId(mutexKey: string): bigint {
   const hash = crypto.createHash("sha256").update(mutexKey).digest();
   return hash.readBigInt64BE(0);
@@ -159,18 +173,54 @@ export async function checkRateLimit(
 
   return withKeyMutex(mutexKey, async () => {
     const execute = async (tx: RateLimitClient): Promise<RateLimitDecision> => {
-      // In PostgreSQL, pg_advisory_xact_lock enforces cross-process mutual exclusion
-      // across multiple Vercel serverless lambdas sharing the database
-      if (typeof tx.$executeRaw === "function") {
+      // In PostgreSQL, advisory locks enforce cross-process mutual exclusion
+      // across multiple Vercel serverless lambdas sharing the database.
+      // During lock storms on a single key, we fail fast rather than letting
+      // requests queue up and starve the Postgres connection pool.
+      const lockId = deriveAdvisoryLockId(mutexKey);
+
+      if (typeof tx.$queryRaw === "function") {
         try {
-          const lockId = deriveAdvisoryLockId(mutexKey);
+          const query = tx.$queryRaw as (
+            query: TemplateStringsArray,
+            ...values: unknown[]
+          ) => Promise<Array<Record<string, unknown>>>;
+
+          const rows = await query`SELECT pg_try_advisory_xact_lock(${lockId}) AS acquired;`;
+          const acquired = Boolean(rows[0]?.acquired ?? rows[0]?.pg_try_advisory_xact_lock ?? true);
+          if (!acquired) {
+            // Brief 25ms backoff before second check
+            await new Promise((resolve) => setTimeout(resolve, 25));
+            const retryRows = await query`SELECT pg_try_advisory_xact_lock(${lockId}) AS acquired;`;
+            const retryAcquired = Boolean(retryRows[0]?.acquired ?? retryRows[0]?.pg_try_advisory_xact_lock ?? true);
+            if (!retryAcquired) {
+              return {
+                allowed: false,
+                retryAfterSeconds: 2,
+                message: "High traffic detected. Please try again in a moment.",
+              };
+            }
+          }
+        } catch {
+          // Ignore if mocked or query dialect differs
+        }
+      } else if (typeof tx.$executeRaw === "function") {
+        try {
           const rawQuery = tx.$executeRaw as (
             query: TemplateStringsArray,
             ...values: unknown[]
           ) => Promise<unknown>;
-          await rawQuery`SET LOCAL lock_timeout = '2000ms';`;
+          await rawQuery`SET LOCAL lock_timeout = '200ms';`;
           await rawQuery`SELECT pg_advisory_xact_lock(${lockId});`;
-        } catch {
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
+          if (message.includes("55P03") || message.toLowerCase().includes("lock timeout")) {
+            return {
+              allowed: false,
+              retryAfterSeconds: 2,
+              message: "High traffic detected. Please try again in a moment.",
+            };
+          }
           // ignore if raw query unsupported or mocked
         }
       }

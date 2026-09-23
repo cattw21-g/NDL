@@ -17,11 +17,22 @@ export async function POST(request: NextRequest) {
   try {
     const maintenanceResult = await runDatabaseMaintenance(prisma);
     let autoExpiredCount = 0;
+    let discordSyncedCount = 0;
 
     try {
       autoExpiredCount = await autoExpireOverdueSubmissions(prisma);
     } catch (expireErr) {
       console.error("Auto-expire overdue submissions error:", expireErr);
+    }
+
+    try {
+      if (process.env.DISCORD_BOT_TOKEN) {
+        const { syncAllLinkedDiscordUsers } = await import("@/lib/discord-role-sync");
+        const discordSync = await syncAllLinkedDiscordUsers();
+        discordSyncedCount = discordSync.totalSynced;
+      }
+    } catch (discordErr) {
+      console.error("Cron Discord role reconciliation error:", discordErr);
     }
 
     const totalDurationMs = Date.now() - startTime;
@@ -33,6 +44,7 @@ export async function POST(request: NextRequest) {
       maintenance: {
         ...maintenanceResult,
         autoExpiredSubmissions: autoExpiredCount,
+        discordSyncedUsers: discordSyncedCount,
         totalDurationMs,
       },
     });

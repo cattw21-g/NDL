@@ -68,7 +68,7 @@ function transcodeAndTrim(inputWebm, outputMp4, startSec, maxDurationSec) {
 
   try {
     fs.unlinkSync(inputWebm);
-  } catch (_) {}
+  } catch {}
 }
 
 async function createContextAndPage(browser, initialX = 960, initialY = 540, skipSplash = true) {
@@ -91,13 +91,13 @@ async function createContextAndPage(browser, initialX = 960, initialY = 540, ski
         if (noSplash) {
           sessionStorage.setItem("ndl_splash_seen", "true");
         }
-      } catch (_) {}
+      } catch {}
 
       window.addEventListener("DOMContentLoaded", () => {
         try {
           document.documentElement.classList.add("dark");
           document.documentElement.dataset.theme = "dark";
-        } catch (_) {}
+        } catch {}
 
         const cursor = document.createElement("div");
         cursor.id = "virtual-cursor";

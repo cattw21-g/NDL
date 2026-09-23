@@ -132,4 +132,28 @@ describe("Anti-Alt IP Security & Network Conflict Detection", () => {
     });
     expect(conflict).toBe(true);
   });
+
+  it("throws an explicit configuration error in production when secrets are missing", () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    const originalAntiAlt = process.env.ANTI_ALT_SECRET;
+    const originalSession = process.env.SESSION_SECRET;
+    const originalNextAuth = process.env.NEXTAUTH_SECRET;
+
+    try {
+      (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+      delete process.env.ANTI_ALT_SECRET;
+      delete process.env.SESSION_SECRET;
+      delete process.env.NEXTAUTH_SECRET;
+
+      expect(() => hashClientIp("198.51.100.50")).toThrow(
+        "ANTI_ALT_SECRET or SESSION_SECRET must be configured in production environment.",
+      );
+    } finally {
+      (process.env as Record<string, string | undefined>).NODE_ENV = originalNodeEnv;
+      process.env.ANTI_ALT_SECRET = originalAntiAlt;
+      process.env.SESSION_SECRET = originalSession;
+      process.env.NEXTAUTH_SECRET = originalNextAuth;
+    }
+  });
 });
+
