@@ -4,7 +4,10 @@ import { runDatabaseMaintenance, type MaintenanceResult } from "@/lib/database-h
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const shouldBroadcast = url.searchParams.get("broadcast_email") === "true";
+  let broadcastResult: unknown = null;
   const clientId = process.env.DISCORD_APPLICATION_ID || process.env.DISCORD_CLIENT_ID || "1541531776097198080";
   const redirectUri = "https://www.nerfeddemonlist.net/api/auth/discord/callback";
 
@@ -70,6 +73,57 @@ export async function GET() {
     console.error("Maintenance task error in health check:", err);
   }
 
+  if (shouldBroadcast) {
+    try {
+      const { sendNewsBroadcastEmail } = await import("@/lib/email");
+      const { STAFF_APPLICATIONS_OPEN_POST } = await import("@/lib/changelog");
+      const { absoluteSiteUrl } = await import("@/lib/site-url");
+
+      const recipients = new Map<string, string>();
+      const adminEmail = process.env.SMTP_USER?.trim() || "cattwgd@gmail.com";
+      recipients.set(adminEmail, "cattw21");
+
+      const users = await prisma.user.findMany({
+        where: { email: { not: "" }, isDemo: false },
+        select: { email: true, displayName: true, playerName: true },
+      });
+
+      for (const u of users) {
+        if (u.email && !u.email.endsWith(".local") && u.email.includes("@")) {
+          recipients.set(u.email.trim(), u.displayName || u.playerName);
+        }
+      }
+
+      const articleUrl = absoluteSiteUrl(`/changelog/${STAFF_APPLICATIONS_OPEN_POST.slug}`);
+      const results: Array<{ email: string; name: string; success: boolean; error?: string }> = [];
+
+      for (const [email, name] of recipients.entries()) {
+        try {
+          await sendNewsBroadcastEmail({
+            to: email,
+            recipientName: name,
+            title: STAFF_APPLICATIONS_OPEN_POST.title,
+            summary: STAFF_APPLICATIONS_OPEN_POST.summary,
+            category: STAFF_APPLICATIONS_OPEN_POST.category,
+            articleUrl,
+          });
+          results.push({ email, name, success: true });
+        } catch (e) {
+          results.push({ email, name, success: false, error: String(e) });
+        }
+      }
+
+      broadcastResult = {
+        total: recipients.size,
+        sent: results.filter((r) => r.success).length,
+        failed: results.filter((r) => !r.success).length,
+        results,
+      };
+    } catch (err) {
+      broadcastResult = `error: ${String(err)}`;
+    }
+  }
+
   return NextResponse.json({
     status: "ok",
     clientId: clientId.trim(),
@@ -79,5 +133,6 @@ export async function GET() {
     appMigration: appMigrationResult,
     dbInfo,
     maintenance,
+    broadcastResult,
   });
 }
