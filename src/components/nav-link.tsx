@@ -89,6 +89,7 @@ export function NavLink({
     "/creators": "creators",
     "/archive": "archive",
     "/submit": "submit",
+    "/applications": "apply",
     "/suggest-level": "suggest",
     "/staff": "staff",
     "/rules": "rules",
@@ -98,6 +99,7 @@ export function NavLink({
   const displayLabel = t(key, label);
 
   const isSubmitLink = href === "/submit";
+  const isApplyLink = href === "/applications";
 
   return (
     <Link
@@ -110,7 +112,9 @@ export function NavLink({
           ? "border border-cyan-700 bg-cyan-700 text-white shadow-sm shadow-cyan-900/20 dark:border-cyan-400 dark:bg-cyan-400 dark:text-slate-950 font-black"
           : isSubmitLink
             ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-900 hover:border-emerald-500/60 hover:bg-emerald-500/20 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:border-emerald-400"
-            : "border border-slate-300/80 bg-white/90 text-slate-700 hover:border-cyan-400 hover:bg-cyan-50/80 hover:text-cyan-900 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:border-cyan-500/50 dark:hover:bg-cyan-950/40 dark:hover:text-cyan-200 shadow-xs",
+            : isApplyLink
+              ? "border border-cyan-500/40 bg-cyan-500/10 text-cyan-950 hover:border-cyan-500/60 hover:bg-cyan-500/20 dark:border-cyan-500/30 dark:bg-cyan-950/40 dark:text-cyan-300 dark:hover:border-cyan-400"
+              : "border border-slate-300/80 bg-white/90 text-slate-700 hover:border-cyan-400 hover:bg-cyan-50/80 hover:text-cyan-900 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:border-cyan-500/50 dark:hover:bg-cyan-950/40 dark:hover:text-cyan-200 shadow-xs",
         toneClass,
       )}
     >
@@ -121,10 +125,18 @@ export function NavLink({
             ? "text-white dark:text-slate-950"
             : isSubmitLink
               ? "text-emerald-600 dark:text-emerald-400"
-              : "text-slate-400 dark:text-slate-400 group-hover:text-cyan-600 dark:group-hover:text-cyan-400",
+              : isApplyLink
+                ? "text-cyan-600 dark:text-cyan-400"
+                : "text-slate-400 dark:text-slate-400 group-hover:text-cyan-600 dark:group-hover:text-cyan-400",
         )}
       />
       <span className="whitespace-nowrap">{displayLabel}</span>
+      {isApplyLink && !active ? (
+        <span className="relative flex h-1.5 w-1.5 shrink-0">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-500" />
+        </span>
+      ) : null}
       {effectiveBadgeCount > 0 ? (
         <span
           className={cx(

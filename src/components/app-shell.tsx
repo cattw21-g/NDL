@@ -25,6 +25,7 @@ const primaryNavItems = [
 
 const secondaryNavItems = [
   { href: "/submit", label: "Submit", icon: "upload" },
+  { href: "/applications", label: "Apply", icon: "review" },
   { href: "/suggest-level", label: "Suggest", icon: "suggest" },
   { href: "/staff", label: "Staff", icon: "shield" },
   { href: "/rules", label: "Rules", icon: "book" },

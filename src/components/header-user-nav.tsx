@@ -1,4 +1,4 @@
-import { Settings, UserRound, Sparkles } from "lucide-react";
+import { Settings, UserRound, Sparkles, ClipboardCheck } from "lucide-react";
 import Link from "next/link";
 
 import { AdminDropdownMenu } from "@/components/admin-dropdown-menu";
@@ -38,6 +38,14 @@ export async function HeaderUserNav() {
       >
         <UserRound className="h-3.5 w-3.5 shrink-0" />
         <span className="max-w-28 truncate">{user.displayName}</span>
+      </Link>
+      <Link
+        href="/applications/mine"
+        title="My Staff Applications"
+        className="inline-flex min-h-8 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-xs font-bold text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950 dark:hover:text-cyan-100"
+        aria-label="My Staff Applications"
+      >
+        <ClipboardCheck className="h-3.5 w-3.5" />
       </Link>
       <Link
         href="/settings"

@@ -220,6 +220,27 @@ export default async function Home() {
             Community list for reviewed nerfed demon records and rankings.
           </p>
 
+          {/* Quick Actions / Staff Applications CTA */}
+          <div className="mt-4 flex flex-wrap items-center gap-2.5">
+            <Link
+              href="/applications"
+              className="inline-flex items-center gap-2 rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-3.5 py-1.5 text-xs sm:text-sm font-bold text-cyan-300 shadow-sm backdrop-blur transition hover:border-cyan-400 hover:bg-cyan-500/25 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-300"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-500" />
+              </span>
+              <span>Staff Applications Open</span>
+              <span className="text-cyan-400/70 font-normal">→</span>
+            </Link>
+            <Link
+              href="/applications/mine"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700/60 bg-zinc-800/50 px-3 py-1.5 text-xs font-bold text-zinc-300 transition hover:border-zinc-600 hover:bg-zinc-800 hover:text-white"
+            >
+              <span>My Applications</span>
+            </Link>
+          </div>
+
           {/* Quick Metrics */}
           <div className="mt-6 grid grid-cols-3 gap-3 max-w-lg">
             <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-3">
