@@ -47,6 +47,13 @@ export async function GET() {
     appMigrationResult = `error: ${String(err)}`;
   }
 
+  try {
+    const { ensureLatestChangelogPost } = await import("@/lib/changelog");
+    await ensureLatestChangelogPost(prisma);
+  } catch (err) {
+    console.error("Health check changelog sync error:", err);
+  }
+
   let dbInfo: unknown = null;
   try {
     dbInfo = await prisma.$queryRawUnsafe(

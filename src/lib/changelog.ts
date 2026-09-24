@@ -269,7 +269,72 @@ Thanks for your patience and understanding, keep having fun, and good luck beati
 *— cattw21*`,
 };
 
+export const STAFF_APPLICATIONS_OPEN_POST = {
+  title: "Staff Applications Are Open: List Reviewers & Beta Testers Wanted!",
+  slug: "staff-applications-open",
+  category: "ANNOUNCEMENT" as const,
+  summary:
+    "Staff applications for Nerfed Demonlist are officially open! We are looking for active, dedicated community members to join the team as List Reviewers and Beta Testers. Check out the requirements, expectations, and apply today.",
+  content: `Hey everyone!
+
+We are excited to announce that **Nerfed Demonlist Staff Applications are officially open**! 🎉
+
+As the list and community continue to grow, we are expanding our team to keep verification fast, fair, and thorough, and to ensure upcoming features are rigorously tested before public release.
+
+We are currently recruiting for two key roles (plus List Moderator):
+
+---
+
+### 📋 Open Positions
+
+#### 1. List Reviewer
+- **Responsibilities**: Review incoming record submissions, verify completion videos, inspect click audio, check FPS/TPS guidelines, and maintain quick queue turnaround times.
+- **Requirements**:
+  - Deep familiarity with NDL verification guidelines and proof standards.
+  - Objective, unbiased, and patient attitude when evaluating player runs.
+  - Active Discord presence and regular availability.
+- **Apply Here**: [List Reviewer Application](/applications/list-reviewer)
+
+#### 2. Beta Tester
+- **Responsibilities**: Test upcoming features, try new redesigns and tools early, test responsive layouts across different mobile/desktop browsers, and submit structured bug reports.
+- **Requirements**:
+  - Willingness to test experimental features and provide clear, actionable feedback.
+- **Apply Here**: [Beta Tester Application](/applications/beta-tester)
+
+#### 3. List Moderator
+- For experienced community members ready to assist with dispute resolution, complex run evaluations, and queue management: [List Moderator Application](/applications/list-moderator)
+
+---
+
+### 🚀 How to Apply
+
+1. Click the **Apply** button in the top navigation bar or the **Staff Applications Open** banner on the homepage.
+2. Sign in or register your NDL account.
+3. Select the position you wish to apply for (**List Reviewer** or **Beta Tester**).
+4. Fill out the application form—your answers autosave automatically as you type!
+5. Submit your application. You can track your application status at any time under [My Applications](/applications/mine).
+
+We're looking forward to reading your applications and welcoming new team members to NDL!
+
+*— cattw21 & NDL Staff*`,
+};
+
 export const DEFAULT_POSTS = [
+  {
+    id: "staff-applications-open",
+    title: STAFF_APPLICATIONS_OPEN_POST.title,
+    slug: STAFF_APPLICATIONS_OPEN_POST.slug,
+    category: STAFF_APPLICATIONS_OPEN_POST.category,
+    summary: STAFF_APPLICATIONS_OPEN_POST.summary,
+    content: STAFF_APPLICATIONS_OPEN_POST.content,
+    isPinned: true,
+    isPublished: true,
+    isDemo: false,
+    publishedAt: new Date("2026-09-24T11:40:00.000Z"),
+    updatedAt: new Date("2026-09-24T11:40:00.000Z"),
+    archivedAt: null,
+    author: { displayName: "cattw21" },
+  },
   {
     id: "ndl-v1-6-0",
     title: V1_6_0_ANNOUNCEMENT_POST.title,
@@ -277,7 +342,7 @@ export const DEFAULT_POSTS = [
     category: V1_6_0_ANNOUNCEMENT_POST.category,
     summary: V1_6_0_ANNOUNCEMENT_POST.summary,
     content: V1_6_0_ANNOUNCEMENT_POST.content,
-    isPinned: true,
+    isPinned: false,
     isPublished: true,
     isDemo: false,
     publishedAt: new Date("2026-09-23T20:00:00.000Z"),
@@ -474,7 +539,7 @@ export async function ensureLatestChangelogPost(prismaClient: PrismaClient) {
 
     await prismaClient.changelogPost.updateMany({
       where: {
-        slug: { not: V1_6_0_ANNOUNCEMENT_POST.slug },
+        slug: { not: STAFF_APPLICATIONS_OPEN_POST.slug },
         isPinned: true,
       },
       data: {
