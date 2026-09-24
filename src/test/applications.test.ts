@@ -51,11 +51,11 @@ describe("Staff Applications System Core Tests", () => {
       expect(q[7].required).toBe(false);
     });
 
-    it("provides the complete List Moderator template with exactly 9 questions", () => {
+    it("provides the complete List Moderator template with exactly 10 questions", () => {
       const tmpl = APPLICATION_TEMPLATES.LIST_MODERATOR;
       expect(tmpl).toBeDefined();
       expect(tmpl.role).toBe("LIST_MODERATOR");
-      expect(tmpl.questions).toHaveLength(9);
+      expect(tmpl.questions).toHaveLength(10);
 
       const q = tmpl.questions;
       expect(q[0].prompt).toContain("Why do you want to moderate the NDL?");
@@ -70,22 +70,26 @@ describe("Staff Applications System Core Tests", () => {
       expect(q[3].prompt).toContain("record may have been accepted incorrectly");
       expect(q[3].type).toBe("LONG_TEXT");
 
-      expect(q[4].prompt).toContain("A friend asks you to 'just approve' their run");
+      expect(q[4].prompt).toContain("unlisted, but the evidence isn't conclusive yet");
       expect(q[4].type).toBe("LONG_TEXT");
+      expect(q[4].required).toBe(true);
 
-      expect(q[5].prompt).toContain("A player is angry because their submission was rejected");
+      expect(q[5].prompt).toContain("A friend asks you to 'just approve' their run");
       expect(q[5].type).toBe("LONG_TEXT");
 
-      expect(q[6].prompt).toContain("moderator should NOT take without an Admin");
+      expect(q[6].prompt).toContain("A player is angry because their submission was rejected");
       expect(q[6].type).toBe("LONG_TEXT");
 
-      expect(q[7].prompt).toContain("How often can you realistically be active?");
-      expect(q[7].type).toBe("SINGLE_CHOICE");
-      expect(q[7].options).toEqual(["Most days", "A few times a week", "About once a week", "Variable / As needed"]);
+      expect(q[7].prompt).toContain("moderator should NOT take without an Admin");
+      expect(q[7].type).toBe("LONG_TEXT");
 
-      expect(q[8].prompt).toContain("Anything else you want us to know?");
-      expect(q[8].type).toBe("LONG_TEXT");
-      expect(q[8].required).toBe(false);
+      expect(q[8].prompt).toContain("How often can you realistically be active?");
+      expect(q[8].type).toBe("SINGLE_CHOICE");
+      expect(q[8].options).toEqual(["Most days", "A few times a week", "About once a week", "Variable / As needed"]);
+
+      expect(q[9].prompt).toContain("Anything else you want us to know?");
+      expect(q[9].type).toBe("LONG_TEXT");
+      expect(q[9].required).toBe(false);
     });
 
     it("provides the complete Beta Tester template with exactly 8 device & testing questions", () => {

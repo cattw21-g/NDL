@@ -38,11 +38,13 @@ export function canReviewSubmissions(role?: string | null): boolean {
 }
 
 /**
- * Top 10 record submissions require Admin final approval.
- * List Reviewers and List Moderators CANNOT give final approval to Top 10.
- * Submissions beyond Top 10 can be approved by List Reviewers, List Moderators, and Admins.
+ * Top 10 record submission final decisions (ACCEPTED or REJECTED) require Admin authority.
+ * List Reviewers and List Moderators CANNOT give final approval or final rejection to Top 10.
+ * They may inspect, leave notes, request changes (NEEDS_CHANGES), and escalate to Admins.
+ * Submissions beyond Top 10 can be decided by List Reviewers, List Moderators, and Admins.
  */
-export function canApproveSubmission(
+export function canFinalDecideSubmission(
+  action: "ACCEPTED" | "REJECTED" | "NEEDS_CHANGES",
   role?: string | null,
   levelRank?: number | null,
   playerName?: string | null,
@@ -50,10 +52,31 @@ export function canApproveSubmission(
   if (isAdminRole(role, playerName)) {
     return true;
   }
-  if (typeof levelRank === "number" && levelRank >= 1 && levelRank <= 10) {
+  if (!isListReviewerRole(role)) {
     return false;
   }
-  return isListReviewerRole(role);
+  if (typeof levelRank === "number" && levelRank >= 1 && levelRank <= 10) {
+    if (action === "ACCEPTED" || action === "REJECTED") {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function canApproveSubmission(
+  role?: string | null,
+  levelRank?: number | null,
+  playerName?: string | null,
+): boolean {
+  return canFinalDecideSubmission("ACCEPTED", role, levelRank, playerName);
+}
+
+export function canRejectSubmission(
+  role?: string | null,
+  levelRank?: number | null,
+  playerName?: string | null,
+): boolean {
+  return canFinalDecideSubmission("REJECTED", role, levelRank, playerName);
 }
 
 export function canManageLevels(role?: string | null, playerName?: string | null): boolean {

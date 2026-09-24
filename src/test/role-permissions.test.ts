@@ -7,6 +7,8 @@ import {
   isBetaTester,
   canReviewSubmissions,
   canApproveSubmission,
+  canRejectSubmission,
+  canFinalDecideSubmission,
   canManageApplications,
   canUnlistRecord,
   canRestoreRecord,
@@ -97,74 +99,80 @@ describe("NDL Role-Based Access Control (RBAC) Matrix", () => {
     });
   });
 
-  describe("Top 10 Submission Final Approval Gates", () => {
-    it("LIST_REVIEWER -> Top 10 final approval denied", () => {
+  describe("Top 10 Submission Final Decision Gates (Admin-Only Outcomes)", () => {
+    it("Reviewer -> Top 10 ACCEPT denied, REJECT denied, NEEDS_CHANGES allowed", () => {
+      // Top 10 (ranks 1, 5, 10):
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_REVIEWER", 1)).toBe(false);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_REVIEWER", 5)).toBe(false);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_REVIEWER", 10)).toBe(false);
+
+      expect(canFinalDecideSubmission("REJECTED", "LIST_REVIEWER", 1)).toBe(false);
+      expect(canFinalDecideSubmission("REJECTED", "LIST_REVIEWER", 5)).toBe(false);
+      expect(canFinalDecideSubmission("REJECTED", "LIST_REVIEWER", 10)).toBe(false);
+
       expect(canApproveSubmission("LIST_REVIEWER", 1)).toBe(false);
-      expect(canApproveSubmission("LIST_REVIEWER", 5)).toBe(false);
-      expect(canApproveSubmission("LIST_REVIEWER", 10)).toBe(false);
+      expect(canRejectSubmission("LIST_REVIEWER", 1)).toBe(false);
+
+      // Reviewer CAN request changes or leave review notes on Top 10
+      expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_REVIEWER", 1)).toBe(true);
+      expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_REVIEWER", 10)).toBe(true);
+
       // Allowed for normal list levels > 10
-      expect(canApproveSubmission("LIST_REVIEWER", 11)).toBe(true);
-      expect(canApproveSubmission("LIST_REVIEWER", 25)).toBe(true);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_REVIEWER", 11)).toBe(true);
+      expect(canFinalDecideSubmission("REJECTED", "LIST_REVIEWER", 11)).toBe(true);
+      expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_REVIEWER", 11)).toBe(true);
     });
 
-    it("LIST_MODERATOR -> Top 10 final approval denied", () => {
+    it("Moderator -> Top 10 ACCEPT denied, REJECT denied, NEEDS_CHANGES allowed", () => {
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 1)).toBe(false);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 5)).toBe(false);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 10)).toBe(false);
+
+      expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 1)).toBe(false);
+      expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 5)).toBe(false);
+      expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 10)).toBe(false);
+
       expect(canApproveSubmission("LIST_MODERATOR", 1)).toBe(false);
-      expect(canApproveSubmission("LIST_MODERATOR", 5)).toBe(false);
-      expect(canApproveSubmission("LIST_MODERATOR", 10)).toBe(false);
+      expect(canRejectSubmission("LIST_MODERATOR", 1)).toBe(false);
+
+      // Moderator CAN request changes or leave review notes on Top 10
+      expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_MODERATOR", 1)).toBe(true);
+      expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_MODERATOR", 10)).toBe(true);
+
       // Allowed for normal list levels > 10
-      expect(canApproveSubmission("LIST_MODERATOR", 11)).toBe(true);
-      expect(canApproveSubmission("LIST_MODERATOR", 25)).toBe(true);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 11)).toBe(true);
+      expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 11)).toBe(true);
+      expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_MODERATOR", 11)).toBe(true);
     });
 
-    it("MODERATOR (legacy) -> Top 10 final approval denied", () => {
-      expect(canApproveSubmission("MODERATOR", 1)).toBe(false);
-      expect(canApproveSubmission("MODERATOR", 10)).toBe(false);
-      expect(canApproveSubmission("MODERATOR", 15)).toBe(true);
-    });
+    it("Admin -> both ACCEPT and REJECT allowed on Top 10", () => {
+      expect(canFinalDecideSubmission("ACCEPTED", "ADMIN", 1)).toBe(true);
+      expect(canFinalDecideSubmission("ACCEPTED", "ADMIN", 5)).toBe(true);
+      expect(canFinalDecideSubmission("ACCEPTED", "ADMIN", 10)).toBe(true);
 
-    it("ADMIN -> allowed to give final approval to Top 10 completions", () => {
+      expect(canFinalDecideSubmission("REJECTED", "ADMIN", 1)).toBe(true);
+      expect(canFinalDecideSubmission("REJECTED", "ADMIN", 5)).toBe(true);
+      expect(canFinalDecideSubmission("REJECTED", "ADMIN", 10)).toBe(true);
+
+      expect(canFinalDecideSubmission("NEEDS_CHANGES", "ADMIN", 1)).toBe(true);
+
       expect(canApproveSubmission("ADMIN", 1)).toBe(true);
-      expect(canApproveSubmission("ADMIN", 5)).toBe(true);
-      expect(canApproveSubmission("ADMIN", 10)).toBe(true);
-      expect(canApproveSubmission("ADMIN", 25)).toBe(true);
+      expect(canRejectSubmission("ADMIN", 1)).toBe(true);
       expect(canApproveSubmission("PLAYER", 1, "cattw21")).toBe(true);
+      expect(canRejectSubmission("PLAYER", 1, "cattw21")).toBe(true);
     });
 
-    it("distinguishes final approval from non-approval moderation actions (reject / needs changes)", () => {
-      // Helper simulating the decision gate in reviewSubmissionAction
-      const canPerformModerationAction = (
-        action: "ACCEPTED" | "REJECTED" | "NEEDS_CHANGES",
-        role: string,
-        rank: number,
-        playerName?: string,
-      ) => {
-        if (!canReviewSubmissions(role)) return false;
-        if (action === "ACCEPTED") {
-          return canApproveSubmission(role, rank, playerName);
-        }
-        // Non-approval actions (reject, request changes) are available to all reviewers
-        return true;
-      };
+    it("PLAYER and BETA_TESTER -> denied all moderation decisions", () => {
+      expect(canFinalDecideSubmission("ACCEPTED", "PLAYER", 1)).toBe(false);
+      expect(canFinalDecideSubmission("REJECTED", "PLAYER", 1)).toBe(false);
+      expect(canFinalDecideSubmission("NEEDS_CHANGES", "PLAYER", 1)).toBe(false);
 
-      // Rank 1 demon (Top 10):
-      // Final approval: ONLY admin
-      expect(canPerformModerationAction("ACCEPTED", "LIST_REVIEWER", 1)).toBe(false);
-      expect(canPerformModerationAction("ACCEPTED", "LIST_MODERATOR", 1)).toBe(false);
-      expect(canPerformModerationAction("ACCEPTED", "ADMIN", 1)).toBe(true);
+      expect(canFinalDecideSubmission("ACCEPTED", "BETA_TESTER", 1)).toBe(false);
+      expect(canFinalDecideSubmission("REJECTED", "BETA_TESTER", 1)).toBe(false);
+      expect(canFinalDecideSubmission("NEEDS_CHANGES", "BETA_TESTER", 1)).toBe(false);
 
-      // Rejections on Top 10: allowed for reviewers and moderators
-      expect(canPerformModerationAction("REJECTED", "LIST_REVIEWER", 1)).toBe(true);
-      expect(canPerformModerationAction("REJECTED", "LIST_MODERATOR", 1)).toBe(true);
-      expect(canPerformModerationAction("REJECTED", "ADMIN", 1)).toBe(true);
-
-      // Needs changes on Top 10: allowed for reviewers and moderators
-      expect(canPerformModerationAction("NEEDS_CHANGES", "LIST_REVIEWER", 1)).toBe(true);
-      expect(canPerformModerationAction("NEEDS_CHANGES", "LIST_MODERATOR", 1)).toBe(true);
-      expect(canPerformModerationAction("NEEDS_CHANGES", "ADMIN", 1)).toBe(true);
-
-      // Normal player / beta tester cannot perform any moderation actions
-      expect(canPerformModerationAction("REJECTED", "PLAYER", 1)).toBe(false);
-      expect(canPerformModerationAction("REJECTED", "BETA_TESTER", 1)).toBe(false);
+      expect(canFinalDecideSubmission("ACCEPTED", "PLAYER", 25)).toBe(false);
+      expect(canFinalDecideSubmission("ACCEPTED", "BETA_TESTER", 25)).toBe(false);
     });
   });
 });

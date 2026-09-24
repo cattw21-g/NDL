@@ -179,6 +179,16 @@ export const APPLICATION_TEMPLATES: Record<ApplicationRole, ApplicationTemplate>
       },
       {
         order: 5,
+        prompt: "You think an accepted record may need to be unlisted, but the evidence isn't conclusive yet. What would you do?",
+        description: "How do you handle incomplete evidence, investigation, and escalation before taking irreversible action?",
+        type: "LONG_TEXT",
+        required: true,
+        placeholder: "I would gather the available evidence and...",
+        minLength: 15,
+        maxLength: 2500,
+      },
+      {
+        order: 6,
         prompt: "A friend asks you to 'just approve' their run because you know it's legit. What would you do?",
         description: "How do you handle peer pressure and maintain neutrality?",
         type: "LONG_TEXT",
@@ -188,7 +198,7 @@ export const APPLICATION_TEMPLATES: Record<ApplicationRole, ApplicationTemplate>
         maxLength: 2500,
       },
       {
-        order: 6,
+        order: 7,
         prompt: "A player is angry because their submission was rejected. How would you handle the situation?",
         description: "How do you de-escalate and explain the reasoning constructively?",
         type: "LONG_TEXT",
@@ -198,7 +208,7 @@ export const APPLICATION_TEMPLATES: Record<ApplicationRole, ApplicationTemplate>
         maxLength: 2500,
       },
       {
-        order: 7,
+        order: 8,
         prompt: "What kinds of actions do you think a moderator should NOT take without an Admin?",
         description: "Share your view on the boundaries between moderator and admin authority (e.g. final Top 10 approvals, list placements, bans).",
         type: "LONG_TEXT",
@@ -208,7 +218,7 @@ export const APPLICATION_TEMPLATES: Record<ApplicationRole, ApplicationTemplate>
         maxLength: 2500,
       },
       {
-        order: 8,
+        order: 9,
         prompt: "How often can you realistically be active?",
         description: "Give an honest estimate of your availability.",
         type: "SINGLE_CHOICE",
@@ -221,7 +231,7 @@ export const APPLICATION_TEMPLATES: Record<ApplicationRole, ApplicationTemplate>
         ],
       },
       {
-        order: 9,
+        order: 10,
         prompt: "Anything else you want us to know?",
         description: "Optional notes or comments.",
         type: "LONG_TEXT",
