@@ -37,75 +37,84 @@ export async function saveApplicationDraftAction(params: {
     return { success: false, error: "You must be signed in to save an application." };
   }
 
-  let opening = await prisma.applicationOpening.findUnique({
-    where: { id: params.openingId },
-    select: { id: true, status: true, deadline: true },
-  });
-
-  if (!opening) {
-    opening = await prisma.applicationOpening.findUnique({
-      where: { slug: params.openingId },
+  try {
+    let opening = await prisma.applicationOpening.findUnique({
+      where: { id: params.openingId },
       select: { id: true, status: true, deadline: true },
     });
-  }
 
-  if (!opening) {
-    return { success: false, error: "Application opening not found." };
-  }
+    if (!opening) {
+      opening = await prisma.applicationOpening.findUnique({
+        where: { slug: params.openingId },
+        select: { id: true, status: true, deadline: true },
+      });
+    }
 
-  if (opening.status !== "OPEN") {
-    return { success: false, error: "This application opening is currently closed." };
-  }
+    if (!opening) {
+      return { success: false, error: "Application opening not found." };
+    }
 
-  if (opening.deadline && new Date() > opening.deadline) {
-    return { success: false, error: "The deadline for this opening has passed." };
-  }
+    if (opening.status !== "OPEN") {
+      return { success: false, error: "This application opening is currently closed." };
+    }
 
-  // Find or create draft
-  const existing = await prisma.applicationSubmission.findUnique({
-    where: {
-      openingId_userId: {
-        openingId: opening.id,
-        userId: user.id,
-      },
-    },
-  });
+    if (opening.deadline && new Date() > opening.deadline) {
+      return { success: false, error: "The deadline for this opening has passed." };
+    }
 
-  if (existing && existing.status !== "DRAFT" && existing.status !== "WITHDRAWN") {
-    return { success: false, error: "You have already submitted this application." };
-  }
-
-  const answersJson = JSON.stringify(params.answers);
-
-  if (existing) {
-    const updated = await prisma.applicationSubmission.update({
-      where: { id: existing.id },
-      data: {
-        answers: answersJson,
-        status: "DRAFT",
+    // Find or create draft
+    const existing = await prisma.applicationSubmission.findUnique({
+      where: {
+        openingId_userId: {
+          openingId: opening.id,
+          userId: user.id,
+        },
       },
     });
+
+    if (existing && existing.status !== "DRAFT" && existing.status !== "WITHDRAWN") {
+      return { success: false, error: "You have already submitted this application." };
+    }
+
+    const answersJson = JSON.stringify(params.answers);
+
+    if (existing) {
+      const updated = await prisma.applicationSubmission.update({
+        where: { id: existing.id },
+        data: {
+          answers: answersJson,
+          status: "DRAFT",
+        },
+      });
+      return {
+        success: true,
+        message: "Draft saved.",
+        data: { submissionId: updated.id, updatedAt: updated.updatedAt.toISOString() },
+      };
+    }
+
+    const created = await prisma.applicationSubmission.create({
+      data: {
+        openingId: opening.id,
+        userId: user.id,
+        status: "DRAFT",
+        answers: answersJson,
+      },
+    });
+
     return {
       success: true,
-      message: "Draft saved.",
-      data: { submissionId: updated.id, updatedAt: updated.updatedAt.toISOString() },
+      message: "Draft created.",
+      data: { submissionId: created.id, updatedAt: created.updatedAt.toISOString() },
     };
+  } catch (err: unknown) {
+    console.error("saveApplicationDraftAction error:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes("connect") || message.includes("timeout") || message.includes("quota") || message.includes("ECONNREFUSED")) {
+      return { success: false, error: "The database is temporarily unavailable. Your answers are preserved locally — please try saving again in a moment." };
+    }
+    return { success: false, error: "Failed to save draft. Please try again." };
   }
-
-  const created = await prisma.applicationSubmission.create({
-    data: {
-      openingId: opening.id,
-      userId: user.id,
-      status: "DRAFT",
-      answers: answersJson,
-    },
-  });
-
-  return {
-    success: true,
-    message: "Draft created.",
-    data: { submissionId: created.id, updatedAt: created.updatedAt.toISOString() },
-  };
 }
 
 export async function submitApplicationAction(params: {
@@ -117,138 +126,147 @@ export async function submitApplicationAction(params: {
     return { success: false, error: "You must be signed in to submit an application." };
   }
 
-  let opening = await prisma.applicationOpening.findUnique({
-    where: { id: params.openingId },
-    include: {
-      questions: {
-        orderBy: { order: "asc" },
-      },
-    },
-  });
-
-  if (!opening) {
-    opening = await prisma.applicationOpening.findUnique({
-      where: { slug: params.openingId },
+  try {
+    let opening = await prisma.applicationOpening.findUnique({
+      where: { id: params.openingId },
       include: {
         questions: {
           orderBy: { order: "asc" },
         },
       },
     });
-  }
 
-  if (!opening) {
-    return { success: false, error: "Application opening not found." };
-  }
+    if (!opening) {
+      opening = await prisma.applicationOpening.findUnique({
+        where: { slug: params.openingId },
+        include: {
+          questions: {
+            orderBy: { order: "asc" },
+          },
+        },
+      });
+    }
 
-  if (opening.status !== "OPEN") {
-    return { success: false, error: "This application opening is not currently accepting submissions." };
-  }
+    if (!opening) {
+      return { success: false, error: "Application opening not found." };
+    }
 
-  if (opening.deadline && new Date() > opening.deadline) {
-    return { success: false, error: "The deadline for this opening has passed." };
-  }
+    if (opening.status !== "OPEN") {
+      return { success: false, error: "This application opening is not currently accepting submissions." };
+    }
 
-  // Validate all required questions
-  for (const q of opening.questions) {
-    const ans = params.answers[q.id];
-    const strVal = typeof ans === "string" ? ans.trim() : "";
+    if (opening.deadline && new Date() > opening.deadline) {
+      return { success: false, error: "The deadline for this opening has passed." };
+    }
 
-    if (q.required) {
-      if (ans === undefined || ans === null || strVal === "") {
+    // Validate all required questions
+    for (const q of opening.questions) {
+      const ans = params.answers[q.id];
+      const strVal = typeof ans === "string" ? ans.trim() : "";
+
+      if (q.required) {
+        if (ans === undefined || ans === null || strVal === "") {
+          return {
+            success: false,
+            error: `Question "${q.prompt.slice(0, 40)}..." is required.`,
+          };
+        }
+      }
+
+      if (strVal && q.minLength && strVal.length < q.minLength) {
         return {
           success: false,
-          error: `Question "${q.prompt.slice(0, 40)}..." is required.`,
+          error: `Question "${q.prompt.slice(0, 40)}..." must be at least ${q.minLength} characters.`,
+        };
+      }
+
+      if (strVal && q.maxLength && strVal.length > q.maxLength) {
+        return {
+          success: false,
+          error: `Question "${q.prompt.slice(0, 40)}..." cannot exceed ${q.maxLength} characters.`,
         };
       }
     }
 
-    if (strVal && q.minLength && strVal.length < q.minLength) {
-      return {
-        success: false,
-        error: `Question "${q.prompt.slice(0, 40)}..." must be at least ${q.minLength} characters.`,
-      };
-    }
+    // Freeze immutable question snapshot
+    const questionSnapshot = JSON.stringify(
+      opening.questions.map((q) => ({
+        id: q.id,
+        order: q.order,
+        prompt: q.prompt,
+        description: q.description,
+        type: q.type,
+        required: q.required,
+        options: q.options ? JSON.parse(q.options) : null,
+      })),
+    );
 
-    if (strVal && q.maxLength && strVal.length > q.maxLength) {
-      return {
-        success: false,
-        error: `Question "${q.prompt.slice(0, 40)}..." cannot exceed ${q.maxLength} characters.`,
-      };
-    }
-  }
+    const answersJson = JSON.stringify(params.answers);
 
-  // Freeze immutable question snapshot
-  const questionSnapshot = JSON.stringify(
-    opening.questions.map((q) => ({
-      id: q.id,
-      order: q.order,
-      prompt: q.prompt,
-      description: q.description,
-      type: q.type,
-      required: q.required,
-      options: q.options ? JSON.parse(q.options) : null,
-    })),
-  );
-
-  const answersJson = JSON.stringify(params.answers);
-
-  const existing = await prisma.applicationSubmission.findUnique({
-    where: {
-      openingId_userId: {
-        openingId: opening.id,
-        userId: user.id,
-      },
-    },
-  });
-
-  let submission;
-
-  if (existing) {
-    if (existing.status !== "DRAFT" && existing.status !== "WITHDRAWN") {
-      return { success: false, error: "You have already submitted this application." };
-    }
-
-    submission = await prisma.applicationSubmission.update({
-      where: { id: existing.id },
-      data: {
-        status: "SUBMITTED",
-        answers: answersJson,
-        questionSnapshot,
-        submittedAt: new Date(),
+    const existing = await prisma.applicationSubmission.findUnique({
+      where: {
+        openingId_userId: {
+          openingId: opening.id,
+          userId: user.id,
+        },
       },
     });
-  } else {
-    submission = await prisma.applicationSubmission.create({
-      data: {
-        openingId: opening.id,
-        userId: user.id,
-        status: "SUBMITTED",
-        answers: answersJson,
-        questionSnapshot,
-        submittedAt: new Date(),
-      },
+
+    let submission;
+
+    if (existing) {
+      if (existing.status !== "DRAFT" && existing.status !== "WITHDRAWN") {
+        return { success: false, error: "You have already submitted this application." };
+      }
+
+      submission = await prisma.applicationSubmission.update({
+        where: { id: existing.id },
+        data: {
+          status: "SUBMITTED",
+          answers: answersJson,
+          questionSnapshot,
+          submittedAt: new Date(),
+        },
+      });
+    } else {
+      submission = await prisma.applicationSubmission.create({
+        data: {
+          openingId: opening.id,
+          userId: user.id,
+          status: "SUBMITTED",
+          answers: answersJson,
+          questionSnapshot,
+          submittedAt: new Date(),
+        },
+      });
+    }
+
+    // Send applicant a confirmation notification
+    await createUserNotification({
+      userId: user.id,
+      title: "Application Submitted",
+      message: `Your application for "${opening.title}" has been successfully submitted and is under review.`,
+      link: "/applications/mine",
+      type: "APPLICATION",
     });
+
+    revalidatePath(`/applications/${opening.slug}`);
+    revalidatePath("/applications/mine");
+    revalidatePath(`/admin/applications/${opening.id}`);
+
+    return {
+      success: true,
+      message: "Application submitted successfully.",
+      data: { submissionId: submission.id },
+    };
+  } catch (err: unknown) {
+    console.error("submitApplicationAction error:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes("connect") || message.includes("timeout") || message.includes("quota") || message.includes("ECONNREFUSED")) {
+      return { success: false, error: "The database is temporarily unavailable. Your answers have been preserved — please try submitting again in a few minutes." };
+    }
+    return { success: false, error: "Submission failed due to a server error. Please try again." };
   }
-
-  // Send applicant a confirmation notification
-  await createUserNotification({
-    userId: user.id,
-    title: "Application Submitted",
-    message: `Your application for "${opening.title}" has been successfully submitted and is under review.`,
-    link: "/applications/mine",
-    type: "APPLICATION",
-  });
-
-  revalidatePath(`/applications/${opening.slug}`);
-  revalidatePath("/applications/mine");
-  revalidatePath(`/admin/applications/${opening.id}`);
-
-  return {
-    success: true,
-    message: "Application submitted successfully.",
-    data: { submissionId: submission.id },
-  };
 }
 
 export async function withdrawApplicationAction(params: {
