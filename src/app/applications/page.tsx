@@ -65,9 +65,33 @@ export default async function ApplicationsPage() {
 
     if (dbOpenings.length > 0) {
       openings = dbOpenings;
+    } else {
+      const { ensureApplicationSchemaAndOpenings } = await import("@/lib/ensure-application-schema");
+      await ensureApplicationSchemaAndOpenings();
+      openings = await prisma.applicationOpening.findMany({
+        where: {
+          status: { in: ["OPEN", "CLOSED"] },
+          isPublished: true,
+        },
+        orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          role: true,
+          description: true,
+          requirements: true,
+          status: true,
+          deadline: true,
+          maxPositions: true,
+          _count: {
+            select: { submissions: true },
+          },
+        },
+      });
     }
 
-    if (user) {
+    if (user && openings.length > 0) {
       const subs = await prisma.applicationSubmission.findMany({
         where: { userId: user.id },
         select: { openingId: true, status: true, id: true },

@@ -18,6 +18,7 @@ export async function GET() {
   const guildId = process.env.DISCORD_GUILD_ID?.trim() || "";
 
   let migrationResult = "ok";
+  let appMigrationResult: unknown = null;
   try {
     await prisma.$executeRawUnsafe(`
       DO $$
@@ -37,6 +38,13 @@ export async function GET() {
     `);
   } catch (err) {
     migrationResult = `error: ${String(err)}`;
+  }
+
+  try {
+    const { ensureApplicationSchemaAndOpenings } = await import("@/lib/ensure-application-schema");
+    appMigrationResult = await ensureApplicationSchemaAndOpenings();
+  } catch (err) {
+    appMigrationResult = `error: ${String(err)}`;
   }
 
   let dbInfo: unknown = null;
@@ -61,6 +69,7 @@ export async function GET() {
     guildId,
     hasBotToken: Boolean(botToken && botToken.length > 0),
     dbMigration: migrationResult,
+    appMigration: appMigrationResult,
     dbInfo,
     maintenance,
   });

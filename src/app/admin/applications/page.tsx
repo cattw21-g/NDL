@@ -53,6 +53,22 @@ export default async function AdminApplicationsPage() {
         },
       },
     });
+
+    if (openings.length === 0) {
+      const { ensureApplicationSchemaAndOpenings } = await import("@/lib/ensure-application-schema");
+      await ensureApplicationSchemaAndOpenings();
+      openings = await prisma.applicationOpening.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          submissions: {
+            select: {
+              id: true,
+              status: true,
+            },
+          },
+        },
+      });
+    }
   } catch (err) {
     console.error("Failed to load application openings:", err);
   }

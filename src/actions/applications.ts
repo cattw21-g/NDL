@@ -37,10 +37,17 @@ export async function saveApplicationDraftAction(params: {
     return { success: false, error: "You must be signed in to save an application." };
   }
 
-  const opening = await prisma.applicationOpening.findUnique({
+  let opening = await prisma.applicationOpening.findUnique({
     where: { id: params.openingId },
     select: { id: true, status: true, deadline: true },
   });
+
+  if (!opening) {
+    opening = await prisma.applicationOpening.findUnique({
+      where: { slug: params.openingId },
+      select: { id: true, status: true, deadline: true },
+    });
+  }
 
   if (!opening) {
     return { success: false, error: "Application opening not found." };
@@ -110,7 +117,7 @@ export async function submitApplicationAction(params: {
     return { success: false, error: "You must be signed in to submit an application." };
   }
 
-  const opening = await prisma.applicationOpening.findUnique({
+  let opening = await prisma.applicationOpening.findUnique({
     where: { id: params.openingId },
     include: {
       questions: {
@@ -118,6 +125,17 @@ export async function submitApplicationAction(params: {
       },
     },
   });
+
+  if (!opening) {
+    opening = await prisma.applicationOpening.findUnique({
+      where: { slug: params.openingId },
+      include: {
+        questions: {
+          orderBy: { order: "asc" },
+        },
+      },
+    });
+  }
 
   if (!opening) {
     return { success: false, error: "Application opening not found." };
@@ -321,11 +339,16 @@ export async function createApplicationOpeningAction(params: {
     return { success: false, error: "A valid URL slug is required." };
   }
 
-  const existingSlug = await prisma.applicationOpening.findUnique({
-    where: { slug: cleanSlug },
-  });
-  if (existingSlug) {
-    return { success: false, error: `An opening with slug "${cleanSlug}" already exists.` };
+  try {
+    const existingSlug = await prisma.applicationOpening.findUnique({
+      where: { slug: cleanSlug },
+    });
+    if (existingSlug) {
+      return { success: false, error: `An opening with slug "${cleanSlug}" already exists.` };
+    }
+  } catch {
+    const { ensureApplicationSchemaAndOpenings } = await import("@/lib/ensure-application-schema");
+    await ensureApplicationSchemaAndOpenings();
   }
 
   const opening = await prisma.applicationOpening.create({

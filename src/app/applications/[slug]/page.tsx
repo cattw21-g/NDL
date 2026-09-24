@@ -66,6 +66,35 @@ export default async function ApplicationDetailPage({
         maxLength: q.maxLength,
       }));
     }
+
+    if (!opening) {
+      const { ensureApplicationSchemaAndOpenings } = await import("@/lib/ensure-application-schema");
+      await ensureApplicationSchemaAndOpenings();
+      const retryOpening = await prisma.applicationOpening.findUnique({
+        where: { slug },
+        include: {
+          questions: {
+            orderBy: { order: "asc" },
+          },
+        },
+      });
+
+      if (retryOpening) {
+        opening = retryOpening;
+        questions = retryOpening.questions.map((q) => ({
+          id: q.id,
+          order: q.order,
+          prompt: q.prompt,
+          description: q.description,
+          type: q.type,
+          required: q.required,
+          options: q.options ? JSON.parse(q.options) : null,
+          placeholder: q.placeholder,
+          minLength: q.minLength,
+          maxLength: q.maxLength,
+        }));
+      }
+    }
   } catch (err) {
     console.error("Database query for opening failed:", err);
   }
