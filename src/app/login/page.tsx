@@ -30,8 +30,8 @@ export default async function LoginPage({
               {params.error}
             </p>
           ) : null}
-          <FieldLabel label="Email">
-            <input name="email" type="email" required className={inputClass} />
+          <FieldLabel label="Email or username">
+            <input name="identifier" type="text" autoComplete="username" required className={inputClass} />
           </FieldLabel>
           <FieldLabel label="Password">
             <input

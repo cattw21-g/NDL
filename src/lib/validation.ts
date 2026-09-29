@@ -66,7 +66,7 @@ const checkboxBoolean = z.preprocess(
 const passwordSchema = z.string().min(10).max(128);
 
 export const loginSchema = z.object({
-  email: z.email().trim().toLowerCase(),
+  identifier: z.string().trim().min(1).max(254),
   password: z.string().min(1),
 });
 

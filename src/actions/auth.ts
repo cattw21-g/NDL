@@ -66,25 +66,31 @@ export async function loginAction(formData: FormData) {
   const parsed = loginSchema.safeParse(formDataToObject(formData));
 
   if (!parsed.success) {
-    authError("login", "Enter a valid email and password.");
+    authError("login", "Enter your email or username and password.");
   }
 
   try {
+    const identifier = parsed.data.identifier;
     const rateLimit = await checkRateLimit(
       prisma,
       "login",
-      emailRateLimitKey(parsed.data.email),
+      emailRateLimitKey(identifier),
     );
 
     if (!rateLimit.allowed) {
       authError("login", rateLimit.message);
     }
 
-    const user = await prisma.user.findUnique({
-      where: {
-        email: parsed.data.email,
-      },
-    });
+    const user = identifier.includes("@")
+      ? await prisma.user.findUnique({
+          where: { email: identifier.toLowerCase() },
+        })
+      : (await prisma.user.findUnique({
+          where: { playerName: identifier },
+        })) ??
+        (await prisma.user.findFirst({
+          where: { playerName: { equals: identifier, mode: "insensitive" } },
+        }));
 
     if (!user) {
       authError("login", "No account was found for those credentials.");

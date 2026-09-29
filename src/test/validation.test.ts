@@ -11,11 +11,20 @@ import {
 import {
   levelSchema,
   levelSuggestionReviewSchema,
+  loginSchema,
   registerSchema,
   resetPasswordSchema,
   reviewSchema,
   submissionSchema,
 } from "../lib/validation";
+
+describe("login validation", () => {
+  it("accepts either a username or an email with a password", () => {
+    expect(loginSchema.safeParse({ identifier: "Player_One", password: "secret" }).success).toBe(true);
+    expect(loginSchema.safeParse({ identifier: "player@example.com", password: "secret" }).success).toBe(true);
+    expect(loginSchema.safeParse({ identifier: " ", password: "secret" }).success).toBe(false);
+  });
+});
 
 describe("registration validation", () => {
   const validRegistration = {
