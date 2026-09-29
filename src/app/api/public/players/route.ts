@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   }
 
   const limit = parseApiLimit(request.nextUrl.searchParams);
-  const records = await prisma.record.findMany({
+  let records = await prisma.record.findMany({
     where: publicRecordWhere({
       level: {
         status: {
@@ -31,8 +31,13 @@ export async function GET(request: NextRequest) {
     },
   });
 
+  if (records.length === 0) {
+    const { getFallbackRecords } = await import("@/lib/fallback-records");
+    records = getFallbackRecords() as any;
+  }
+
   return apiOk({
-    players: serializePublicLeaderboard(records).slice(0, limit),
+    players: serializePublicLeaderboard(records as any).slice(0, limit),
     limit,
   });
 }

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     ...(minProgress > 0 ? { progress: { gte: minProgress } } : {}),
   });
 
-  const [records, totalCount] = await Promise.all([
+  let [records, totalCount] = await Promise.all([
     prisma.record.findMany({
       where,
       skip,
@@ -62,6 +62,50 @@ export async function GET(request: NextRequest) {
     }),
     prisma.record.count({ where }),
   ]);
+
+  if (totalCount === 0) {
+    const { getFallbackRecords } = await import("@/lib/fallback-records");
+    let fb = getFallbackRecords();
+    if (levelId) {
+      fb = fb.filter((r) => r.levelId === levelId || r.level.slug === levelId);
+    }
+    if (playerId) {
+      fb = fb.filter((r) => r.playerId === playerId || r.player.playerName.toLowerCase() === playerId.toLowerCase());
+    }
+    if (isVerifier !== null && isVerifier !== undefined) {
+      const isV = isVerifier === "true";
+      fb = fb.filter((r) => r.isVerifier === isV);
+    }
+    if (minProgress > 0) {
+      fb = fb.filter((r) => r.progress >= minProgress);
+    }
+
+    totalCount = fb.length;
+    records = fb.slice(skip, skip + limit).map((r) => ({
+      id: r.id,
+      progress: r.progress,
+      pointsAwarded: r.pointsAwarded,
+      videoUrl: r.videoUrl,
+      fps: r.fps,
+      cbfUsed: r.cbfUsed,
+      isVerifier: r.isVerifier,
+      acceptedAt: r.acceptedAt,
+      level: {
+        id: r.level.id,
+        name: r.level.name,
+        slug: r.level.slug,
+        rank: r.level.rank,
+        status: r.level.status,
+      },
+      player: {
+        id: r.player.id,
+        playerName: r.player.playerName,
+        displayName: r.player.displayName,
+        countryCode: r.player.countryCode,
+        subdivision: r.player.subdivision,
+      },
+    })) as any;
+  }
 
   return cachedJson(
     request,

@@ -79,6 +79,20 @@ export async function generateMetadata({
   }
 
   if (!player) {
+    const { getFallbackPlayer } = await import("@/lib/fallback-records");
+    const fb = getFallbackPlayer(playerName);
+    if (fb) {
+      player = {
+        displayName: fb.displayName,
+        playerName: fb.playerName,
+        countryCode: fb.countryCode,
+        subdivision: fb.subdivision,
+        records: fb.records.map((r) => ({ id: r.id })),
+      };
+    }
+  }
+
+  if (!player) {
     return {
       title: "Player Not Found — Nerfed Demonlist",
       description: "This player profile could not be found on the Nerfed Demonlist.",
@@ -194,7 +208,30 @@ export default async function PlayerProfilePage({
     console.error("Database query failed in player profile page:", err);
   }
 
-  const [viewer, player, allRecords] = data ?? [null, null, []];
+  let [viewer, player, allRecords] = data ?? [null, null, []];
+
+  if (!player) {
+    const { getFallbackPlayer } = await import("@/lib/fallback-records");
+    const fb = getFallbackPlayer(playerName);
+    if (fb) {
+      player = fb as any;
+    }
+  } else if (player && player.records.length === 0) {
+    const { getFallbackPlayer } = await import("@/lib/fallback-records");
+    const fb = getFallbackPlayer(player.playerName);
+    if (fb && fb.records.length > 0) {
+      player = {
+        ...player,
+        records: fb.records as any,
+        verifiedLevels: player.verifiedLevels.length > 0 ? player.verifiedLevels : (fb.verifiedLevels as any),
+      };
+    }
+  }
+
+  if (allRecords.length === 0) {
+    const { getFallbackRecords } = await import("@/lib/fallback-records");
+    allRecords = getFallbackRecords() as any;
+  }
 
   if (!player) {
     notFound();

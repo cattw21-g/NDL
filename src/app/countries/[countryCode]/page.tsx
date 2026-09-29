@@ -82,6 +82,24 @@ export default async function CountryDetailPage({ params }: Props) {
     console.warn("Database unavailable on /countries/[countryCode], using fallback:", err);
   }
 
+  if (records.length === 0) {
+    const { getFallbackRecords } = await import("@/lib/fallback-records");
+    records = getFallbackRecords().map((r) => ({
+      playerId: r.playerId,
+      pointsAwarded: r.pointsAwarded,
+      levelId: r.levelId,
+      acceptedAt: r.acceptedAt,
+      progress: r.progress,
+      player: {
+        id: r.player.id,
+        playerName: r.player.playerName,
+        displayName: r.player.displayName,
+        countryCode: r.player.countryCode,
+        subdivision: r.player.subdivision,
+      },
+    }));
+  }
+
   const leaderboardRecords: LeaderboardRecord[] = records.map((r) => ({
     playerId: r.player.id,
     playerName: r.player.playerName,

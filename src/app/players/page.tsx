@@ -85,6 +85,33 @@ export default async function PlayersPage() {
     console.warn("Database unavailable on /players, using fallback:", err);
   }
 
+  if (records.length === 0) {
+    const { getFallbackRecords, getFallbackPlayers } = await import("@/lib/fallback-records");
+    const fallbackRecords = getFallbackRecords();
+    records = fallbackRecords.map((r) => ({
+      playerId: r.playerId,
+      levelId: r.levelId,
+      acceptedAt: r.acceptedAt,
+      player: {
+        playerName: r.player.playerName,
+        displayName: r.player.displayName,
+      },
+      level: {
+        rank: r.level.rank,
+        status: r.level.status,
+        points: r.level.points,
+      },
+    }));
+
+    if (allUsers.length === 0) {
+      allUsers = getFallbackPlayers().map((p) => ({
+        id: p.id,
+        playerName: p.playerName,
+        displayName: p.displayName,
+      }));
+    }
+  }
+
   const leaderboard = calculateLeaderboard(
     records.map((record) => ({
       playerId: record.playerId,

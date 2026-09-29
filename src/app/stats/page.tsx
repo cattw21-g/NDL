@@ -144,6 +144,36 @@ export default async function StatsPage() {
     console.warn("Database unavailable on /stats, using fallback:", err);
   }
 
+  if (records.length === 0) {
+    const { getFallbackRecords, getFallbackPlayers } = await import("@/lib/fallback-records");
+    records = getFallbackRecords().map((r) => ({
+      id: r.id,
+      playerId: r.playerId,
+      levelId: r.levelId,
+      progress: r.progress,
+      pointsAwarded: r.pointsAwarded,
+      fps: r.fps,
+      cbfUsed: r.cbfUsed,
+      isVerifier: r.isVerifier,
+      acceptedAt: r.acceptedAt,
+      player: {
+        id: r.player.id,
+        playerName: r.player.playerName,
+        displayName: r.player.displayName,
+        countryCode: r.player.countryCode,
+      },
+    }));
+
+    if (users.length === 0) {
+      users = getFallbackPlayers().map((p) => ({
+        id: p.id,
+        playerName: p.playerName,
+        displayName: p.displayName,
+        countryCode: p.countryCode,
+      }));
+    }
+  }
+
   // Compute points and classifications
   const mainListLevels = levels.filter((l) => l.status === "RANKED" && l.rank !== null && l.rank <= 75);
   const extendedListLevels = levels.filter((l) => l.status === "RANKED" && l.rank !== null && l.rank > 75 && l.rank <= 150);

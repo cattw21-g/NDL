@@ -229,6 +229,44 @@ export default async function LevelPage({
     notFound();
   }
 
+  if (level.records.length === 0) {
+    const { getFallbackRecordsForLevel } = await import("@/lib/fallback-records");
+    const fbRecords = getFallbackRecordsForLevel(level.id);
+    if (fbRecords.length > 0) {
+      level.records = fbRecords.map((r) => ({
+        id: r.id,
+        progress: r.progress,
+        isVerifier: r.isVerifier,
+        videoUrl: r.videoUrl,
+        rawFootageUrl: r.rawFootageUrl,
+        fps: r.fps,
+        cbfUsed: r.cbfUsed,
+        acceptedAt: r.acceptedAt,
+        pointsAwarded: r.pointsAwarded,
+        player: {
+          id: r.player.id,
+          displayName: r.player.displayName,
+          playerName: r.player.playerName,
+        },
+        submission: {
+          submittedAt: r.acceptedAt,
+        },
+      })) as any;
+    }
+  }
+
+  if (!level.verifierUser && level.verifier) {
+    const { getFallbackPlayer } = await import("@/lib/fallback-records");
+    const fbUser = getFallbackPlayer(level.verifier);
+    if (fbUser) {
+      level.verifierUser = {
+        id: fbUser.id,
+        displayName: fbUser.displayName,
+        playerName: fbUser.playerName,
+      } as any;
+    }
+  }
+
   const isDemo = demoModeEnabled() && (level.isDemo || level.name.includes("[DEMO]"));
   const currentLevelPoints = calculateCurrentLevelPoints(level);
   const tier = getLevelTier(level.rank, level.status);

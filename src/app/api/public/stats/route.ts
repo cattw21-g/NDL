@@ -29,13 +29,26 @@ export async function GET(request: NextRequest) {
     }),
   ]);
 
+  let finalRecords = records;
+  if (records.length === 0) {
+    const { getFallbackRecords } = await import("@/lib/fallback-records");
+    finalRecords = getFallbackRecords().map((r) => ({
+      id: r.id,
+      playerId: r.playerId,
+      pointsAwarded: r.pointsAwarded,
+      progress: r.progress,
+      fps: r.fps,
+      cbfUsed: r.cbfUsed,
+    }));
+  }
+
   const mainList = levels.filter((l) => l.status === "RANKED" && l.rank !== null && l.rank <= 75);
   const extendedList = levels.filter((l) => l.status === "RANKED" && l.rank !== null && l.rank > 75 && l.rank <= 150);
   const legacyList = levels.filter((l) => l.status === "LEGACY" || (l.rank !== null && l.rank > 150));
 
-  const totalPoints = records.reduce((sum, r) => sum + r.pointsAwarded, 0);
-  const completions100 = records.filter((r) => r.progress === 100);
-  const cbfCount = records.filter((r) => r.cbfUsed).length;
+  const totalPoints = finalRecords.reduce((sum, r) => sum + r.pointsAwarded, 0);
+  const completions100 = finalRecords.filter((r) => r.progress === 100);
+  const cbfCount = finalRecords.filter((r) => r.cbfUsed).length;
 
   const difficultyCounts: Record<string, number> = {
     EXTREME: levels.length,
