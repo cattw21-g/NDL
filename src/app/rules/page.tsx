@@ -212,6 +212,15 @@ export default async function RulesPage() {
             <p className="mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
               Original replay/macro compatibility is a structural eligibility check only. Player records must still be completed legitimately without macros or replay bots.
             </p>
+            <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800">
+              <Link
+                href="/rules/compare"
+                className="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-bold text-zinc-700 transition hover:border-rose-400 hover:text-rose-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-rose-500 dark:hover:text-white"
+              >
+                <GitCompareArrows className="h-3.5 w-3.5" />
+                Compare rule versions & diff
+              </Link>
+            </div>
           </SectionPanel>
         </aside>
       </section>

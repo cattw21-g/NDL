@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(absoluteSiteUrl("/login?error=session_expired"));
   }
 
-  const clientId = "1541531776097198080";
+  const clientId = process.env.DISCORD_CLIENT_ID?.trim() || "1541531776097198080";
   const clientSecret = process.env.DISCORD_CLIENT_SECRET?.trim() || "";
   const redirectUri = stateData.redirectUri || absoluteSiteUrl("/api/auth/discord/callback");
 

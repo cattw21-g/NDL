@@ -16,7 +16,13 @@ export async function GET(request: Request) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const clientId = "1541531776097198080";
+  const clientId = process.env.DISCORD_CLIENT_ID?.trim() || "1541531776097198080";
+  const clientSecret = process.env.DISCORD_CLIENT_SECRET?.trim();
+
+  if (!clientSecret) {
+    const errorTarget = user ? `/players/${user.playerName}?discord_error=missing_client_secret` : "/login?error=Discord%20OAuth%20is%20not%20configured%20yet.";
+    return NextResponse.redirect(new URL(errorTarget, request.url));
+  }
 
   // Use the canonical production redirect URI (or localhost for dev)
   const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || requestUrl.host || "";

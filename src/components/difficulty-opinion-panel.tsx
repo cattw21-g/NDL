@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Scale, Check, Star, BarChart3 } from "lucide-react";
 import { SectionPanel } from "@/components/ui";
 import { analyzeDifficultyOpinions } from "@/lib/difficulty-analysis";
@@ -22,6 +22,7 @@ type Props = {
 };
 
 export function DifficultyOpinionPanel({
+  levelId,
   levelName,
   currentRank,
   initialOpinions = [],
@@ -32,6 +33,25 @@ export function DifficultyOpinionPanel({
   const [difficultyCategory, setDifficultyCategory] = useState("EXTREME");
   const [notes, setNotes] = useState("");
   const [submitted, setSubmitted] = useState(false);
+
+  // Load persisted opinions from local storage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(`ndl_opinions_${levelId}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setOpinions((prev) => {
+            const existingTimestamps = new Set(prev.map((p) => p.submittedAt));
+            const newItems = parsed.filter((item: Opinion) => !existingTimestamps.has(item.submittedAt));
+            return [...newItems, ...prev];
+          });
+        }
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [levelId]);
 
   const stats = analyzeDifficultyOpinions(opinions.map((o) => o.suggestedRank));
   const avgRank = stats.mean !== null ? stats.mean.toString() : currentRank ? currentRank.toString() : "N/A";
@@ -47,9 +67,16 @@ export function DifficultyOpinionPanel({
       notes: notes.trim() || undefined,
       submittedAt: new Date().toISOString(),
     };
-    setOpinions([newOpinion, ...opinions]);
+    const nextOpinions = [newOpinion, ...opinions];
+    setOpinions(nextOpinions);
     setSubmitted(true);
     setNotes("");
+
+    try {
+      localStorage.setItem(`ndl_opinions_${levelId}`, JSON.stringify(nextOpinions));
+    } catch {
+      // Ignore storage errors
+    }
   }
 
   return (

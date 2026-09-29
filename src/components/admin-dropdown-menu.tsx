@@ -1,9 +1,11 @@
 "use client";
 
 import {
+  BookOpen,
   ChevronDown,
   Clock,
   FileCheck,
+  FileText,
   FolderKanban,
   Hourglass,
   Layers,
@@ -159,6 +161,24 @@ export function AdminDropdownMenu({ badgeCount }: { badgeCount?: number } = {}) 
             >
               <Sparkles className="h-3.5 w-3.5 text-purple-500" />
               <span>Beta Feedback</span>
+            </Link>
+
+            <Link
+              href="/admin/rules"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-emerald-50 hover:text-emerald-900 dark:text-slate-200 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-300"
+            >
+              <BookOpen className="h-3.5 w-3.5 text-emerald-500" />
+              <span>Manage Rules</span>
+            </Link>
+
+            <Link
+              href="/admin/changelog"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-amber-50 hover:text-amber-900 dark:text-slate-200 dark:hover:bg-amber-950/40 dark:hover:text-amber-300"
+            >
+              <FileText className="h-3.5 w-3.5 text-amber-500" />
+              <span>Changelog Posts</span>
             </Link>
 
             <Link
