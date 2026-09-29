@@ -21,6 +21,25 @@ import {
 
 export const dynamic = "force-dynamic";
 
+function thumbnailUploadFailure(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+
+  if (/suspended|inactive|usage threshold/i.test(message)) {
+    return NextResponse.json(
+      {
+        error:
+          "Image storage is currently unavailable because the Vercel Blob store is suspended. Reactivate the store in Vercel or use an image URL.",
+      },
+      { status: 503 },
+    );
+  }
+
+  return NextResponse.json(
+    { error: "Thumbnail upload failed. Try again or use an image URL." },
+    { status: 400 },
+  );
+}
+
 export async function POST(request: Request) {
   const user = await getCurrentUser();
 
@@ -74,10 +93,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ blob });
     } catch (error) {
       console.error("Direct thumbnail upload failed.", error);
-      return NextResponse.json(
-        { error: "Thumbnail upload failed. Try again or use an image URL." },
-        { status: 400 },
-      );
+      return thumbnailUploadFailure(error);
     }
   }
 
@@ -112,9 +128,6 @@ export async function POST(request: Request) {
     return NextResponse.json(response);
   } catch (error) {
     console.error("Blob thumbnail upload failed.", error);
-    return NextResponse.json(
-      { error: "Thumbnail upload failed. Try again or use an image URL." },
-      { status: 400 },
-    );
+    return thumbnailUploadFailure(error);
   }
 }
