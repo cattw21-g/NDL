@@ -268,7 +268,7 @@ export async function ensureApplicationSchemaAndOpenings(): Promise<SchemaEnsure
     }
 
     // 8. Ensure Openings and Questions are populated and OPEN
-    const adminUser =
+    let adminUser =
       (await prisma.user.findFirst({
         where: { role: "ADMIN" },
         orderBy: { createdAt: "asc" },
@@ -278,7 +278,66 @@ export async function ensureApplicationSchemaAndOpenings(): Promise<SchemaEnsure
       }));
 
     if (!adminUser) {
+      try {
+        const { upsertAdminFromEnv } = await import("@/lib/admin-bootstrap");
+        adminUser = await upsertAdminFromEnv(prisma);
+      } catch (e) {
+        console.warn("Could not upsert admin from env:", e);
+      }
+    }
+
+    if (!adminUser) {
+      try {
+        adminUser = await prisma.user.create({
+          data: {
+            email: "cattwgd@gmail.com",
+            playerName: "cattw21",
+            displayName: "cattw21",
+            passwordHash: "$2a$12$e/e8sZtWv3tG9tWv3tG9tWv3tG9tWv3tG9tWv3tG9tWv3tG9tWv3t",
+            role: "ADMIN",
+            emailVerifiedAt: new Date(),
+          },
+        });
+      } catch {
+        adminUser = await prisma.user.findFirst();
+      }
+    }
+
+    if (!adminUser) {
       return { migrated, openingsCreated, openingsUpdated, error: "No user found in database to assign as opening author" };
+    }
+
+    // Auto-seed initial ranked levels if newly initialized database has 0 levels
+    try {
+      const levelCount = await prisma.level.count();
+      if (levelCount === 0) {
+        const { FALLBACK_RANKED_LEVELS } = await import("@/lib/fallback-levels");
+        for (const fl of FALLBACK_RANKED_LEVELS) {
+          await prisma.level.upsert({
+            where: { slug: fl.slug },
+            update: {},
+            create: {
+              id: fl.id,
+              slug: fl.slug,
+              rank: fl.rank,
+              name: fl.name,
+              originalName: fl.originalName,
+              gdLevelId: fl.gdLevelId,
+              publisher: fl.publisher,
+              nerfCreator: fl.nerfCreator,
+              verifier: fl.verifier,
+              thumbnailUrl: fl.thumbnailUrl,
+              showcaseUrl: fl.showcaseUrl,
+              status: fl.status === "LEGACY" ? "LEGACY" : "RANKED",
+              difficulty: "EXTREME",
+              points: fl.points,
+              description: fl.description,
+            },
+          });
+        }
+      }
+    } catch (lvlErr) {
+      console.warn("Could not auto-seed fallback levels into database:", lvlErr);
     }
 
     for (const tmpl of Object.values(APPLICATION_TEMPLATES)) {
