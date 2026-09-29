@@ -1,13 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { requireAdmin, isCurrentSessionRecent, deleteAccountAsAdmin, revalidatePath } = vi.hoisted(() => ({
+const { requireAdmin, deleteAccountAsAdmin, revalidatePath } = vi.hoisted(() => ({
   requireAdmin: vi.fn(),
-  isCurrentSessionRecent: vi.fn(),
   deleteAccountAsAdmin: vi.fn(),
   revalidatePath: vi.fn(),
 }));
 
-vi.mock("@/lib/auth", () => ({ requireAdmin, isCurrentSessionRecent }));
+vi.mock("@/lib/auth", () => ({ requireAdmin }));
 vi.mock("@/lib/account-deletion", () => ({ deleteAccountAsAdmin }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
 vi.mock("next/cache", () => ({ revalidatePath }));
@@ -15,45 +14,42 @@ vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw new Error
 
 import { deleteUserAsAdminAction } from "../actions/admin-user-deletion";
 
-function confirmationForm(value = "DELETE @target") {
+function deletionForm() {
   const form = new FormData();
   form.set("userId", "target-id");
   form.set("playerName", "target");
-  form.set("confirmation", value);
-  form.set("understood", "yes");
   return form;
 }
 
 describe("admin user deletion action", () => {
   beforeEach(() => {
     requireAdmin.mockReset().mockResolvedValue({ id: "admin-id", playerName: "admin", role: "ADMIN" });
-    isCurrentSessionRecent.mockReset().mockResolvedValue(true);
     deleteAccountAsAdmin.mockReset().mockResolvedValue("deleted");
     revalidatePath.mockReset();
   });
 
   it("requires admin authorization", async () => {
     requireAdmin.mockRejectedValue(new Error("unauthorized"));
-    await expect(deleteUserAsAdminAction(confirmationForm())).rejects.toThrow("unauthorized");
+    await expect(deleteUserAsAdminAction(deletionForm())).rejects.toThrow("unauthorized");
     expect(deleteAccountAsAdmin).not.toHaveBeenCalled();
   });
 
-  it("requires a recent session and exact confirmation", async () => {
-    isCurrentSessionRecent.mockResolvedValueOnce(false);
-    await expect(deleteUserAsAdminAction(confirmationForm())).rejects.toThrow("session-expired");
-    await expect(deleteUserAsAdminAction(confirmationForm("DELETE @wrong"))).rejects.toThrow("invalid-confirmation");
+  it("rejects a malformed target ID", async () => {
+    const form = deletionForm();
+    form.set("userId", "../wrong");
+    await expect(deleteUserAsAdminAction(form)).rejects.toThrow("error=invalid");
     expect(deleteAccountAsAdmin).not.toHaveBeenCalled();
   });
 
-  it("deletes only the selected account after server-side checks", async () => {
-    await expect(deleteUserAsAdminAction(confirmationForm())).rejects.toThrow("redirect:/admin/users?deleted=1");
+  it("deletes the selected account with just the button's target fields", async () => {
+    await expect(deleteUserAsAdminAction(deletionForm())).rejects.toThrow("redirect:/admin/users?deleted=1");
     expect(deleteAccountAsAdmin).toHaveBeenCalledWith({}, expect.objectContaining({ id: "admin-id" }), "target-id", "target");
     expect(revalidatePath).toHaveBeenCalledWith("/players/target");
   });
 
   it("does not report success when the deletion service refuses", async () => {
     deleteAccountAsAdmin.mockResolvedValue("last-admin");
-    await expect(deleteUserAsAdminAction(confirmationForm())).rejects.toThrow("error=last-admin");
+    await expect(deleteUserAsAdminAction(deletionForm())).rejects.toThrow("error=last-admin");
     expect(revalidatePath).not.toHaveBeenCalled();
   });
 });

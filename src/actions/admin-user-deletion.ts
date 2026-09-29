@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { deleteAccountAsAdmin } from "@/lib/account-deletion";
-import { isCurrentSessionRecent, requireAdmin } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function deleteUserAsAdminAction(formData: FormData) {
@@ -18,14 +18,6 @@ export async function deleteUserAsAdminAction(formData: FormData) {
   }
 
   const detailPath = `/admin/users/${encodeURIComponent(userId)}/delete`;
-  if (!(await isCurrentSessionRecent())) {
-    redirect(`${detailPath}?error=session-expired`);
-  }
-  if (formData.get("confirmation") !== `DELETE @${playerName}` ||
-      formData.get("understood") !== "yes") {
-    redirect(`${detailPath}?error=invalid-confirmation`);
-  }
-
   let result: Awaited<ReturnType<typeof deleteAccountAsAdmin>>;
   try {
     result = await deleteAccountAsAdmin(prisma, admin, userId, playerName);
