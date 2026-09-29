@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSiteUrl } from "@/lib/site-url";
 import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/auth";
-import { hashPassword } from "@/lib/password-hashing";
-import { randomBytes } from "node:crypto";
+import { hasCompletedGoogleUsernameSetup } from "@/lib/google-username-setup";
+import {
+  createGoogleSignupToken,
+  GOOGLE_OAUTH_STATE_COOKIE,
+  GOOGLE_SETUP_COOKIE,
+  GOOGLE_SETUP_TTL_SECONDS,
+} from "@/lib/google-signup";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +19,22 @@ export async function GET(request: NextRequest) {
   const proto = request.headers.get("x-forwarded-proto") || (url.protocol.replace(":", "") || "https");
   const siteUrl = `${proto}://${host}`;
 
+  const state = searchParams.get("state");
+  const expectedState = request.cookies.get(GOOGLE_OAUTH_STATE_COOKIE)?.value;
+  if (!state || !expectedState || state !== expectedState) {
+    const response = NextResponse.redirect(new URL("/login?error=Google%20sign-in%20expired.%20Please%20try%20again.", siteUrl));
+    response.cookies.delete(GOOGLE_OAUTH_STATE_COOKIE);
+    return response;
+  }
+
+  const redirectWithoutState = (path: string) => {
+    const response = NextResponse.redirect(new URL(path, siteUrl));
+    response.cookies.delete(GOOGLE_OAUTH_STATE_COOKIE);
+    return response;
+  };
+
   if (!code) {
-    return NextResponse.redirect(new URL("/login?error=Google%20authentication%20was%20cancelled.", siteUrl));
+    return redirectWithoutState("/login?error=Google%20authentication%20was%20cancelled.");
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -24,7 +42,7 @@ export async function GET(request: NextRequest) {
   const redirectUri = `${siteUrl}/api/auth/google/callback`;
 
   if (!clientId || !clientSecret) {
-    return NextResponse.redirect(new URL("/login?error=Google%20OAuth%20credentials%20missing.", siteUrl));
+    return redirectWithoutState("/login?error=Google%20OAuth%20credentials%20missing.");
   }
 
   try {
@@ -43,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     const tokenData = await tokenResponse.json();
     if (!tokenResponse.ok || !tokenData.access_token) {
-      return NextResponse.redirect(new URL("/login?error=Failed%20to%20exchange%20Google%20token.", siteUrl));
+      return redirectWithoutState("/login?error=Failed%20to%20exchange%20Google%20token.");
     }
 
     // 2. Fetch Google profile
@@ -52,49 +70,38 @@ export async function GET(request: NextRequest) {
     });
 
     const profile = await profileResponse.json();
-    if (!profileResponse.ok || !profile.email) {
-      return NextResponse.redirect(new URL("/login?error=Failed%20to%20fetch%20Google%20profile.", siteUrl));
+    if (!profileResponse.ok || !profile.email || profile.verified_email !== true) {
+      return redirectWithoutState("/login?error=Google%20did%20not%20provide%20a%20verified%20email.");
     }
 
     const email = profile.email.toLowerCase().trim();
-    let user = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { email },
     });
 
-    if (!user) {
-      // Create new user linked with Google
-      const baseHandle = (profile.name || email.split("@")[0])
-        .toLowerCase()
-        .replace(/[^a-z0-9_]/g, "")
-        .slice(0, 20) || "player";
-      let playerName = baseHandle;
-      let counter = 1;
-      while (await prisma.user.findUnique({ where: { playerName } })) {
-        playerName = `${baseHandle}${counter++}`;
-      }
-
-      const dummyHash = await hashPassword(randomBytes(24).toString("hex"));
-
-      user = await prisma.user.create({
-        data: {
-          email,
-          emailVerifiedAt: new Date(),
-          playerName,
-          displayName: profile.name || playerName,
-          passwordHash: dummyHash,
-        },
+    if (!user || !(await hasCompletedGoogleUsernameSetup(user.id))) {
+      const response = redirectWithoutState("/complete-google-signup");
+      response.cookies.set(GOOGLE_SETUP_COOKIE, createGoogleSignupToken(email, Date.now(), process.env, user?.id), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: GOOGLE_SETUP_TTL_SECONDS,
       });
-    } else if (!user.emailVerifiedAt) {
-      user = await prisma.user.update({
+      return response;
+    }
+
+    if (!user.emailVerifiedAt) {
+      await prisma.user.update({
         where: { id: user.id },
         data: { emailVerifiedAt: new Date() },
       });
     }
 
     await createSession(user.id);
-    return NextResponse.redirect(new URL(`/players/${user.playerName}`, siteUrl));
+    return redirectWithoutState(`/players/${user.playerName}`);
   } catch (err) {
     console.error("Google OAuth error:", err);
-    return NextResponse.redirect(new URL("/login?error=Internal%20Google%20OAuth%20error.", siteUrl));
+    return redirectWithoutState("/login?error=Internal%20Google%20OAuth%20error.");
   }
 }

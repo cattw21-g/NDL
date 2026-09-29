@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { getSiteUrl } from "@/lib/site-url";
+import { randomBytes } from "node:crypto";
+
+import { GOOGLE_OAUTH_STATE_COOKIE, GOOGLE_SETUP_TTL_SECONDS } from "@/lib/google-signup";
 
 export const dynamic = "force-dynamic";
 
@@ -19,12 +21,13 @@ export async function GET(request: Request) {
   }
 
   const rootUrl = "https://accounts.google.com/o/oauth2/v2/auth";
+  const state = randomBytes(32).toString("base64url");
   const options = {
     redirect_uri: redirectUri,
     client_id: clientId,
-    access_type: "offline",
     response_type: "code",
-    prompt: "consent",
+    prompt: "select_account",
+    state,
     scope: [
       "https://www.googleapis.com/auth/userinfo.profile",
       "https://www.googleapis.com/auth/userinfo.email",
@@ -32,5 +35,13 @@ export async function GET(request: Request) {
   };
 
   const qs = new URLSearchParams(options);
-  return NextResponse.redirect(`${rootUrl}?${qs.toString()}`);
+  const response = NextResponse.redirect(`${rootUrl}?${qs.toString()}`);
+  response.cookies.set(GOOGLE_OAUTH_STATE_COOKIE, state, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: GOOGLE_SETUP_TTL_SECONDS,
+  });
+  return response;
 }

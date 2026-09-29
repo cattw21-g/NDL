@@ -58,6 +58,22 @@ export async function createSession(userId: string) {
   });
 }
 
+export async function isCurrentSessionRecent(maxAgeMs = 15 * 60 * 1000) {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!token) return false;
+  const session = await prisma.session.findUnique({
+    where: { tokenHash: hashToken(token) },
+    select: { createdAt: true, expiresAt: true },
+  });
+  const now = Date.now();
+  return Boolean(
+    session &&
+    session.expiresAt.getTime() > now &&
+    session.createdAt.getTime() <= now &&
+    now - session.createdAt.getTime() <= maxAgeMs,
+  );
+}
+
 export async function destroyCurrentSession() {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;

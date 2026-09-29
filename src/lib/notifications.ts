@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { GOOGLE_USERNAME_SETUP_MARKER } from "@/lib/google-username-setup";
 
 export async function createUserNotification(params: {
   userId: string;
@@ -26,7 +27,7 @@ export async function createUserNotification(params: {
 export async function getUserNotifications(userId: string, limit = 20) {
   try {
     return await prisma.userNotification.findMany({
-      where: { userId },
+      where: { userId, type: { not: GOOGLE_USERNAME_SETUP_MARKER } },
       orderBy: { createdAt: "desc" },
       take: limit,
     });

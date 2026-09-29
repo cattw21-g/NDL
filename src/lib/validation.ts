@@ -70,15 +70,17 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+export const playerNameSchema = z
+  .string()
+  .trim()
+  .min(2)
+  .max(32)
+  .regex(/^[a-zA-Z0-9_-]+$/, "Use letters, numbers, underscores, or dashes.");
+
 export const registerSchema = z
   .object({
     email: z.email().trim().toLowerCase(),
-    playerName: z
-      .string()
-      .trim()
-      .min(2)
-      .max(32)
-      .regex(/^[a-zA-Z0-9_-]+$/, "Use letters, numbers, underscores, or dashes."),
+    playerName: playerNameSchema,
     countryCode: z
       .string()
       .trim()

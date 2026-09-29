@@ -7,7 +7,7 @@ import { FieldLabel, inputClass, SectionPanel } from "@/components/ui";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; deleted?: string }>;
 }) {
   const params = await searchParams;
 
@@ -25,6 +25,11 @@ export default async function LoginPage({
 
       <form action={loginAction}>
         <SectionPanel className="space-y-4 p-5">
+          {params.deleted === "1" ? (
+            <p role="status" className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-200">
+              Your account was deleted and you have been signed out.
+            </p>
+          ) : null}
           {params.error ? (
             <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-500/50 dark:bg-red-950/40 dark:text-red-200">
               {params.error}
