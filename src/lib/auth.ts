@@ -150,6 +150,16 @@ async function getSessionUser({ includeUnverified = false } = {}) {
 
     return session.user;
   } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "digest" in error &&
+      typeof (error as { digest?: unknown }).digest === "string" &&
+      ((error as { digest: string }).digest.startsWith("NEXT_") ||
+        (error as { digest: string }).digest === "DYNAMIC_SERVER_USAGE")
+    ) {
+      throw error;
+    }
     console.warn("Could not retrieve session user (database offline or quota exceeded):", error);
     return null;
   }

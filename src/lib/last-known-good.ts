@@ -43,10 +43,10 @@ function getLocalScratchLocation(): { dir: string; file: string; isEphemeralTmp:
       isEphemeralTmp: true,
     };
   }
-  const dir = path.join(process.cwd(), ".data");
+  const dir = path.join(/* turbopackIgnore: true */ process.cwd(), ".data");
   return {
     dir,
-    file: path.join(dir, "demonlist-snapshot.json"),
+    file: path.join(/* turbopackIgnore: true */ dir, "demonlist-snapshot.json"),
     isEphemeralTmp: false,
   };
 }
@@ -317,9 +317,12 @@ export async function syncSnapshotToDurableBlob(
 
     return { success: false, skippedReason: "cas_retry_exhausted" };
   } catch (err) {
-    logger.warn("LastKnownGood", "Failed to sync snapshot to Vercel Blob", {
-      error: err instanceof Error ? err.message : String(err),
-    });
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    if (!errorMsg.includes("suspended")) {
+      logger.warn("LastKnownGood", "Failed to sync snapshot to Vercel Blob", {
+        error: errorMsg,
+      });
+    }
     return { success: false, skippedReason: "upload_failed" };
   }
 }
@@ -368,9 +371,12 @@ async function fetchDurableBlobSnapshot(): Promise<DurableDemonlistSnapshot | nu
     }
     return null;
   } catch (err) {
-    logger.warn("LastKnownGood", "Failed to fetch durable snapshot from Vercel Blob", {
-      error: err instanceof Error ? err.message : String(err),
-    });
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    if (!errorMsg.includes("suspended")) {
+      logger.warn("LastKnownGood", "Failed to fetch durable snapshot from Vercel Blob", {
+        error: errorMsg,
+      });
+    }
     return null;
   }
 }
