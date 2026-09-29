@@ -38,7 +38,9 @@ export default async function PlayersPage() {
     id: string;
     playerName: string;
     displayName: string;
+    archived?: boolean;
   }> = [];
+  let showingArchivedRoster = false;
 
   try {
     const results = await Promise.all([
@@ -103,13 +105,17 @@ export default async function PlayersPage() {
       },
     }));
 
-    if (allUsers.length === 0) {
-      allUsers = getFallbackPlayers().map((p) => ({
+    const knownNames = new Set(allUsers.map((user) => user.playerName.toLowerCase()));
+    const archivedPlayers = getFallbackPlayers()
+      .filter((player) => !knownNames.has(player.playerName.toLowerCase()))
+      .map((p) => ({
         id: p.id,
         playerName: p.playerName,
         displayName: p.displayName,
+        archived: true,
       }));
-    }
+    allUsers = [...allUsers, ...archivedPlayers];
+    showingArchivedRoster = archivedPlayers.length > 0;
   }
 
   const leaderboard = calculateLeaderboard(
@@ -152,6 +158,7 @@ export default async function PlayersPage() {
       rank: null,
       points: 0,
       recordsCount: 0,
+      archived: u.archived,
     }));
 
   const leaderboardRows = [...rankedRows, ...unrankedUsers];
@@ -197,6 +204,11 @@ export default async function PlayersPage() {
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <main className="min-w-0">
+          {showingArchivedRoster ? (
+            <p className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
+              Historical player names are shown while account and record recovery is in progress. These are not restored accounts or verified rankings.
+            </p>
+          ) : null}
           <LeaderboardView rows={leaderboardRows} />
         </main>
 

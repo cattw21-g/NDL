@@ -1,5 +1,4 @@
 import { FALLBACK_RANKED_LEVELS } from "./fallback-levels";
-import type { LevelStatus } from "@/generated/prisma/client";
 import type { ScoredLevelStatus } from "./points";
 
 export type FallbackPlayer = {
@@ -220,7 +219,7 @@ export function getFallbackRecords(): FallbackRecord[] {
 }
 
 export function getFallbackPlayers(): FallbackPlayer[] {
-  if (!allowUnverifiedFallbackData()) return [];
+  // Names in the historical public roster may be shown, but not as recovered accounts.
   return FALLBACK_PLAYERS;
 }
 
@@ -232,7 +231,6 @@ export function getFallbackRecordsForLevel(levelId: string): FallbackRecord[] {
 }
 
 export function getFallbackPlayer(playerName: string) {
-  if (!allowUnverifiedFallbackData()) return null;
   const norm = playerName.toLowerCase().replace(/[^a-z0-9]/g, "");
   const player = FALLBACK_PLAYERS.find(
     (p) =>
@@ -242,55 +240,12 @@ export function getFallbackPlayer(playerName: string) {
 
   if (!player) return null;
 
-  const playerRecords = FALLBACK_RECORDS.filter(
-    (r) => r.playerId === player.id || r.player.playerName.toLowerCase() === norm,
-  );
-
-  const verifiedLevels = FALLBACK_RANKED_LEVELS.filter((lvl) => {
-    const lvlVerifierNorm = lvl.verifier.toLowerCase().replace(/[^a-z0-9]/g, "");
-    return lvlVerifierNorm === norm || lvl.verifier.toLowerCase() === player.displayName.toLowerCase();
-  }).map((lvl) => ({
-    id: lvl.id,
-    slug: lvl.slug,
-    name: lvl.name,
-    originalName: lvl.originalName,
-    rank: lvl.rank,
-    status: lvl.status as LevelStatus,
-    points: lvl.points,
-    thumbnailUrl: lvl.thumbnailUrl,
-    verificationVideoUrl: lvl.showcaseUrl || null,
-    showcaseUrl: lvl.showcaseUrl,
-  }));
-
-  const createdLevels = FALLBACK_RANKED_LEVELS.filter((lvl) => {
-    const creatorNorm = lvl.nerfCreator.toLowerCase().replace(/[^a-z0-9]/g, "");
-    return creatorNorm === norm || lvl.nerfCreator.toLowerCase() === player.displayName.toLowerCase();
-  }).map((lvl) => ({ id: lvl.id }));
-
   return {
     ...player,
-    createdLevels,
-    verifiedLevels,
-    records: playerRecords.map((r) => ({
-      ...r,
-      level: {
-        ...r.level,
-        id: r.level.id,
-        slug: r.level.slug,
-        name: r.level.name,
-        originalName: r.level.originalName,
-        rank: r.level.rank,
-        status: r.level.status as LevelStatus,
-        points: r.level.points,
-        thumbnailUrl: r.level.thumbnailUrl,
-        publisher: "",
-        nerfCreator: "",
-        verifier: player.displayName,
-        verificationVideoUrl: r.videoUrl,
-        showcaseUrl: r.videoUrl,
-        description: "",
-      },
-    })),
+    bio: null,
+    createdLevels: [],
+    verifiedLevels: [],
+    records: [] as FallbackRecord[],
     submissions: [],
   };
 }

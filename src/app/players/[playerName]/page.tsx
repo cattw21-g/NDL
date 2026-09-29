@@ -59,6 +59,7 @@ export async function generateMetadata({
     subdivision: string | null;
     records: Array<{ id: string }>;
   } | null = null;
+  let archivedListing = false;
 
   try {
     player = await prisma.user.findFirst({
@@ -82,6 +83,7 @@ export async function generateMetadata({
     const { getFallbackPlayer } = await import("@/lib/fallback-records");
     const fb = getFallbackPlayer(playerName);
     if (fb) {
+      archivedListing = true;
       player = {
         displayName: fb.displayName,
         playerName: fb.playerName,
@@ -108,7 +110,9 @@ export async function generateMetadata({
 
   const completionsCount = player.records.length;
   const title = `${player.displayName} (${player.playerName}) | Nerfed Demonlist`;
-  const description = `${location} • ${completionsCount} Completed ${completionsCount === 1 ? "Demon" : "Demons"} • View full records, progress runs, and verified demons.`;
+  const description = archivedListing
+    ? `Historical player listing for ${player.displayName}. Account and record recovery is in progress.`
+    : `${location} • ${completionsCount} Completed ${completionsCount === 1 ? "Demon" : "Demons"} • View full records, progress runs, and verified demons.`;
   const pageUrl = absoluteSiteUrl(`/players/${player.playerName}`);
 
   return {
@@ -209,12 +213,14 @@ export default async function PlayerProfilePage({
   }
 
   let [viewer, player, allRecords] = data ?? [null, null, []];
+  let isArchivedProfile = false;
 
   if (!player) {
     const { getFallbackPlayer } = await import("@/lib/fallback-records");
     const fb = getFallbackPlayer(playerName);
     if (fb) {
       player = fb as any;
+      isArchivedProfile = true;
     }
   } else if (player && player.records.length === 0) {
     const { getFallbackPlayer } = await import("@/lib/fallback-records");
@@ -321,6 +327,11 @@ export default async function PlayerProfilePage({
 
   return (
     <div className="space-y-6">
+      {isArchivedProfile ? (
+        <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-200">
+          This is a historical player listing, not a recovered account. Records and profile details are still being recovered.
+        </p>
+      ) : null}
       {/* 1. HERO BANNER */}
       <section className="relative overflow-hidden rounded-xl border border-slate-300 bg-white p-6 shadow-md dark:border-slate-700 dark:bg-slate-900">
         <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
@@ -375,6 +386,10 @@ export default async function PlayerProfilePage({
                     <Trophy className="h-3.5 w-3.5 text-cyan-600" />
                     Rank #{globalRank}
                   </span>
+                ) : isArchivedProfile ? (
+                  <span className="rounded bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    Historical listing
+                  </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
                     <User className="h-3.5 w-3.5" />
@@ -382,7 +397,7 @@ export default async function PlayerProfilePage({
                   </span>
                 )}
 
-                <StatusBadge value={player.role} />
+                {!isArchivedProfile ? <StatusBadge value={player.role} /> : null}
 
                 {player.isSubmissionLocked ? (
                   <span
@@ -396,9 +411,11 @@ export default async function PlayerProfilePage({
               </div>
 
               <div className="mt-2 flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-500">
-                <span className="inline-flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" /> Member since {formatDate(player.createdAt)}
-                </span>
+                {!isArchivedProfile ? (
+                  <span className="inline-flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" /> Member since {formatDate(player.createdAt)}
+                  </span>
+                ) : null}
                 {countryMeta ? (
                   <Link
                     href={`/countries/${countryMeta.code.toLowerCase()}`}
@@ -440,7 +457,7 @@ export default async function PlayerProfilePage({
               cbfCount={cbfCount}
               totalCompletions={fullCompletions.length}
             />
-            {!isOwnProfile ? (
+            {!isOwnProfile && !isArchivedProfile ? (
               <PlayerClaimModal
                 playerName={player.playerName}
                 displayName={player.displayName}

@@ -13,6 +13,7 @@ export type LeaderboardRow = {
   rank: number | null;
   points: number;
   recordsCount: number;
+  archived?: boolean;
 };
 
 export function LeaderboardView({ rows }: { rows: LeaderboardRow[] }) {
@@ -23,8 +24,8 @@ export function LeaderboardView({ rows }: { rows: LeaderboardRow[] }) {
   const displayedRows = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) {
-      // Default view: Top 50 ranked players only
-      return rankedOnly.slice(0, 50);
+      // Show the roster when no accepted records can establish rankings.
+      return (rankedOnly.length > 0 ? rankedOnly : rows).slice(0, 50);
     }
     // Search view: Search across ALL registered users and ranked players
     return rows.filter(
@@ -154,7 +155,7 @@ export function LeaderboardView({ rows }: { rows: LeaderboardRow[] }) {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search any player or registered user (e.g. SpaceUK, @username)..."
+              placeholder="Search players by name or @username..."
               className={`${inputClass} w-full pl-9`}
             />
           </label>
@@ -214,7 +215,7 @@ export function LeaderboardView({ rows }: { rows: LeaderboardRow[] }) {
 
                 {/* Completions */}
                 <span className="text-sm font-semibold text-zinc-200 md:text-right">
-                  {row.recordsCount > 0 ? row.recordsCount : "0"}
+                  {row.archived ? "—" : row.recordsCount}
                 </span>
 
                 {/* Total Points */}
@@ -224,7 +225,7 @@ export function LeaderboardView({ rows }: { rows: LeaderboardRow[] }) {
                     row.points > 0 ? "text-amber-400" : "text-zinc-600",
                   )}
                 >
-                  {row.points.toLocaleString()} pts
+                  {row.archived ? "—" : `${row.points.toLocaleString()} pts`}
                 </span>
 
                 {/* View Profile CTA */}
