@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   updateUserCountryAdminAction,
   updateUserRoleAction,
@@ -27,7 +29,7 @@ export default async function AdminUsersPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q.trim() : "";
   const roleFilter = typeof params.role === "string" ? params.role.trim().toUpperCase() : "";
@@ -62,6 +64,11 @@ export default async function AdminUsersPage({
         description="Role and country changes affect leaderboards, player stats, and review access immediately."
       />
       <PageMessage searchParams={params} />
+      {params.deleted === "1" ? (
+        <p role="status" className="rounded-md border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 dark:border-emerald-500/50 dark:bg-emerald-950/40 dark:text-emerald-200">
+          Account deleted. Shared levels and staff content were preserved.
+        </p>
+      ) : null}
 
       <SectionPanel className="p-4">
         <form method="get" className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -151,6 +158,11 @@ export default async function AdminUsersPage({
                     <FactPill label="Region" value={user.subdivision} />
                   ) : null}
                 </div>
+                {user.id !== admin.id && user.email !== "deleted-account@nerfeddemonlist.invalid" ? (
+                  <Link href={`/admin/users/${user.id}/delete`} className="mt-3 inline-block text-sm font-bold text-red-700 hover:underline dark:text-red-300">
+                    Delete account
+                  </Link>
+                ) : null}
               </div>
 
               {/* Role form */}
