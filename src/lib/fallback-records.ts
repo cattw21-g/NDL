@@ -219,7 +219,7 @@ export function getFallbackRecords(): FallbackRecord[] {
 }
 
 export function getFallbackPlayers(): FallbackPlayer[] {
-  // Names in the historical public roster may be shown, but not as recovered accounts.
+  if (!allowUnverifiedFallbackData()) return [];
   return FALLBACK_PLAYERS;
 }
 
@@ -231,6 +231,7 @@ export function getFallbackRecordsForLevel(levelId: string): FallbackRecord[] {
 }
 
 export function getFallbackPlayer(playerName: string) {
+  if (!allowUnverifiedFallbackData()) return null;
   const norm = playerName.toLowerCase().replace(/[^a-z0-9]/g, "");
   const player = FALLBACK_PLAYERS.find(
     (p) =>

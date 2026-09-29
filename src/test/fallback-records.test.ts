@@ -9,16 +9,13 @@ import {
   getFallbackRecordsForLevel,
 } from "../lib/fallback-records";
 
-describe("historical player listings", () => {
-  it("keeps roster names visible without inventing accepted records or completions", () => {
+describe("unverified historical data", () => {
+  it("does not present placeholder players or records as live accounts or scores", () => {
     expect(FALLBACK_RECORDS.length).toBeGreaterThan(0);
     expect(FALLBACK_PLAYERS.length).toBeGreaterThan(0);
     expect(getFallbackRecords()).toEqual([]);
-    expect(getFallbackPlayers()).toEqual(FALLBACK_PLAYERS);
+    expect(getFallbackPlayers()).toEqual([]);
     expect(getFallbackRecordsForLevel(FALLBACK_RECORDS[0].levelId)).toEqual([]);
-    const listing = getFallbackPlayer(FALLBACK_PLAYERS[0].playerName);
-    expect(listing?.records).toEqual([]);
-    expect(listing?.verifiedLevels).toEqual([]);
-    expect(listing?.createdLevels).toEqual([]);
+    expect(getFallbackPlayer(FALLBACK_PLAYERS[0].playerName)).toBeNull();
   });
 });
