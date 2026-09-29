@@ -1,5 +1,5 @@
-import { FALLBACK_RANKED_LEVELS, type FallbackLevel } from "./fallback-levels";
-import type { Role, LevelStatus } from "@/generated/prisma/client";
+import { FALLBACK_RANKED_LEVELS } from "./fallback-levels";
+import type { LevelStatus } from "@/generated/prisma/client";
 import type { ScoredLevelStatus } from "./points";
 
 export type FallbackPlayer = {
@@ -208,21 +208,31 @@ export const FALLBACK_RECORDS: FallbackRecord[] = FALLBACK_RANKED_LEVELS.map((lv
   };
 });
 
+// These historical placeholders were never verified against accepted records.
+// Keep the source data for recovery analysis, but never present it as live data.
+function allowUnverifiedFallbackData(): boolean {
+  return false;
+}
+
 export function getFallbackRecords(): FallbackRecord[] {
+  if (!allowUnverifiedFallbackData()) return [];
   return FALLBACK_RECORDS;
 }
 
 export function getFallbackPlayers(): FallbackPlayer[] {
+  if (!allowUnverifiedFallbackData()) return [];
   return FALLBACK_PLAYERS;
 }
 
 export function getFallbackRecordsForLevel(levelId: string): FallbackRecord[] {
+  if (!allowUnverifiedFallbackData()) return [];
   return FALLBACK_RECORDS.filter(
     (r) => r.levelId === levelId || r.level.slug === levelId,
   );
 }
 
 export function getFallbackPlayer(playerName: string) {
+  if (!allowUnverifiedFallbackData()) return null;
   const norm = playerName.toLowerCase().replace(/[^a-z0-9]/g, "");
   const player = FALLBACK_PLAYERS.find(
     (p) =>

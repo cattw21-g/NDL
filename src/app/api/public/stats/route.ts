@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
       records: {
         totalAccepted: records.length,
         completions100: completions100.length,
-        progressRuns: records.length - completions100.length,
+        progressRuns: finalRecords.length - completions100.length,
         totalPointsAwarded: totalPoints,
         cbfAdoptionRatePercent: records.length > 0 ? Math.round((cbfCount / records.length) * 100) : 0,
       },

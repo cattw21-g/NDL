@@ -586,11 +586,9 @@ async function main() {
 
   await seedRules(rulesVersion);
   await seedLaunchPost();
-  const { seedVerifierRecords } = await import("../scripts/seed-verifier-records");
-  await seedVerifierRecords(prisma);
   const admin = await upsertAdminFromEnv(prisma);
   console.log(
-    `Seeded production-safe baseline rules (${rulesVersion}), launch post, and baseline verifier records. No demo users, levels, submissions, or records were created.`,
+    `Seeded production-safe baseline rules (${rulesVersion}) and launch post. No demo users, levels, submissions, or records were created.`,
   );
   if (admin) {
     console.log(`Environment admin ready: ${admin.email} (${admin.playerName}).`);
