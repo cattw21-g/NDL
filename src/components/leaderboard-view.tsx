@@ -24,10 +24,9 @@ export function LeaderboardView({ rows }: { rows: LeaderboardRow[] }) {
   const displayedRows = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) {
-      // Show the roster when no accepted records can establish rankings.
-      return (rankedOnly.length > 0 ? rankedOnly : rows).slice(0, 50);
+      return rankedOnly.slice(0, 50);
     }
-    // Search view: Search across ALL registered users and ranked players
+    // Search only players with accepted records.
     return rows.filter(
       (r) =>
         r.displayName.toLowerCase().includes(q) ||
@@ -155,7 +154,7 @@ export function LeaderboardView({ rows }: { rows: LeaderboardRow[] }) {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search players by name or @username..."
+              placeholder="Search ranked players by name or @username..."
               className={`${inputClass} w-full pl-9`}
             />
           </label>
@@ -243,7 +242,7 @@ export function LeaderboardView({ rows }: { rows: LeaderboardRow[] }) {
           </div>
         ) : (
           <div className="p-12 text-center text-zinc-400">
-            {query ? `No player or user matches "${query}".` : "No public player scores yet."}
+            {query ? `No ranked player matches "${query}".` : "No accepted player records yet."}
           </div>
         )}
       </div>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { LeaderboardView } from "@/components/leaderboard-view";
 import { SectionPanel } from "@/components/ui";
 import { prisma } from "@/lib/db";
-import { demoModeEnabled, publicRecordWhere } from "@/lib/demo-visibility";
+import { publicRecordWhere } from "@/lib/demo-visibility";
 import {
   calculateCurrentLevelPoints,
   calculateLeaderboard,
@@ -19,7 +19,6 @@ export const metadata = {
 };
 
 export default async function PlayersPage() {
-  const isDemoMode = demoModeEnabled();
   let records: Array<{
     playerId: string;
     levelId: string;
@@ -34,88 +33,21 @@ export default async function PlayersPage() {
       points: number;
     };
   }> = [];
-  let allUsers: Array<{
-    id: string;
-    playerName: string;
-    displayName: string;
-    archived?: boolean;
-  }> = [];
-  let showingArchivedRoster = false;
-
   try {
-    const results = await Promise.all([
-      prisma.record.findMany({
-        where: publicRecordWhere({
-          level: {
-            status: {
-              in: ["RANKED", "LEGACY"],
-            },
-          },
-        }),
-        select: {
-          playerId: true,
-          levelId: true,
-          acceptedAt: true,
-          player: {
-            select: {
-              playerName: true,
-              displayName: true,
-            },
-          },
-          level: {
-            select: {
-              rank: true,
-              status: true,
-              points: true,
-            },
-          },
-        },
+    records = await prisma.record.findMany({
+      where: publicRecordWhere({
+        level: { status: { in: ["RANKED", "LEGACY"] } },
       }),
-      prisma.user.findMany({
-        where: isDemoMode ? {} : { isDemo: false },
-        select: {
-          id: true,
-          playerName: true,
-          displayName: true,
-        },
-        orderBy: { createdAt: "asc" },
-      }),
-    ]);
-    records = results[0] as typeof records;
-    allUsers = results[1];
+      select: {
+        playerId: true,
+        levelId: true,
+        acceptedAt: true,
+        player: { select: { playerName: true, displayName: true } },
+        level: { select: { rank: true, status: true, points: true } },
+      },
+    });
   } catch (err) {
-    console.warn("Database unavailable on /players, using fallback:", err);
-  }
-
-  if (records.length === 0) {
-    const { getFallbackRecords, getFallbackPlayers } = await import("@/lib/fallback-records");
-    const fallbackRecords = getFallbackRecords();
-    records = fallbackRecords.map((r) => ({
-      playerId: r.playerId,
-      levelId: r.levelId,
-      acceptedAt: r.acceptedAt,
-      player: {
-        playerName: r.player.playerName,
-        displayName: r.player.displayName,
-      },
-      level: {
-        rank: r.level.rank,
-        status: r.level.status,
-        points: r.level.points,
-      },
-    }));
-
-    const knownNames = new Set(allUsers.map((user) => user.playerName.toLowerCase()));
-    const archivedPlayers = getFallbackPlayers()
-      .filter((player) => !knownNames.has(player.playerName.toLowerCase()))
-      .map((p) => ({
-        id: p.id,
-        playerName: p.playerName,
-        displayName: p.displayName,
-        archived: true,
-      }));
-    allUsers = [...allUsers, ...archivedPlayers];
-    showingArchivedRoster = archivedPlayers.length > 0;
+    console.error("Database unavailable on /players:", err);
   }
 
   const leaderboard = calculateLeaderboard(
@@ -129,17 +61,6 @@ export default async function PlayersPage() {
     })),
   );
 
-  const leaderboardMap = new Map(
-    leaderboard.map((row, index) => [
-      row.playerId,
-      {
-        rank: index + 1,
-        points: row.points,
-        recordsCount: row.records,
-      },
-    ]),
-  );
-
   const rankedRows = leaderboard.map((row, index) => ({
     playerId: row.playerId,
     playerName: row.playerName,
@@ -148,20 +69,6 @@ export default async function PlayersPage() {
     points: row.points,
     recordsCount: row.records,
   }));
-
-  const unrankedUsers = allUsers
-    .filter((u) => !leaderboardMap.has(u.id))
-    .map((u) => ({
-      playerId: u.id,
-      playerName: u.playerName,
-      displayName: u.displayName,
-      rank: null,
-      points: 0,
-      recordsCount: 0,
-      archived: u.archived,
-    }));
-
-  const leaderboardRows = [...rankedRows, ...unrankedUsers];
 
   const totalPoints = leaderboard.reduce((sum, r) => sum + r.points, 0);
   const champion = leaderboard[0];
@@ -204,12 +111,7 @@ export default async function PlayersPage() {
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <main className="min-w-0">
-          {showingArchivedRoster ? (
-            <p className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
-              Historical player names are shown while account and record recovery is in progress. These are not restored accounts or verified rankings.
-            </p>
-          ) : null}
-          <LeaderboardView rows={leaderboardRows} />
+          <LeaderboardView rows={rankedRows} />
         </main>
 
         <aside className="space-y-4">
