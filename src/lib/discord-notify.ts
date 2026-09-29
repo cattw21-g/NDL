@@ -1,4 +1,5 @@
 import { absoluteSiteUrl } from "@/lib/site-url";
+import type { ListRankChange } from "@/lib/list-rank-changes";
 
 const DISCORD_API_BASE = "https://discord.com/api/v10";
 
@@ -75,6 +76,35 @@ async function fetchWithDiscordRetry(
 
 let cachedGuildOwnerId: string | null = "948605174203686912";
 
+type MentionRole = { id: string; name: string; managed?: boolean };
+const mentionRolesCache = new Map<string, { roles: MentionRole[]; expiresAt: number }>();
+
+async function getMentionRoles(guildId: string, token: string): Promise<MentionRole[]> {
+  const cached = mentionRolesCache.get(guildId);
+  if (cached && cached.expiresAt > Date.now()) return cached.roles;
+  try {
+    const response = await fetchWithDiscordRetry(`${DISCORD_API_BASE}/guilds/${guildId}/roles`, {
+      headers: { Authorization: `Bot ${token}` },
+      cache: "no-store",
+    });
+    if (response.ok) {
+      const roles: MentionRole[] = await response.json();
+      mentionRolesCache.set(guildId, { roles, expiresAt: Date.now() + 60_000 });
+      return roles;
+    }
+    console.warn(`Could not validate Discord mention roles: HTTP ${response.status}`);
+  } catch (error) {
+    console.error("Could not validate Discord mention roles:", error);
+  }
+  return [];
+}
+
+function currentModeratorRole(roles: MentionRole[]) {
+  const normalized = (name: string) => name.toLowerCase().replace(/[^a-z]/g, "");
+  return roles.find((role) => !role.managed && normalized(role.name) === "listmoderator")
+    ?? roles.find((role) => !role.managed && normalized(role.name) === "staff");
+}
+
 /**
  * Resolves the Discord mention string to notify staff/owner about new queue items.
  * Prioritizes DISCORD_NOTIFY_MENTION, then DISCORD_OWNER_ID / DISCORD_STAFF_ROLE_ID,
@@ -86,10 +116,23 @@ export async function resolveStaffMention(
 ): Promise<string> {
   const customMention = process.env.DISCORD_NOTIFY_MENTION?.trim();
   if (customMention) {
-    return customMention;
+    if (!guildId || !botToken || !/<@&\d+>/.test(customMention)) return customMention;
+    const roles = await getMentionRoles(guildId, botToken);
+    const fallback = currentModeratorRole(roles);
+    const validated = customMention.replace(/<@&(\d+)>/g, (mention, id: string) => {
+      if (roles.some((role) => role.id === id && role.id !== guildId)) return mention;
+      return fallback ? `<@&${fallback.id}>` : "";
+    }).trim();
+    if (validated) return validated;
   }
 
-  const staffRoleId = process.env.DISCORD_STAFF_ROLE_ID?.trim();
+  let staffRoleId = process.env.DISCORD_STAFF_ROLE_ID?.trim();
+  if (guildId && botToken) {
+    const roles = await getMentionRoles(guildId, botToken);
+    if (!staffRoleId || !roles.some((role) => role.id === staffRoleId && role.id !== guildId)) {
+      staffRoleId = currentModeratorRole(roles)?.id;
+    }
+  }
   const ownerUserId =
     process.env.DISCORD_OWNER_ID?.trim() ||
     process.env.DISCORD_NOTIFY_USER_ID?.trim();
@@ -155,12 +198,15 @@ async function sendDiscordEmbed(
 
     const payload: Record<string, unknown> = {
       embeds: [embed],
+      allowed_mentions: { parse: [] },
     };
 
     if (content) {
       payload.content = content;
       payload.allowed_mentions = {
-        parse: ["users", "roles", "everyone"],
+        parse: /@here\b/.test(content) ? ["everyone"] : [],
+        users: [...new Set([...content.matchAll(/<@!?(\d+)>/g)].map((match) => match[1]))],
+        roles: [...new Set([...content.matchAll(/<@&(\d+)>/g)].map((match) => match[1]))],
       };
     }
 
@@ -588,6 +634,7 @@ export async function notifyLevelUpdated(data: {
   status: string;
   points: number;
   thumbnailUrl?: string | null;
+  rankChanges?: ListRankChange[];
 }) {
   const levelUrl = absoluteSiteUrl(`/levels/${data.levelSlug}`);
   const isRankChange =
@@ -595,7 +642,7 @@ export async function notifyLevelUpdated(data: {
     data.newRank !== null &&
     data.oldRank !== data.newRank;
   const oldRankStr = data.oldRank ? `#${data.oldRank}` : "Unranked";
-  const newRankStr = data.newRank ? `#${data.newRank}` : "Unranked";
+  const newRankStr = data.newRank ? `#${data.newRank}` : data.status === "REMOVED" ? "Removed" : "Unranked";
 
   const validThumbnail =
     data.thumbnailUrl && data.thumbnailUrl.startsWith("http")
@@ -606,7 +653,11 @@ export async function notifyLevelUpdated(data: {
   let description = `**[${data.levelName}](${levelUrl})** has been adjusted on the list to **${newRankStr}** (${data.points} pts).`;
   let color = 0x6366f1; // Blurple / Indigo
 
-  if (isRankChange) {
+  if (data.status === "REMOVED") {
+    title = `🗑️ Demon Removed — ${data.levelName}`;
+    description = `**[${data.levelName}](${levelUrl})** has been removed from the Nerfed Demonlist${data.oldRank ? ` (previously **#${data.oldRank}**)` : ""}.`;
+    color = 0xf43f5e;
+  } else if (isRankChange) {
     const isPromotion = (data.oldRank || 999) > (data.newRank || 999);
     title = isPromotion
       ? `📈 Demon Moved Up — ${data.levelName} (#${data.oldRank} ➔ #${data.newRank})`
@@ -641,6 +692,7 @@ export async function notifyLevelUpdated(data: {
         value: `**${data.status}**`,
         inline: true,
       },
+      ...rankChangeFields(data.rankChanges ?? []),
       {
         name: "🌐 Level Page",
         value: `[Open on Nerfed Demonlist ↗](${levelUrl})`,
@@ -654,4 +706,27 @@ export async function notifyLevelUpdated(data: {
   };
 
   await sendDiscordEmbed("list-updates", embed, ["🔥"]);
+}
+
+function rankChangeFields(changes: ListRankChange[]) {
+  const fields: { name: string; value: string; inline: boolean }[] = [];
+  let shown = 0;
+  for (let chunk = 0; chunk < 4 && shown < changes.length; chunk++) {
+    const lines: string[] = [];
+    let length = 0;
+    while (shown < changes.length) {
+      const change = changes[shown];
+      const name = change.levelName.replace(/[*_~]/g, "").slice(0, 96);
+      const line = `**${name}**: #${change.oldRank} → **#${change.newRank}**`;
+      if (length + line.length + 1 > 950) break;
+      lines.push(line);
+      length += line.length + 1;
+      shown++;
+    }
+    fields.push({ name: chunk === 0 ? "📈 Other placement changes" : "Placement changes (continued)", value: lines.join("\n"), inline: false });
+  }
+  if (shown < changes.length) {
+    fields.push({ name: "More changes", value: `${changes.length - shown} more levels changed position. [View the full list](${absoluteSiteUrl("/")}).`, inline: false });
+  }
+  return fields;
 }

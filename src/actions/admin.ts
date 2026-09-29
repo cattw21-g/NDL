@@ -10,6 +10,7 @@ import { requireAdmin } from "@/lib/auth";
 import { normalizeChangelogSlug } from "@/lib/changelog";
 import { COUNTRIES } from "@/lib/countries";
 import { prisma } from "@/lib/db";
+import { compareListRanks } from "@/lib/list-rank-changes";
 import {
   createLevelFormErrorState,
   levelMutationErrorState,
@@ -302,7 +303,15 @@ export async function updateLevelAction(
           id: levelId,
         },
       });
+      const beforeRanked = await tx.level.findMany({
+        where: { status: "RANKED" },
+        select: { id: true, name: true, rank: true },
+      });
       const mutation = await updateLevelWithRank(tx, levelId, upload.data);
+      const afterRanked = await tx.level.findMany({
+        where: { status: "RANKED" },
+        select: { id: true, name: true, rank: true },
+      });
 
       await tx.levelHistory.create({
         data: {
@@ -334,6 +343,8 @@ export async function updateLevelAction(
       return {
         ...mutation,
         beforeRank: beforeLevel?.rank ?? null,
+        beforeStatus: beforeLevel?.status,
+        rankChanges: compareListRanks(beforeRanked, afterRanked, levelId),
       };
     }),
     upload.uploadedPaths,
@@ -343,7 +354,8 @@ export async function updateLevelAction(
     return levelMutationErrorState(parsed.values, result.error);
   }
 
-  if (result.value.level.status === "RANKED" || result.value.level.status === "LEGACY") {
+  if (result.value.level.status === "RANKED" || result.value.level.status === "LEGACY" ||
+      (result.value.level.status === "REMOVED" && result.value.beforeStatus !== "REMOVED")) {
     await notifyLevelUpdated({
       levelName: result.value.level.name,
       levelSlug: result.value.level.slug,
@@ -352,6 +364,7 @@ export async function updateLevelAction(
       status: result.value.level.status,
       points: result.value.level.points,
       thumbnailUrl: result.value.level.thumbnailUrl,
+      rankChanges: result.value.rankChanges,
     }).catch((err) => {
       console.error("Failed to dispatch notifyLevelUpdated:", err);
     });
