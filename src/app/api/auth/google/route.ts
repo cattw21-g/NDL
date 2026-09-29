@@ -3,9 +3,12 @@ import { getSiteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
-  const siteUrl = getSiteUrl();
+  const url = new URL(request.url);
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || url.host;
+  const proto = request.headers.get("x-forwarded-proto") || (url.protocol.replace(":", "") || "https");
+  const siteUrl = `${proto}://${host}`;
   const redirectUri = `${siteUrl}/api/auth/google/callback`;
 
   if (!clientId) {

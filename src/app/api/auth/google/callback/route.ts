@@ -10,7 +10,10 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
-  const siteUrl = getSiteUrl();
+  const url = new URL(request.url);
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || url.host;
+  const proto = request.headers.get("x-forwarded-proto") || (url.protocol.replace(":", "") || "https");
+  const siteUrl = `${proto}://${host}`;
 
   if (!code) {
     return NextResponse.redirect(new URL("/login?error=Google%20authentication%20was%20cancelled.", siteUrl));
