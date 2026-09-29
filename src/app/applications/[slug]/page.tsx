@@ -40,6 +40,7 @@ export default async function ApplicationDetailPage({
   let opening = null;
   let questions: QuestionData[] = [];
   let existingSubmission: ExistingSubmission | null = null;
+  let openingLoadFailed = false;
 
   try {
     const dbOpening = await prisma.applicationOpening.findUnique({
@@ -97,10 +98,18 @@ export default async function ApplicationDetailPage({
     }
   } catch (err) {
     console.error("Database query for opening failed:", err);
+    openingLoadFailed = true;
   }
 
   // Fallback to built-in template if not found in DB
   const tmpl = Object.values(APPLICATION_TEMPLATES).find((t) => t.slug === slug);
+
+  // Never render template questions after a failed database read. Template IDs
+  // are not the persisted question IDs used by submitApplicationAction, which
+  // would make every required answer appear missing on submit.
+  if (openingLoadFailed) {
+    throw new Error("Application data is temporarily unavailable.");
+  }
 
   if (!opening && !tmpl) {
     notFound();

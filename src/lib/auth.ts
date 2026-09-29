@@ -63,11 +63,15 @@ export async function destroyCurrentSession() {
   const token = cookieStore.get(SESSION_COOKIE)?.value;
 
   if (token) {
-    await prisma.session.deleteMany({
-      where: {
-        tokenHash: hashToken(token),
-      },
-    });
+    try {
+      await prisma.session.deleteMany({
+        where: {
+          tokenHash: hashToken(token),
+        },
+      });
+    } catch (error) {
+      console.warn("Could not delete session from database (database offline or quota exceeded):", error);
+    }
   }
 
   cookieStore.delete(SESSION_COOKIE);
@@ -78,11 +82,15 @@ export async function destroyCurrentSession() {
  */
 export async function revokeAllUserSessions(userId: string) {
   if (!userId) return;
-  await prisma.session.deleteMany({
-    where: {
-      userId,
-    },
-  });
+  try {
+    await prisma.session.deleteMany({
+      where: {
+        userId,
+      },
+    });
+  } catch (error) {
+    console.warn("Could not revoke all user sessions from database:", error);
+  }
 }
 
 /**
@@ -95,43 +103,56 @@ export async function revokeOtherUserSessions(userId: string, currentToken?: str
     return;
   }
   const currentHash = hashToken(currentToken);
-  await prisma.session.deleteMany({
-    where: {
-      userId,
-      tokenHash: { not: currentHash },
-    },
-  });
+  try {
+    await prisma.session.deleteMany({
+      where: {
+        userId,
+        tokenHash: { not: currentHash },
+      },
+    });
+  } catch (error) {
+    console.warn("Could not revoke other user sessions from database:", error);
+  }
 }
 
 async function getSessionUser({ includeUnverified = false } = {}) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(SESSION_COOKIE)?.value;
 
-  if (!token) {
-    return null;
-  }
-
-  const session = await prisma.session.findUnique({
-    where: {
-      tokenHash: hashToken(token),
-    },
-    include: {
-      user: true,
-    },
-  });
-
-  if (!session || session.expiresAt < new Date()) {
-    if (session) {
-      await prisma.session.delete({ where: { id: session.id } });
+    if (!token) {
+      return null;
     }
+
+    const session = await prisma.session.findUnique({
+      where: {
+        tokenHash: hashToken(token),
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!session || session.expiresAt < new Date()) {
+      if (session) {
+        try {
+          await prisma.session.delete({ where: { id: session.id } });
+        } catch {
+          // Ignore cleanup error if database is offline or read-only
+        }
+      }
+      return null;
+    }
+
+    if (!includeUnverified && !isVerifiedAccount(session.user)) {
+      return null;
+    }
+
+    return session.user;
+  } catch (error) {
+    console.warn("Could not retrieve session user (database offline or quota exceeded):", error);
     return null;
   }
-
-  if (!includeUnverified && !isVerifiedAccount(session.user)) {
-    return null;
-  }
-
-  return session.user;
 }
 
 export async function getCurrentUser() {

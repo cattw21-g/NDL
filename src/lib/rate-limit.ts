@@ -255,9 +255,12 @@ export async function checkRateLimit(
     };
 
     if (typeof client.$transaction === "function") {
-      const runner = client.$transaction as <T>(
+      const runner = client.$transaction.bind(client) as <T>(
         fn: (tx: RateLimitClient) => Promise<T>,
       ) => Promise<T>;
+      // Prisma's $transaction method relies on its client instance as `this`.
+      // Calling a detached reference makes Prisma read _engineConfig from
+      // undefined and causes every rate-limited server action to fail.
       return runner(execute);
     }
 

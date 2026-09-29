@@ -6,74 +6,82 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
+  const shouldSync = url.searchParams.get("sync") === "true";
   const shouldBroadcast = url.searchParams.get("broadcast_email") === "true";
-  let broadcastResult: unknown = null;
+  const shouldMaintain = url.searchParams.get("maintenance") === "true";
+  const adminKey = url.searchParams.get("admin_key") || request.headers.get("x-cron-secret");
+
+  const isAuthorized =
+    (process.env.CRON_SECRET && adminKey === process.env.CRON_SECRET) ||
+    (process.env.BOT_API_SECRET && adminKey === process.env.BOT_API_SECRET);
+
   const clientId = process.env.DISCORD_APPLICATION_ID || process.env.DISCORD_CLIENT_ID || "1541531776097198080";
-  const redirectUri = "https://www.nerfeddemonlist.net/api/auth/discord/callback";
-
-  const u = new URL("https://discord.com/oauth2/authorize");
-  u.searchParams.set("client_id", clientId.trim());
-  u.searchParams.set("response_type", "code");
-  u.searchParams.set("redirect_uri", redirectUri);
-  u.searchParams.set("scope", "identify");
-
   const botToken = process.env.DISCORD_BOT_TOKEN?.trim() || "";
   const guildId = process.env.DISCORD_GUILD_ID?.trim() || "";
 
-  let migrationResult = "ok";
+  let dbStatus = "ok";
+  let dbError: string | null = null;
+
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch (err) {
+    dbStatus = "unavailable";
+    dbError = err instanceof Error ? err.message : String(err);
+  }
+
+  let migrationResult: string | null = null;
   let appMigrationResult: unknown = null;
-  try {
-    await prisma.$executeRawUnsafe(`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_type t 
-          JOIN pg_enum e ON t.oid = e.enumtypid 
-          WHERE t.typname = 'RecordStatus' AND e.enumlabel = 'UNDER_CONSIDERATION'
-        ) THEN
-          ALTER TYPE "RecordStatus" ADD VALUE 'UNDER_CONSIDERATION';
-        END IF;
-      END
-      $$;
-      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isSubmissionLocked" BOOLEAN NOT NULL DEFAULT false;
-      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "subdivision" TEXT;
-      ALTER TABLE "LevelSuggestion" ALTER COLUMN "verificationVideoUrl" DROP NOT NULL;
-    `);
-  } catch (err) {
-    migrationResult = `error: ${String(err)}`;
-  }
-
-  try {
-    const { ensureApplicationSchemaAndOpenings } = await import("@/lib/ensure-application-schema");
-    appMigrationResult = await ensureApplicationSchemaAndOpenings();
-  } catch (err) {
-    appMigrationResult = `error: ${String(err)}`;
-  }
-
-  try {
-    const { ensureLatestChangelogPost } = await import("@/lib/changelog");
-    await ensureLatestChangelogPost(prisma);
-  } catch (err) {
-    console.error("Health check changelog sync error:", err);
-  }
-
-  let dbInfo: unknown = null;
-  try {
-    dbInfo = await prisma.$queryRawUnsafe(
-      "SELECT current_database(), current_schema(), current_user, inet_server_addr()::text as host;"
-    );
-  } catch (err) {
-    dbInfo = `error: ${String(err)}`;
-  }
-
   let maintenance: MaintenanceResult | null = null;
-  try {
-    maintenance = await runDatabaseMaintenance(prisma);
-  } catch (err) {
-    console.error("Maintenance task error in health check:", err);
+  let broadcastResult: unknown = null;
+
+  // Only run heavy schema sync and maintenance if explicitly requested by authorized caller
+  if (isAuthorized && shouldSync) {
+    try {
+      await prisma.$executeRawUnsafe(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_type t 
+            JOIN pg_enum e ON t.oid = e.enumtypid 
+            WHERE t.typname = 'RecordStatus' AND e.enumlabel = 'UNDER_CONSIDERATION'
+          ) THEN
+            ALTER TYPE "RecordStatus" ADD VALUE 'UNDER_CONSIDERATION';
+          END IF;
+        END
+        $$;
+        ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isSubmissionLocked" BOOLEAN NOT NULL DEFAULT false;
+        ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "subdivision" TEXT;
+        ALTER TABLE "LevelSuggestion" ALTER COLUMN "verificationVideoUrl" DROP NOT NULL;
+      `);
+      migrationResult = "ok";
+    } catch (err) {
+      migrationResult = `error: ${String(err)}`;
+    }
+
+    try {
+      const { ensureApplicationSchemaAndOpenings } = await import("@/lib/ensure-application-schema");
+      appMigrationResult = await ensureApplicationSchemaAndOpenings();
+    } catch (err) {
+      appMigrationResult = `error: ${String(err)}`;
+    }
+
+    try {
+      const { ensureLatestChangelogPost } = await import("@/lib/changelog");
+      await ensureLatestChangelogPost(prisma);
+    } catch (err) {
+      console.error("Health check changelog sync error:", err);
+    }
   }
 
-  if (shouldBroadcast) {
+  if (isAuthorized && shouldMaintain) {
+    try {
+      maintenance = await runDatabaseMaintenance(prisma);
+    } catch (err) {
+      console.error("Maintenance task error in health check:", err);
+    }
+  }
+
+  if (isAuthorized && shouldBroadcast) {
     try {
       const { sendNewsBroadcastEmail } = await import("@/lib/email");
       const { STAFF_APPLICATIONS_OPEN_POST } = await import("@/lib/changelog");
@@ -125,14 +133,15 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    status: "ok",
+    status: dbStatus === "ok" ? "ok" : "degraded",
+    database: dbStatus,
+    ...(dbError ? { dbError } : {}),
     clientId: clientId.trim(),
     guildId,
     hasBotToken: Boolean(botToken && botToken.length > 0),
-    dbMigration: migrationResult,
-    appMigration: appMigrationResult,
-    dbInfo,
-    maintenance,
-    broadcastResult,
+    ...(migrationResult ? { dbMigration: migrationResult } : {}),
+    ...(appMigrationResult ? { appMigration: appMigrationResult } : {}),
+    ...(maintenance ? { maintenance } : {}),
+    ...(broadcastResult ? { broadcastResult } : {}),
   });
 }

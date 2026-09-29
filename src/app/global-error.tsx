@@ -25,17 +25,29 @@ export default function GlobalError({
           <p className="mt-2 text-sm text-zinc-400">
             A critical system error occurred. Please refresh or try again.
           </p>
-          <div className="mt-6 flex justify-center gap-3">
+          <div className="mt-6 flex flex-wrap justify-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => reset()}
-              className="rounded-lg bg-cyan-500 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 focus:outline-none"
+              className="rounded-lg bg-cyan-500 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-950 transition hover:bg-cyan-400 focus:outline-none"
             >
               Reload application
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  document.cookie = "ndl_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                } catch (_) {}
+                window.location.href = "/";
+              }}
+              className="rounded-lg border border-slate-700 bg-zinc-800 px-4 py-2.5 text-xs sm:text-sm font-bold text-zinc-200 transition hover:bg-zinc-700"
+            >
+              Reset Session
+            </button>
             <Link
               href="/"
-              className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm font-bold text-zinc-200 transition hover:bg-zinc-700"
+              className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-xs sm:text-sm font-bold text-zinc-200 transition hover:bg-zinc-700"
             >
               Home
             </Link>

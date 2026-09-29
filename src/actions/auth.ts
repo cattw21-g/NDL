@@ -69,43 +69,71 @@ export async function loginAction(formData: FormData) {
     authError("login", "Enter a valid email and password.");
   }
 
-  const rateLimit = await checkRateLimit(
-    prisma,
-    "login",
-    emailRateLimitKey(parsed.data.email),
-  );
+  try {
+    const rateLimit = await checkRateLimit(
+      prisma,
+      "login",
+      emailRateLimitKey(parsed.data.email),
+    );
 
-  if (!rateLimit.allowed) {
-    authError("login", rateLimit.message);
-  }
+    if (!rateLimit.allowed) {
+      authError("login", rateLimit.message);
+    }
 
-  const user = await prisma.user.findUnique({
-    where: {
-      email: parsed.data.email,
-    },
-  });
-
-  if (!user) {
-    authError("login", "No account was found for those credentials.");
-  }
-
-  const validPassword = await verifyPassword(
-    parsed.data.password,
-    user.passwordHash,
-  );
-
-  if (!validPassword) {
-    authError("login", "No account was found for those credentials.");
-  }
-
-  if (!isVerifiedAccount(user)) {
-    await sendVerificationOrRedirect(user, {
-      success: "verification-required-sent",
-      failure: "verification-required-email-failed",
+    const user = await prisma.user.findUnique({
+      where: {
+        email: parsed.data.email,
+      },
     });
+
+    if (!user) {
+      authError("login", "No account was found for those credentials.");
+    }
+
+    const validPassword = await verifyPassword(
+      parsed.data.password,
+      user.passwordHash,
+    );
+
+    if (!validPassword) {
+      authError("login", "No account was found for those credentials.");
+    }
+
+    if (!isVerifiedAccount(user)) {
+      await sendVerificationOrRedirect(user, {
+        success: "verification-required-sent",
+        failure: "verification-required-email-failed",
+      });
+    }
+
+    await createSession(user.id);
+  } catch (error: unknown) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "digest" in error &&
+      typeof (error as { digest?: unknown }).digest === "string" &&
+      (error as { digest: string }).digest.startsWith("NEXT_")
+    ) {
+      throw error;
+    }
+    console.error("Login action encountered an error:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    if (
+      message.includes("quota") ||
+      message.includes("53000") ||
+      message.includes("connect") ||
+      message.includes("timeout") ||
+      message.includes("ECONNREFUSED")
+    ) {
+      authError(
+        "login",
+        "The database is temporarily offline or undergoing maintenance. Please try again soon.",
+      );
+    }
+    authError("login", "Unable to log in at this time. Please try again.");
   }
 
-  await createSession(user.id);
   redirect("/submissions");
 }
 
@@ -130,47 +158,77 @@ export async function registerAction(
     return parsed.state;
   }
 
-  const rateLimit = await checkRateLimit(
-    prisma,
-    "register",
-    emailRateLimitKey(parsed.data.email),
-  );
+  try {
+    const rateLimit = await checkRateLimit(
+      prisma,
+      "register",
+      emailRateLimitKey(parsed.data.email),
+    );
 
-  if (!rateLimit.allowed) {
+    if (!rateLimit.allowed) {
+      return createRegisterFormErrorState(parsed.values, {
+        formErrors: [rateLimit.message],
+      });
+    }
+
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: parsed.data.email },
+          { playerName: parsed.data.playerName },
+        ],
+      },
+    });
+
+    if (existing) {
+      return createRegisterFormErrorState(parsed.values, {
+        formErrors: ["That email or username is already in use."],
+      });
+    }
+
+    const user = await prisma.user.create({
+      data: await buildRegistrationCreateData({
+        email: parsed.data.email,
+        playerName: parsed.data.playerName,
+        displayName: parsed.data.playerName,
+        password: parsed.data.password,
+        countryCode: parsed.data.countryCode,
+      }),
+    });
+
+    return sendVerificationOrRedirect(user, {
+      success: "registered-sent",
+      failure: "registered-email-failed",
+    });
+  } catch (error: unknown) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "digest" in error &&
+      typeof (error as { digest?: unknown }).digest === "string" &&
+      (error as { digest: string }).digest.startsWith("NEXT_")
+    ) {
+      throw error;
+    }
+    console.error("Register action encountered an error:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    if (
+      message.includes("quota") ||
+      message.includes("53000") ||
+      message.includes("connect") ||
+      message.includes("timeout") ||
+      message.includes("ECONNREFUSED")
+    ) {
+      return createRegisterFormErrorState(parsed.values, {
+        formErrors: [
+          "The database is temporarily offline or undergoing maintenance. Please try again soon.",
+        ],
+      });
+    }
     return createRegisterFormErrorState(parsed.values, {
-      formErrors: [rateLimit.message],
+      formErrors: ["Unable to complete registration at this time. Please try again."],
     });
   }
-
-  const existing = await prisma.user.findFirst({
-    where: {
-      OR: [
-        { email: parsed.data.email },
-        { playerName: parsed.data.playerName },
-      ],
-    },
-  });
-
-  if (existing) {
-    return createRegisterFormErrorState(parsed.values, {
-      formErrors: ["That email or username is already in use."],
-    });
-  }
-
-  const user = await prisma.user.create({
-    data: await buildRegistrationCreateData({
-      email: parsed.data.email,
-      playerName: parsed.data.playerName,
-      displayName: parsed.data.playerName,
-      password: parsed.data.password,
-      countryCode: parsed.data.countryCode,
-    }),
-  });
-
-  return sendVerificationOrRedirect(user, {
-    success: "registered-sent",
-    failure: "registered-email-failed",
-  });
 }
 
 export async function logoutAction() {

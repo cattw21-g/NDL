@@ -15,4 +15,10 @@ describe("Session Lifecycle & Revocation Security", () => {
     await expect(revokeAllUserSessions("")).resolves.not.toThrow();
     await expect(revokeOtherUserSessions("")).resolves.not.toThrow();
   });
+
+  it("handles database outage during session operations without throwing unhandled exceptions", async () => {
+    const { revokeAllUserSessions, revokeOtherUserSessions, destroyCurrentSession } = await import("@/lib/auth");
+    await expect(revokeAllUserSessions("user-123")).resolves.not.toThrow();
+    await expect(revokeOtherUserSessions("user-123", "tok-abc")).resolves.not.toThrow();
+  });
 });

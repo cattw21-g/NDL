@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { createUserNotification } from "@/lib/notifications";
 import { APPLICATION_TEMPLATES } from "@/lib/application-templates";
+import { hasApplicationAnswer } from "@/lib/application-answer-validation";
 import {
   type ApplicationRole,
   type ApplicationOpeningStatus,
@@ -163,9 +164,10 @@ export async function submitApplicationAction(params: {
     for (const q of opening.questions) {
       const ans = params.answers[q.id];
       const strVal = typeof ans === "string" ? ans.trim() : "";
+      const hasAnswer = hasApplicationAnswer(ans);
 
       if (q.required) {
-        if (ans === undefined || ans === null || strVal === "") {
+        if (!hasAnswer) {
           return {
             success: false,
             error: `Question "${q.prompt.slice(0, 40)}..." is required.`,
