@@ -44,6 +44,7 @@ export default async function MyApplicationsPage() {
       status: string;
     };
   }> = [];
+  let loadFailed = false;
 
   try {
     submissions = await prisma.applicationSubmission.findMany({
@@ -63,6 +64,7 @@ export default async function MyApplicationsPage() {
     });
   } catch (err) {
     console.error("Failed to load user applications:", err);
+    loadFailed = true;
   }
 
   return (
@@ -86,7 +88,17 @@ export default async function MyApplicationsPage() {
         </Link>
       </div>
 
-      {submissions.length === 0 ? (
+      {loadFailed ? (
+        <SectionPanel className="p-8 text-center">
+          <AlertCircle className="mx-auto h-10 w-10 text-rose-500" />
+          <h3 className="mt-3 text-base font-bold text-slate-800 dark:text-slate-200">
+            Applications temporarily unavailable
+          </h3>
+          <p className="mx-auto mt-1 max-w-md text-xs text-slate-500 dark:text-slate-400">
+            We couldn&apos;t load your applications right now. Please try again later; this does not mean your submissions were deleted.
+          </p>
+        </SectionPanel>
+      ) : submissions.length === 0 ? (
         <SectionPanel className="p-8 text-center">
           <FileText className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-700" />
           <h3 className="mt-3 text-base font-bold text-slate-800 dark:text-slate-200">
