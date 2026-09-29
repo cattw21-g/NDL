@@ -1,6 +1,5 @@
 "use client";
 
-import { upload } from "@vercel/blob/client";
 import {
   type ChangeEvent,
   type FormEvent,
@@ -28,10 +27,8 @@ import {
   type LevelFormField,
   type LevelFormValues,
 } from "@/lib/level-form-state";
-import {
-  blobThumbnailPathname,
-  validateThumbnailUploadCandidate,
-} from "@/lib/thumbnail-upload";
+import { validateThumbnailUploadCandidate } from "@/lib/thumbnail-upload";
+import { uploadThumbnailFile } from "@/lib/thumbnail-upload-client";
 import type { ImageUploadProvider } from "@/lib/upload-storage";
 
 const statuses = ["RANKED", "LEGACY", "PENDING", "REJECTED", "REMOVED"];
@@ -102,15 +99,9 @@ export function AdminLevelForm({
 
     try {
       setBlobUploading(true);
-      const blob = await upload(
-        blobThumbnailPathname(values.name || thumbnailUrlValue || file.name, file),
+      const blob = await uploadThumbnailFile(
         file,
-        {
-          access: "public",
-          handleUploadUrl: "/api/admin/blob-thumbnail-upload",
-          contentType: file.type,
-          multipart: file.size > 4 * 1024 * 1024,
-        },
+        values.name || thumbnailUrlValue || file.name,
       );
 
       setThumbnailUrlValue(blob.url);

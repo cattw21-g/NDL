@@ -635,9 +635,15 @@ describe("production readiness guardrails", () => {
     expect(adminForm).toContain("URL.revokeObjectURL");
     expect(adminForm).toContain("allowObjectUrl");
     expect(adminForm).toContain("onValueChange={setThumbnailUrlValue}");
-    expect(adminForm).toContain("blobThumbnailPathname");
-    expect(adminForm).toContain(
-      "handleUploadUrl: \"/api/admin/blob-thumbnail-upload\"",
+    expect(adminForm).toContain("uploadThumbnailFile");
+    expect(source("lib/thumbnail-upload-client.ts")).toContain(
+      "/api/admin/blob-thumbnail-upload",
+    );
+    expect(source("lib/thumbnail-upload-client.ts")).toContain(
+      "AbortController",
+    );
+    expect(source("app/api/admin/blob-thumbnail-upload/route.ts")).toContain(
+      "putBlob",
     );
     expect(adminForm).not.toContain("/api/suggestions/blob-thumbnail-upload");
   });

@@ -2,6 +2,7 @@ import {
   handleUpload,
   type HandleUploadBody,
 } from "@vercel/blob/client";
+import { put as putBlob } from "@vercel/blob";
 import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth";
@@ -13,6 +14,8 @@ import {
 } from "@/lib/upload-storage";
 import {
   isValidBlobThumbnailPathname,
+  blobThumbnailPathname,
+  validateThumbnailUploadCandidate,
   thumbnailUploadContentTypes,
 } from "@/lib/thumbnail-upload";
 
@@ -39,6 +42,43 @@ export async function POST(request: Request) {
       },
       { status: 400 },
     );
+  }
+
+  if (request.headers.get("content-type")?.startsWith("multipart/form-data")) {
+    try {
+      const formData = await request.formData();
+      const file = formData.get("file");
+      const nameHint = String(formData.get("nameHint") || "thumbnail").trim();
+
+      if (!(file instanceof File) || file.size === 0) {
+        return NextResponse.json({ error: "Choose an image to upload." }, { status: 400 });
+      }
+
+      const validationError = validateThumbnailUploadCandidate(file, maxImageUploadBytes());
+      if (validationError) {
+        return NextResponse.json({ error: validationError }, { status: 400 });
+      }
+
+      const blob = await putBlob(
+        blobThumbnailPathname(nameHint || file.name, file),
+        file,
+        {
+          access: "public",
+          addRandomSuffix: true,
+          cacheControlMaxAge: 60 * 60 * 24 * 365,
+          contentType: file.type || undefined,
+          token,
+        },
+      );
+
+      return NextResponse.json({ blob });
+    } catch (error) {
+      console.error("Direct thumbnail upload failed.", error);
+      return NextResponse.json(
+        { error: "Thumbnail upload failed. Try again or use an image URL." },
+        { status: 400 },
+      );
+    }
   }
 
   let body: HandleUploadBody;

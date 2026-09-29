@@ -1,6 +1,5 @@
 "use client";
 
-import { upload } from "@vercel/blob/client";
 import {
   type FormEvent,
   useEffect,
@@ -14,10 +13,8 @@ import { addUpcomingLevelAction, updateUpcomingThumbnailAction } from "@/actions
 import { cleanupUnusedBlobsAction } from "@/actions/admin";
 import { SafeThumbnail } from "@/components/safe-thumbnail";
 import { inputClass } from "@/components/ui";
-import {
-  blobThumbnailPathname,
-  validateThumbnailUploadCandidate,
-} from "@/lib/thumbnail-upload";
+import { validateThumbnailUploadCandidate } from "@/lib/thumbnail-upload";
+import { uploadThumbnailFile } from "@/lib/thumbnail-upload-client";
 import type { ImageUploadProvider } from "@/lib/upload-storage";
 
 export function AdminUpcomingLevelForm({
@@ -77,15 +74,9 @@ export function AdminUpcomingLevelForm({
 
     try {
       setBlobUploading(true);
-      const blob = await upload(
-        blobThumbnailPathname(levelName || thumbnailUrlValue || file.name, file),
+      const blob = await uploadThumbnailFile(
         file,
-        {
-          access: "public",
-          handleUploadUrl: "/api/admin/blob-thumbnail-upload",
-          contentType: file.type,
-          multipart: file.size > 4 * 1024 * 1024,
-        },
+        levelName || thumbnailUrlValue || file.name,
       );
 
       setThumbnailUrlValue(blob.url);
@@ -339,16 +330,7 @@ export function UpcomingThumbnailInlineEditor({
       const objectUrl = URL.createObjectURL(file);
       setPreview(objectUrl);
 
-      const blob = await upload(
-        blobThumbnailPathname(levelName || file.name, file),
-        file,
-        {
-          access: "public",
-          handleUploadUrl: "/api/admin/blob-thumbnail-upload",
-          contentType: file.type,
-          multipart: file.size > 4 * 1024 * 1024,
-        },
-      );
+      const blob = await uploadThumbnailFile(file, levelName || file.name);
 
       setThumbnailUrl(blob.url);
       setPreview(null);
