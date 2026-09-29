@@ -52,8 +52,9 @@ describe("parseVideoEmbedUrl", () => {
 
   it("parses Medal.tv clip URLs", () => {
     const result = parseVideoEmbedUrl("https://medal.tv/games/geometry-dash/clips/iBv42abc123/d1337xyz");
-    expect(result?.type).toBe("iframe");
-    expect(result?.embedUrl).toBe("https://medal.tv/clip/iBv42abc123?autoplay=1&muted=0&loop=1");
+    expect(result?.type).toBe("external");
+    expect(result?.embedUrl).toBeUndefined();
+    expect(result?.originalUrl).toBe("https://medal.tv/games/geometry-dash/clips/iBv42abc123/d1337xyz");
     expect(result?.providerName).toBe("Medal.tv");
   });
 

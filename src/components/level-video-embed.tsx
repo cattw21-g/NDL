@@ -81,8 +81,9 @@ export function parseVideoEmbedUrl(url: string | null | undefined): {
   );
   if (medalMatch) {
     return {
-      type: "iframe",
-      embedUrl: `https://medal.tv/clip/${medalMatch[1]}?autoplay=1&muted=0&loop=1`,
+      // Medal.tv prevents third-party iframe embedding. Keep the original URL
+      // and open it on Medal instead of rendering a blocked iframe in NDL.
+      type: "external",
       originalUrl: trimmed,
       providerName: "Medal.tv",
     };
