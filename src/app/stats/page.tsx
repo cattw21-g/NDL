@@ -154,19 +154,13 @@ export default async function StatsPage() {
 
   const totalPointsAwarded = records.reduce((sum, r) => sum + r.pointsAwarded, 0);
 
-  // Difficulty Distribution
-  const difficultyCounts: Record<string, number> = {
-    ENTRY: 0,
-    ADVANCED: 0,
-    EXTREME: 0,
-    MYTHIC: 0,
-    ASCENT: 0,
+  // List Tier & Difficulty Distribution
+  const tierDistribution: Record<string, number> = {
+    "Extreme Demon (All Levels)": levels.length,
+    "Main List (#1–75)": mainListLevels.length,
+    "Extended List (#76–150)": extendedListLevels.length,
+    "Legacy Demons": legacyLevels.length,
   };
-  for (const lvl of levels) {
-    if (lvl.difficulty in difficultyCounts) {
-      difficultyCounts[lvl.difficulty]++;
-    }
-  }
 
   // FPS Distribution
   const fpsGroups: Record<number, number> = {};
@@ -266,13 +260,13 @@ export default async function StatsPage() {
         <SectionPanel className="p-5 space-y-4">
           <div className="flex items-center gap-2 border-b border-zinc-200 pb-3 dark:border-zinc-800">
             <Award className="h-5 w-5 text-amber-500" />
-            <h2 className="text-lg font-extrabold text-zinc-900 dark:text-white">Difficulty Distribution</h2>
+            <h2 className="text-lg font-extrabold text-zinc-900 dark:text-white">Tier & Difficulty Distribution</h2>
           </div>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Categorization of ranked and legacy demons across official list tiers.
+            Categorization of ranked and legacy demons across official list tiers (all levels are Extreme Demons).
           </p>
           <div className="space-y-2.5">
-            {Object.entries(difficultyCounts).map(([cat, count]) => {
+            {Object.entries(tierDistribution).map(([cat, count]) => {
               const pct = levels.length > 0 ? Math.round((count / levels.length) * 100) : 0;
               return (
                 <div key={cat} className="space-y-1">

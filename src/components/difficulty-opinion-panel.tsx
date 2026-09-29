@@ -184,19 +184,11 @@ export function DifficultyOpinionPanel({
 
             <div>
               <label className="text-[11px] font-bold text-zinc-400 block mb-1">
-                Estimated Difficulty Category
+                Difficulty
               </label>
-              <select
-                value={difficultyCategory}
-                onChange={(e) => setDifficultyCategory(e.target.value)}
-                className="h-8 w-full rounded-md border border-zinc-700 bg-zinc-900 px-2 text-xs font-bold text-zinc-200 focus:border-cyan-500 focus:outline-none"
-              >
-                <option value="ENTRY">Entry Extreme</option>
-                <option value="ADVANCED">Advanced Demon</option>
-                <option value="EXTREME">Extreme Demon</option>
-                <option value="MYTHIC">Mythic Demon</option>
-                <option value="ASCENT">Ascent Tier</option>
-              </select>
+              <div className="flex h-8 items-center rounded-md border border-zinc-700 bg-zinc-900/60 px-2.5 text-xs font-bold text-zinc-200">
+                Extreme Demon
+              </div>
             </div>
           </div>
 

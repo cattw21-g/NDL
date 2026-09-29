@@ -47,7 +47,6 @@ export function UpcomingView({
 }) {
   const [activeTab, setActiveTab] = useState<"verifying" | "waiting">("verifying");
   const [search, setSearch] = useState("");
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>("ALL");
 
   const currentList = activeTab === "verifying" ? currentlyVerifying : waitingLevels;
 
@@ -61,12 +60,9 @@ export function UpcomingView({
         item.nerfCreator.toLowerCase().includes(search.toLowerCase()) ||
         (item.gdLevelId && item.gdLevelId.includes(search));
 
-      const matchesDifficulty =
-        selectedDifficulty === "ALL" || item.difficulty === selectedDifficulty;
-
-      return matchesSearch && matchesDifficulty;
+      return matchesSearch;
     });
-  }, [currentList, search, selectedDifficulty]);
+  }, [currentList, search]);
 
   const handleTabKeyDown = (
     e: React.KeyboardEvent<HTMLButtonElement>,
@@ -182,9 +178,9 @@ export function UpcomingView({
           </div>
         </div>
 
-        {/* Search & Tier Row */}
-        <div className="mt-3 flex flex-col gap-2.5 pt-3 border-t border-zinc-200/80 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800/80">
-          <div className="relative flex-1">
+        {/* Search Row */}
+        <div className="mt-3 pt-3 border-t border-zinc-200/80 dark:border-zinc-800/80">
+          <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
             <input
               value={search}
@@ -193,25 +189,6 @@ export function UpcomingView({
               aria-label="Search upcoming demons by name, verifier, or creator"
               className={`${inputClass} w-full pl-8.5 py-1 text-xs sm:text-sm`}
             />
-          </div>
-
-          <div role="group" aria-label="Difficulty tier filter" className="inline-flex rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-900">
-            {["ALL", "EXTREME", "MYTHIC", "ADVANCED", "ENTRY"].map((diff) => (
-              <button
-                key={diff}
-                type="button"
-                aria-pressed={selectedDifficulty === diff}
-                onClick={() => setSelectedDifficulty(diff)}
-                className={cx(
-                  "rounded-md px-2.5 py-1 text-xs font-semibold transition-all",
-                  selectedDifficulty === diff
-                    ? "bg-white text-cyan-700 shadow-xs dark:bg-zinc-800 dark:text-cyan-400 font-bold"
-                    : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white",
-                )}
-              >
-                {diff === "ALL" ? "All Tiers" : diff}
-              </button>
-            ))}
           </div>
         </div>
       </div>
@@ -358,7 +335,7 @@ function UpcomingCard({
                   {activeTab === "verifying" ? "CURRENTLY VERIFYING" : "OPEN VERIFICATION"}
                 </span>
                 <span className="rounded bg-slate-900/80 px-2 py-0.5 text-[11px] font-black text-white backdrop-blur-sm">
-                  {lvl.difficulty}
+                  Extreme Demon
                 </span>
               </div>
             </>

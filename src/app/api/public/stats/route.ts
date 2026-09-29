@@ -38,17 +38,8 @@ export async function GET(request: NextRequest) {
   const cbfCount = records.filter((r) => r.cbfUsed).length;
 
   const difficultyCounts: Record<string, number> = {
-    ENTRY: 0,
-    ADVANCED: 0,
-    EXTREME: 0,
-    MYTHIC: 0,
-    ASCENT: 0,
+    EXTREME: levels.length,
   };
-  for (const lvl of levels) {
-    if (lvl.difficulty in difficultyCounts) {
-      difficultyCounts[lvl.difficulty]++;
-    }
-  }
 
   return cachedJson(
     request,

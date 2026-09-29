@@ -318,10 +318,12 @@ export const levelSchema = z.object({
     ["RANKED", "LEGACY", "PENDING", "REJECTED", "REMOVED"],
     "Choose a valid status.",
   ),
-  difficulty: z.enum(
-    ["ENTRY", "ADVANCED", "EXTREME", "MYTHIC", "ASCENT"],
-    "Choose a valid difficulty/category.",
-  ),
+  difficulty: z
+    .enum(
+      ["ENTRY", "ADVANCED", "EXTREME", "MYTHIC", "ASCENT"],
+      "Choose a valid difficulty/category.",
+    )
+    .default("EXTREME"),
   description: z.string().trim().min(10).max(2000),
   versionNotes: z.preprocess(
     emptyToUndefined,

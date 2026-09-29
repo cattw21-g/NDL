@@ -189,22 +189,15 @@ export function AdminUpcomingLevelForm({
             />
           </label>
 
-          <label className="block">
+          <div className="block">
             <span className="text-xs font-black uppercase text-slate-600 dark:text-slate-400">
               Difficulty Tier
             </span>
-            <select
-              name="difficulty"
-              defaultValue="EXTREME"
-              className={`${inputClass} mt-1 w-full font-semibold`}
-            >
-              <option value="EXTREME">Extreme Demon</option>
-              <option value="MYTHIC">Mythic Demon</option>
-              <option value="ADVANCED">Advanced Demon</option>
-              <option value="ENTRY">Entry Extreme</option>
-              <option value="ASCENT">Ascent Tier</option>
-            </select>
-          </label>
+            <input type="hidden" name="difficulty" value="EXTREME" />
+            <div className={`${inputClass} mt-1 w-full font-semibold opacity-80 cursor-not-allowed flex items-center`}>
+              Extreme Demon
+            </div>
+          </div>
 
           <label className="block sm:col-span-2">
             <span className="text-xs font-black uppercase text-slate-600 dark:text-slate-400">
