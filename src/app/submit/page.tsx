@@ -14,6 +14,7 @@ import {
   videoUploadsEnabled,
 } from "@/lib/upload-storage";
 import { calculateCurrentLevelPoints } from "@/lib/points";
+import { ensureFrameCounterSchema } from "@/lib/ensure-frame-counter-schema";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -27,6 +28,7 @@ export default async function SubmitPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await ensureFrameCounterSchema();
   const user = await getCurrentUser();
   const [params, rankedLevels, userUpcomingLevels] = await Promise.all([
     searchParams,
