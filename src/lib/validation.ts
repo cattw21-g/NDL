@@ -123,7 +123,7 @@ export const submissionSchema = z
       .max(100, "Progress cannot exceed 100%.")
       .default(100),
     videoUrl: proofResourceUrl,
-    frameWindowCounterUrl: optionalProofResourceUrl,
+    frameWindowCounterRequested: checkboxBoolean,
     rawFootageUrl: optionalProofResourceUrl,
     proofImageUrl: optionalProofResourceUrl,
     fps: z.coerce.number().int().min(30).max(10000),

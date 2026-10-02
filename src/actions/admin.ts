@@ -1482,6 +1482,8 @@ export async function updateAdminRecordAction(formData: FormData) {
   const videoUrl = String(formData.get("videoUrl") || "").trim();
   const rawFootageUrl =
     String(formData.get("rawFootageUrl") || "").trim() || null;
+  const frameWindowCounterUrl =
+    String(formData.get("frameWindowCounterUrl") || "").trim() || null;
   const fps = parseInt(String(formData.get("fps") || "360"), 10) || 360;
   const cbfUsed =
     formData.get("cbfUsed") === "true" ||
@@ -1516,6 +1518,7 @@ export async function updateAdminRecordAction(formData: FormData) {
       progress,
       videoUrl: videoUrl || existing.videoUrl,
       rawFootageUrl,
+      frameWindowCounterUrl,
       fps,
       cbfUsed,
       isVerifier,

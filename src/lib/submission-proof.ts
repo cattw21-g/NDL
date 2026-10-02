@@ -2,7 +2,7 @@ export type StructuredSubmissionProof = {
   levelId: string;
   progress?: number;
   videoUrl: string;
-  frameWindowCounterUrl?: string;
+  frameWindowCounterRequested?: boolean;
   rawFootageUrl?: string;
   proofImageUrl?: string;
   fps: number;

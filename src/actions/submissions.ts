@@ -99,17 +99,6 @@ export async function submitRecordAction(
     }
   }
 
-  if (parsed.data.frameWindowCounterUrl) {
-    const counterCheck = validateProofUrl(parsed.data.frameWindowCounterUrl);
-    if (!counterCheck.valid) {
-      return createSubmissionFormErrorState(parsed.values, {
-        fieldErrors: {
-          frameWindowCounterUrl: [counterCheck.reason],
-        },
-      });
-    }
-  }
-
   const physicsCheck = validatePhysicsParameters({
     fps: parsed.data.fps,
     progress: parsed.data.progress,
