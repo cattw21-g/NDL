@@ -19,6 +19,7 @@ import { demoModeEnabled } from "@/lib/demo-visibility";
 import { formatDateTime } from "@/lib/format";
 import { countModerationQueue } from "@/lib/moderation-queue";
 import { calculateCurrentLevelPoints } from "@/lib/points";
+import { ensureFrameCounterSchema } from "@/lib/ensure-frame-counter-schema";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +77,7 @@ const adminLinks = [
 
 export default async function AdminPage() {
   await requireAdmin();
+  await ensureFrameCounterSchema();
   const isDemoMode = demoModeEnabled();
   const [
     rankedLevels,
