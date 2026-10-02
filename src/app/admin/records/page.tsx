@@ -330,6 +330,16 @@ export default async function AdminRecordsPage({
                         Raw Footage <ExternalLink className="h-3 w-3" />
                       </a>
                     ) : null}
+                    {rec.frameWindowCounterUrl ? (
+                      <a
+                        href={rec.frameWindowCounterUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-amber-700 underline dark:text-amber-400"
+                      >
+                        Frame Counter <ExternalLink className="h-3 w-3" />
+                      </a>
+                    ) : null}
                     <span>FPS: {rec.fps ?? 360}</span>
                     <span>•</span>
                     <span className={rec.cbfUsed ? "font-bold text-cyan-600 dark:text-cyan-400" : ""}>

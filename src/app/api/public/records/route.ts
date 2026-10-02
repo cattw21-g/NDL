@@ -162,6 +162,7 @@ export async function POST(request: NextRequest) {
       playerName,
       progress = 100,
       videoUrl,
+      frameWindowCounterUrl,
       rawFootageUrl,
       fps = 360,
       cbfUsed = false,
@@ -241,6 +242,20 @@ export async function POST(request: NextRequest) {
         { error: `Invalid video URL: ${normalized.error || "Malformed link."}` },
         { status: 400 },
       );
+    }
+
+    let normalizedFrameWindowCounterUrl: string | undefined;
+    if (typeof frameWindowCounterUrl === "string" && frameWindowCounterUrl.trim()) {
+      const counterVideo = normalizeVideoUrl(frameWindowCounterUrl.trim());
+      if (!counterVideo.isValid) {
+        return NextResponse.json(
+          {
+            error: `Invalid frameWindowCounterUrl: ${counterVideo.error || "Malformed link."}`,
+          },
+          { status: 400 },
+        );
+      }
+      normalizedFrameWindowCounterUrl = counterVideo.normalizedUrl;
     }
 
     // Determine target player
@@ -324,6 +339,7 @@ export async function POST(request: NextRequest) {
       levelId: level.id,
       progress: progressNum,
       videoUrl: normalized.normalizedUrl,
+      frameWindowCounterUrl: normalizedFrameWindowCounterUrl,
       rawFootageUrl: rawFootageUrl || undefined,
       proofImageUrl: undefined,
       fps: Number(fps) || 360,

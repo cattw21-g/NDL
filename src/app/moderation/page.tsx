@@ -739,6 +739,12 @@ function RecordReviewCard({
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <ProofLink href={submission.videoUrl} label="Video" />
+          {submission.frameWindowCounterUrl ? (
+            <ProofLink
+              href={submission.frameWindowCounterUrl}
+              label="Frame window counter"
+            />
+          ) : null}
           {submission.rawFootageUrl ? (
             <ProofLink href={submission.rawFootageUrl} label="Raw footage" />
           ) : (

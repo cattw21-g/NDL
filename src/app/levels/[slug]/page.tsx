@@ -156,6 +156,7 @@ export default async function LevelPage({
             progress: true,
             isVerifier: true,
             videoUrl: true,
+            frameWindowCounterUrl: true,
             rawFootageUrl: true,
             fps: true,
             cbfUsed: true,
@@ -238,6 +239,7 @@ export default async function LevelPage({
         progress: r.progress,
         isVerifier: r.isVerifier,
         videoUrl: r.videoUrl,
+        frameWindowCounterUrl: null,
         rawFootageUrl: r.rawFootageUrl,
         fps: r.fps,
         cbfUsed: r.cbfUsed,
@@ -606,15 +608,28 @@ export default async function LevelPage({
                         <MiniProofPill>{record.fps} FPS</MiniProofPill>
                         <MiniProofPill>CBF {record.cbfUsed ? "yes" : "no"}</MiniProofPill>
                       </span>
-                      <a
-                        href={record.videoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50 md:justify-self-end"
-                      >
-                        Completion video
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <a
+                          href={record.videoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
+                        >
+                          Completion video
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                        {record.frameWindowCounterUrl ? (
+                          <a
+                            href={record.frameWindowCounterUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 text-sm font-black text-amber-800 transition hover:border-amber-400 hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-950/30 dark:text-amber-300"
+                          >
+                            Frame counter
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        ) : null}
+                      </div>
                     </div>
                   );
                 })
@@ -702,15 +717,28 @@ export default async function LevelPage({
                           <MiniProofPill>Raw footage</MiniProofPill>
                         ) : null}
                       </span>
-                      <a
-                        href={record.videoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50 md:justify-self-end"
-                      >
-                        Progress video
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <a
+                          href={record.videoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950/50"
+                        >
+                          Progress video
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                        {record.frameWindowCounterUrl ? (
+                          <a
+                            href={record.frameWindowCounterUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 text-sm font-black text-amber-800 transition hover:border-amber-400 hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-950/30 dark:text-amber-300"
+                          >
+                            Frame counter
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        ) : null}
+                      </div>
                     </div>
                   );
                 })

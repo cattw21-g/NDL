@@ -21,6 +21,7 @@ export function buildSubmissionCreateData(
     levelId: input.levelId,
     progress: input.progress ?? 100,
     videoUrl: input.videoUrl,
+    frameWindowCounterUrl: input.frameWindowCounterUrl,
     rawFootageUrl: input.rawFootageUrl,
     proofImageUrl: input.proofImageUrl,
     fps: input.fps,
@@ -48,6 +49,7 @@ export type ReviewableSubmission = {
   levelId: string;
   progress?: number;
   videoUrl: string;
+  frameWindowCounterUrl?: string | null;
   rawFootageUrl: string | null;
   fps: number;
   cbfUsed: boolean;
@@ -121,6 +123,7 @@ export async function applySubmissionReview(
       levelId: submission.levelId,
       progress,
       videoUrl: submission.videoUrl,
+      frameWindowCounterUrl: submission.frameWindowCounterUrl,
       rawFootageUrl: submission.rawFootageUrl,
       fps: submission.fps,
       cbfUsed: submission.cbfUsed,

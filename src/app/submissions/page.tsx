@@ -83,6 +83,16 @@ export default async function SubmissionsPage({
                 >
                   Completion video
                 </a>
+                {submission.frameWindowCounterUrl ? (
+                  <a
+                    href={submission.frameWindowCounterUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-9 items-center rounded-md border border-amber-200 bg-amber-50 px-3 text-sm font-black text-amber-800"
+                  >
+                    Frame window counter
+                  </a>
+                ) : null}
               </div>
               {submission.moderatorNotes ? (
                 <p className="mt-4 rounded-md border border-slate-300 bg-slate-50 p-3 text-sm leading-6 text-slate-700">

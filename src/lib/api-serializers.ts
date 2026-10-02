@@ -54,6 +54,7 @@ type StaffRecordSubmissionInput = {
   id: string;
   progress?: number;
   videoUrl: string;
+  frameWindowCounterUrl?: string | null;
   rawFootageUrl: string | null;
   proofImageUrl: string | null;
   fps: number;
@@ -226,6 +227,9 @@ export function serializeStaffRecordSubmission(
     player: serializeStaffUser(submission.player),
     level: serializePublicLevel(submission.level),
     videoUrl: submission.videoUrl,
+    ...(submission.frameWindowCounterUrl
+      ? { frameWindowCounterUrl: submission.frameWindowCounterUrl }
+      : {}),
     rawFootageUrl: submission.rawFootageUrl,
     proofImageUrl: submission.proofImageUrl,
     fps: submission.fps,

@@ -269,6 +269,7 @@ model RecordSubmission {
   levelId               String
   progress              Int          @default(100)
   videoUrl              String
+  frameWindowCounterUrl String?
   rawFootageUrl         String?
   proofImageUrl         String?
   fps                   Int
@@ -313,6 +314,7 @@ model Record {
   progress      Int               @default(100)
   isVerifier    Boolean           @default(false)
   videoUrl      String
+  frameWindowCounterUrl String?
   rawFootageUrl String?
   fps           Int
   cbfUsed       Boolean           @default(false)

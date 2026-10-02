@@ -241,6 +241,14 @@ export function SubmitRecordForm({
               errors={state.fieldErrors.videoUrl}
             />
             <TextInput
+              name="frameWindowCounterUrl"
+              label="Frame window counter video (optional)"
+              help="Optional video showing the frame window counter during the run."
+              placeholder="https://youtu.be/..."
+              defaultValue={values.frameWindowCounterUrl}
+              errors={state.fieldErrors.frameWindowCounterUrl}
+            />
+            <TextInput
               name="rawFootageUrl"
               label="Raw footage link"
               help={fieldHelp.rawFootageUrl}
