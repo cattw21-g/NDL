@@ -100,6 +100,11 @@ export default async function LevelSuggestionsPage({
                 >
                   Showcase
                 </a>
+                {suggestion.frameWindowCounterRequested ? (
+                  <span className="inline-flex min-h-8 items-center rounded-md border border-amber-300 bg-amber-50 px-3 text-sm font-black text-amber-800 dark:border-amber-500/50 dark:bg-amber-950/40 dark:text-amber-100">
+                    🎬 Frame counter requested
+                  </span>
+                ) : null}
                 {suggestion.createdLevel ? (
                   <Link
                     href={`/levels/${suggestion.createdLevel.slug}`}

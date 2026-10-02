@@ -168,6 +168,7 @@ export async function submitLevelSuggestionAction(
         thumbnailUrl,
         versionNotes: parsed.data.versionNotes,
         compatibilityNotes: parsed.data.compatibilityNotes,
+        frameWindowCounterRequested: parsed.data.frameWindowCounterRequested ?? false,
       },
     });
 

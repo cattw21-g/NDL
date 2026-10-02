@@ -41,6 +41,7 @@ export type LevelWriteInput = {
   verificationVideoUrl?: string;
   thumbnailUrl: string;
   showcaseUrl: string;
+  frameWindowCounterUrl?: string;
   placementDate?: Date;
   status: LevelStatus;
   difficulty: DifficultyCategory;
@@ -157,6 +158,7 @@ export async function createLevelWithRank(
       verifier: input.verifier,
       thumbnailUrl: input.thumbnailUrl,
       showcaseUrl: input.showcaseUrl,
+      frameWindowCounterUrl: input.frameWindowCounterUrl,
       placementDate: input.placementDate,
       status: input.status,
       difficulty: input.difficulty,
@@ -245,6 +247,7 @@ export async function updateLevelWithRank(
       verifier: input.verifier,
       thumbnailUrl: input.thumbnailUrl,
       showcaseUrl: input.showcaseUrl,
+      frameWindowCounterUrl: input.frameWindowCounterUrl,
       placementDate: input.placementDate,
       status: input.status,
       difficulty: input.difficulty,

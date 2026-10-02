@@ -17,6 +17,7 @@ export const levelSuggestionFields = [
   "thumbnailFile",
   "versionNotes",
   "compatibilityNotes",
+  "frameWindowCounterRequested",
 ] as const;
 
 export type LevelSuggestionField = (typeof levelSuggestionFields)[number];
@@ -45,6 +46,7 @@ const emptyValues = {
   thumbnailFile: "",
   versionNotes: "",
   compatibilityNotes: "",
+  frameWindowCounterRequested: "",
 } satisfies LevelSuggestionValues;
 
 export function createLevelSuggestionFormState(

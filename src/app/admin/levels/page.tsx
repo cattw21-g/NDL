@@ -141,6 +141,7 @@ function levelFormValues(level: {
   verificationVideoUrl?: string | null;
   thumbnailUrl: string;
   showcaseUrl: string;
+  frameWindowCounterUrl?: string | null;
   placementDate: Date | null;
   rank: number | null;
   status: string;
@@ -172,6 +173,7 @@ function levelFormValues(level: {
     thumbnailFile: "",
     thumbnailUrl: level.thumbnailUrl,
     showcaseUrl: level.showcaseUrl,
+    frameWindowCounterUrl: level.frameWindowCounterUrl ?? "",
     placementDate: formatDateInputValue(level.placementDate),
     rank: level.rank?.toString() ?? "",
     status: level.status,
@@ -225,6 +227,7 @@ function levelFormValuesFromSuggestion(suggestion: {
     verificationVideoUrl: suggestion.verificationVideoUrl ?? "",
     thumbnailUrl: suggestion.thumbnailUrl ?? FALLBACK_THUMBNAIL_SRC,
     showcaseUrl: suggestion.showcaseUrl,
+    frameWindowCounterUrl: "",
     placementDate: "",
     rank: "",
     status: "RANKED",

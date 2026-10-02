@@ -225,6 +225,7 @@ model Level {
   verificationVideoUrl  String?
   thumbnailUrl          String
   showcaseUrl           String
+  frameWindowCounterUrl String?
   placementDate         DateTime?
   status                LevelStatus        @default(PENDING)
   difficulty            DifficultyCategory
@@ -269,7 +270,6 @@ model RecordSubmission {
   levelId               String
   progress              Int          @default(100)
   videoUrl              String
-  frameWindowCounterRequested Boolean @default(false)
   rawFootageUrl         String?
   proofImageUrl         String?
   fps                   Int
@@ -314,7 +314,6 @@ model Record {
   progress      Int               @default(100)
   isVerifier    Boolean           @default(false)
   videoUrl      String
-  frameWindowCounterUrl String?
   rawFootageUrl String?
   fps           Int
   cbfUsed       Boolean           @default(false)
@@ -353,6 +352,7 @@ model LevelSuggestion {
   thumbnailUrl         String?
   versionNotes         String?
   compatibilityNotes   String
+  frameWindowCounterRequested Boolean @default(false)
   status               LevelSuggestionStatus @default(PENDING)
   moderatorNotes       String?
   isDemo               Boolean               @default(false)

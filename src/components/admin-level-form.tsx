@@ -303,6 +303,14 @@ export function AdminLevelForm({
           />
           <Field
             formId={formId}
+            name="frameWindowCounterUrl"
+            label="Frame Window Counter URL (optional)"
+            help="Optional link to a video showing the frame window counter for this level."
+            defaultValue={values.frameWindowCounterUrl}
+            errors={state.fieldErrors.frameWindowCounterUrl}
+          />
+          <Field
+            formId={formId}
             name="placementDate"
             label="Placement date"
             type="date"

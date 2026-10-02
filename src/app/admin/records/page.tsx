@@ -62,7 +62,6 @@ export default async function AdminRecordsPage({
       include: {
         player: true,
         level: true,
-        submission: { select: { frameWindowCounterRequested: true } },
       },
       orderBy: [
         { level: { rank: { sort: "asc", nulls: "last" } } },
@@ -331,20 +330,6 @@ export default async function AdminRecordsPage({
                         Raw Footage <ExternalLink className="h-3 w-3" />
                       </a>
                     ) : null}
-                    {rec.frameWindowCounterUrl ? (
-                      <a
-                        href={rec.frameWindowCounterUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-amber-700 underline dark:text-amber-400"
-                      >
-                        Frame Counter <ExternalLink className="h-3 w-3" />
-                      </a>
-                    ) : rec.submission?.frameWindowCounterRequested ? (
-                      <span className="font-black text-amber-600 dark:text-amber-400">
-                        🎬 Frame counter requested
-                      </span>
-                    ) : null}
                     <span>FPS: {rec.fps ?? 360}</span>
                     <span>•</span>
                     <span className={rec.cbfUsed ? "font-bold text-cyan-600 dark:text-cyan-400" : ""}>
@@ -370,13 +355,6 @@ export default async function AdminRecordsPage({
                       name="videoUrl"
                       defaultValue={rec.videoUrl}
                       placeholder="Video URL"
-                      className={`${inputClass} w-48 text-xs`}
-                    />
-                    <input
-                      name="frameWindowCounterUrl"
-                      defaultValue={rec.frameWindowCounterUrl ?? ""}
-                      placeholder="Frame counter URL"
-                      title="Frame window counter video URL"
                       className={`${inputClass} w-48 text-xs`}
                     />
                     <label className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-400">

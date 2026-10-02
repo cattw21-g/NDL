@@ -416,6 +416,25 @@ export function LevelSuggestionForm({
             defaultValue={values.compatibilityNotes}
             errors={state.fieldErrors.compatibilityNotes}
           />
+          <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                name="frameWindowCounterRequested"
+                value="true"
+                defaultChecked={values.frameWindowCounterRequested === "true"}
+                className="mt-0.5 h-5 w-5 rounded border-zinc-700 bg-zinc-900 text-amber-500 focus:ring-amber-400 focus:ring-offset-zinc-950"
+              />
+              <div className="space-y-1">
+                <span className="text-sm font-bold text-amber-400">
+                  I would like a frame window counter video
+                </span>
+                <p className="text-xs text-zinc-300 dark:text-zinc-400 leading-relaxed">
+                  Check this if you&apos;d like a frame window counter video made for this level. Staff will create it if the level is approved.
+                </p>
+              </div>
+            </label>
+          </div>
         </FormSection>
 
         <div className="flex flex-col gap-3 border-t border-slate-300 pt-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">

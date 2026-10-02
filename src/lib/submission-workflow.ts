@@ -21,7 +21,6 @@ export function buildSubmissionCreateData(
     levelId: input.levelId,
     progress: input.progress ?? 100,
     videoUrl: input.videoUrl,
-    frameWindowCounterRequested: input.frameWindowCounterRequested ?? false,
     rawFootageUrl: input.rawFootageUrl,
     proofImageUrl: input.proofImageUrl,
     fps: input.fps,
@@ -49,7 +48,6 @@ export type ReviewableSubmission = {
   levelId: string;
   progress?: number;
   videoUrl: string;
-  frameWindowCounterRequested?: boolean;
   rawFootageUrl: string | null;
   fps: number;
   cbfUsed: boolean;

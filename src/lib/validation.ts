@@ -123,7 +123,6 @@ export const submissionSchema = z
       .max(100, "Progress cannot exceed 100%.")
       .default(100),
     videoUrl: proofResourceUrl,
-    frameWindowCounterRequested: checkboxBoolean,
     rawFootageUrl: optionalProofResourceUrl,
     proofImageUrl: optionalProofResourceUrl,
     fps: z.coerce.number().int().min(30).max(10000),
@@ -219,6 +218,7 @@ export const levelSuggestionSchema = z
       "Explain how the nerf preserves original route/timing compatibility.",
       1500,
     ),
+    frameWindowCounterRequested: checkboxBoolean.default(false),
   })
   .superRefine((data, ctx) => {
     const isExplicitOpen = data.isOpenVerification === true;
@@ -298,6 +298,17 @@ export const levelSchema = z.object({
     .min(1, thumbnailMessage)
     .refine(isValidThumbnailSource, thumbnailMessage),
   showcaseUrl: requiredHttpUrl("Showcase must be a valid http/https URL."),
+  frameWindowCounterUrl: z.preprocess(
+    emptyToUndefined,
+    z
+      .string()
+      .trim()
+      .refine(
+        (val) => !val || isHttpUrl(val),
+        "Frame window counter must be a valid http/https URL.",
+      )
+      .optional(),
+  ),
   placementDate: z.preprocess(
     emptyToUndefined,
     z.coerce.date().optional(),

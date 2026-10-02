@@ -321,6 +321,7 @@ const validLevel = {
   verificationVideoUrl: "",
   thumbnailUrl: "https://i.imgur.com/example.png",
   showcaseUrl: "https://example.com/showcase",
+  frameWindowCounterUrl: "",
   placementDate: "",
   rank: "1",
   status: "RANKED",

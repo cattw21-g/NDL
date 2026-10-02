@@ -262,12 +262,6 @@ export function SubmitRecordForm({
             defaultChecked={values.rawFootageIncluded === "true"}
             errors={state.fieldErrors.rawFootageIncluded}
           />
-          <CheckboxField
-            name="frameWindowCounterRequested"
-            label="I would like a frame window counter video"
-            defaultChecked={values.frameWindowCounterRequested === "true"}
-            errors={state.fieldErrors.frameWindowCounterRequested}
-          />
         </FormSection>
 
         {uploadsAvailable ? (
