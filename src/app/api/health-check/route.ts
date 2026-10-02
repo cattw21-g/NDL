@@ -52,6 +52,8 @@ export async function GET(request: Request) {
         ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isSubmissionLocked" BOOLEAN NOT NULL DEFAULT false;
         ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "subdivision" TEXT;
         ALTER TABLE "LevelSuggestion" ALTER COLUMN "verificationVideoUrl" DROP NOT NULL;
+        ALTER TABLE "Level" ADD COLUMN IF NOT EXISTS "frameWindowCounterUrl" TEXT;
+        ALTER TABLE "LevelSuggestion" ADD COLUMN IF NOT EXISTS "frameWindowCounterRequested" BOOLEAN NOT NULL DEFAULT false;
       `);
       migrationResult = "ok";
     } catch (err) {
