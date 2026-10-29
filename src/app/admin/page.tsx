@@ -77,7 +77,7 @@ const adminLinks = [
 
 export default async function AdminPage() {
   await requireAdmin();
-  await ensureFrameCounterSchema();
+  void ensureFrameCounterSchema();
   const isDemoMode = demoModeEnabled();
   const [
     rankedLevels,

@@ -15,6 +15,7 @@ import {
 } from "@/lib/upload-storage";
 import { calculateCurrentLevelPoints } from "@/lib/points";
 import { ensureFrameCounterSchema } from "@/lib/ensure-frame-counter-schema";
+import { FALLBACK_RANKED_LEVELS } from "@/lib/fallback-levels";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -28,32 +29,46 @@ export default async function SubmitPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await ensureFrameCounterSchema();
+  void ensureFrameCounterSchema();
   const user = await getCurrentUser();
-  const [params, rankedLevels, userUpcomingLevels] = await Promise.all([
-    searchParams,
-    prisma.level.findMany({
-      where: publicLevelWhere({
-        status: {
-          in: ["RANKED", "LEGACY"],
-        },
-      }),
-      orderBy: [{ rank: { sort: "asc", nulls: "last" } }, { name: "asc" }],
-    }),
-    user
-      ? prisma.level.findMany({
-          where: {
-            status: "PENDING",
-            OR: [
-              { verifierUserId: user.id },
-              { verifier: { equals: user.playerName, mode: "insensitive" } },
-              { verifier: { equals: user.displayName, mode: "insensitive" } },
-            ],
+  const params = await searchParams;
+
+  let rankedLevels: Array<any> = [];
+  let userUpcomingLevels: Array<any> = [];
+
+  try {
+    [rankedLevels, userUpcomingLevels] = await Promise.all([
+      prisma.level.findMany({
+        where: publicLevelWhere({
+          status: {
+            in: ["RANKED", "LEGACY"],
           },
-          orderBy: { name: "asc" },
-        })
-      : Promise.resolve([]),
-  ]);
+        }),
+        orderBy: [{ rank: { sort: "asc", nulls: "last" } }, { name: "asc" }],
+      }),
+      user
+        ? prisma.level.findMany({
+            where: {
+              status: "PENDING",
+              OR: [
+                { verifierUserId: user.id },
+                { verifier: { equals: user.playerName, mode: "insensitive" } },
+                { verifier: { equals: user.displayName, mode: "insensitive" } },
+              ],
+            },
+            orderBy: { name: "asc" },
+          })
+        : Promise.resolve([]),
+    ]);
+  } catch (err) {
+    console.warn("Database unavailable on /submit, using fallback levels:", err);
+    rankedLevels = FALLBACK_RANKED_LEVELS.map((lvl) => ({
+      ...lvl,
+      minimumProgress: 50,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
+  }
 
   const levels = [
     ...userUpcomingLevels.map((lvl) => ({
