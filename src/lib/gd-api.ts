@@ -33,6 +33,7 @@ export async function fetchGdLevelMetadata(gdLevelId: string): Promise<GdLevelIn
         "User-Agent": "NerfedDemonlist-Bot/1.5",
       },
       signal: controller.signal,
+      next: { revalidate: 3600 },
     });
     clearTimeout(timeout);
 

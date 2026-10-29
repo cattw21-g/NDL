@@ -49,6 +49,20 @@ import type { Metadata } from "next";
 
 export const revalidate = 60;
 
+export async function generateStaticParams() {
+  try {
+    const levels = await prisma.level.findMany({
+      where: publicLevelWhere({
+        status: { in: ["RANKED", "LEGACY"] },
+      }),
+      select: { slug: true },
+    });
+    return levels.map((lvl) => ({ slug: lvl.slug }));
+  } catch {
+    return FALLBACK_RANKED_LEVELS.map((lvl) => ({ slug: lvl.slug }));
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
