@@ -38,10 +38,10 @@ export function canReviewSubmissions(role?: string | null): boolean {
 }
 
 /**
- * Top 10 record submission final decisions (ACCEPTED or REJECTED) require Admin authority.
- * List Reviewers and List Moderators CANNOT give final approval or final rejection to Top 10.
+ * Top 3 record submission final decisions (ACCEPTED or REJECTED) require Admin authority.
+ * List Reviewers and List Moderators CANNOT give final approval or final rejection to Top 1, 2, or 3.
  * They may inspect, leave notes, request changes (NEEDS_CHANGES), and escalate to Admins.
- * Submissions beyond Top 10 can be decided by List Reviewers, List Moderators, and Admins.
+ * Submissions beyond Top 3 (ranks 4 and below) can be decided by List Reviewers, List Moderators, and Admins.
  */
 export function canFinalDecideSubmission(
   action: "ACCEPTED" | "REJECTED" | "NEEDS_CHANGES",
@@ -55,7 +55,7 @@ export function canFinalDecideSubmission(
   if (!isListReviewerRole(role)) {
     return false;
   }
-  if (typeof levelRank === "number" && levelRank >= 1 && levelRank <= 10) {
+  if (typeof levelRank === "number" && levelRank >= 1 && levelRank <= 3) {
     if (action === "ACCEPTED" || action === "REJECTED") {
       return false;
     }
@@ -79,8 +79,25 @@ export function canRejectSubmission(
   return canFinalDecideSubmission("REJECTED", role, levelRank, playerName);
 }
 
-export function canManageLevels(role?: string | null, playerName?: string | null): boolean {
-  return isAdminRole(role, playerName);
+/**
+ * Moderators can manage every level except Top 1, 2, or 3.
+ * Admins can manage all levels without restriction.
+ */
+export function canManageLevels(
+  role?: string | null,
+  playerName?: string | null,
+  levelRank?: number | null,
+): boolean {
+  if (isAdminRole(role, playerName)) {
+    return true;
+  }
+  if (!isListModeratorRole(role)) {
+    return false;
+  }
+  if (typeof levelRank === "number" && levelRank >= 1 && levelRank <= 3) {
+    return false;
+  }
+  return true;
 }
 
 export function canManageApplications(role?: string | null, playerName?: string | null): boolean {

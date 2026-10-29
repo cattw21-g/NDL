@@ -11,7 +11,8 @@ import {
   SectionPanel,
 } from "@/components/ui";
 import type { LevelFormValues } from "@/lib/level-form-state";
-import { requireAdmin } from "@/lib/auth";
+import { getCurrentUser, requireAdmin } from "@/lib/auth";
+import { isAdminRole, isModeratorRole } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
 import { FALLBACK_THUMBNAIL_SRC } from "@/lib/media";
 import { formatDateInputValue } from "@/lib/format";
@@ -28,7 +29,12 @@ export default async function AdminLevelsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requireAdmin();
+  const currentUser = await getCurrentUser();
+  const isMod = currentUser && isModeratorRole(currentUser.role);
+  if (!isMod) {
+    await requireAdmin();
+  }
+  const isAdmin = currentUser ? isAdminRole(currentUser.role, currentUser.playerName) : false;
   const params = await searchParams;
   const sourceSuggestionId =
     typeof params.suggestionId === "string" ? params.suggestionId : null;
@@ -113,12 +119,18 @@ export default async function AdminLevelsPage({
                   <StatusBadge value={level.status} />
                 </div>
               </div>
-              <AdminLevelForm
-                mode="edit"
-                initialValues={levelFormValues(level)}
-                imageUploadProvider={uploads}
-                maxImageMb={maxImageMb}
-              />
+              {typeof level.rank === "number" && level.rank >= 1 && level.rank <= 3 && !isAdmin ? (
+                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs font-bold text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200">
+                  🔒 Top 3 demon (Rank #{level.rank}) is protected. Only Administrators can manage or re-rank this level.
+                </div>
+              ) : (
+                <AdminLevelForm
+                  mode="edit"
+                  initialValues={levelFormValues(level)}
+                  imageUploadProvider={uploads}
+                  maxImageMb={maxImageMb}
+                />
+              )}
             </SectionPanel>
           ))
         ) : (

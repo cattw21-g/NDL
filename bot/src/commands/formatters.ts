@@ -34,10 +34,11 @@ export function formatTopLevelsEmbed(levels: NdlLevel[], baseUrl: string) {
       levels.length
         ? levels
             .slice(0, maxListRows)
-            .map(
-              (level) =>
-                `${rankLabel(level)} **${clean(level.name)}** - ${level.points} pts - ${clean(level.verifier)} - ${level.recordCount} records\n${levelUrl(baseUrl, level.slug)}`,
-            )
+            .map((level) => {
+              const emoji =
+                level.rank === 1 ? "🥇" : level.rank === 2 ? "🥈" : level.rank === 3 ? "🥉" : "🔹";
+              return `${emoji} **#${level.rank ?? "-"}** [${clean(level.name)}](${levelUrl(baseUrl, level.slug)}) — **${level.points} pts** (by ${clean(level.verifier)}) - ${level.recordCount} records`;
+            })
             .join("\n")
         : "No ranked levels are available yet.",
     )
@@ -45,7 +46,7 @@ export function formatTopLevelsEmbed(levels: NdlLevel[], baseUrl: string) {
 }
 
 export function formatLevelEmbed(level: NdlLevel, baseUrl: string) {
-  return baseEmbed(
+  const embed = baseEmbed(
     `${rankLabel(level)} ${level.name}`,
     `${level.status.toLowerCase()} - ${level.points} pts - ${level.recordCount} records`,
   )
@@ -61,6 +62,12 @@ export function formatLevelEmbed(level: NdlLevel, baseUrl: string) {
         inline: false,
       },
     );
+
+  if (level.thumbnailUrl && level.thumbnailUrl.startsWith("http")) {
+    embed.setThumbnail(level.thumbnailUrl);
+  }
+
+  return embed;
 }
 
 export function formatPlayerEmbed(
@@ -105,17 +112,17 @@ export function formatRecordsEmbed(
   const visibleRecords = records.slice(0, maxListRows);
   const suffix =
     records.length > visibleRecords.length
-      ? `\nShowing ${visibleRecords.length} of ${records.length}.`
+      ? `\n\n[+${records.length - visibleRecords.length} more records on profile ↗](${playerUrl(baseUrl, handle)})`
       : "";
 
   return baseEmbed(
     `Records for ${handle}`,
     visibleRecords.length
       ? `${visibleRecords
-          .map(
-            (record) =>
-              `${rankLabel(record.level)} **${clean(record.level.name)}** - ${record.pointsAwarded} pts - 100%\n${record.videoUrl}`,
-          )
+          .map((record) => {
+            const videoLink = record.videoUrl ? ` • [Proof Video ↗](${record.videoUrl})` : "";
+            return `${rankLabel(record.level)} [**${clean(record.level.name)}**](${levelUrl(baseUrl, record.level.slug)}) — **${record.pointsAwarded} pts** (100%)${videoLink}`;
+          })
           .join("\n")}${suffix}`
       : "No accepted records found.",
   ).setURL(playerUrl(baseUrl, handle));

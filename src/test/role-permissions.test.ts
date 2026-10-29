@@ -47,11 +47,14 @@ describe("NDL Role-Based Access Control (RBAC) Matrix", () => {
       expect(isModeratorRole("MODERATOR")).toBe(true);
     });
 
-    it("allows List Moderators to review normal completions and manage records, but DENIES Top 10 final approval", () => {
+    it("allows List Moderators to review normal completions and manage records, but DENIES Top 3 final approval", () => {
       expect(canReviewSubmissions("LIST_MODERATOR")).toBe(true);
       expect(canApproveSubmission("LIST_MODERATOR", 1)).toBe(false);
-      expect(canApproveSubmission("LIST_MODERATOR", 5)).toBe(false);
-      expect(canApproveSubmission("LIST_MODERATOR", 10)).toBe(false);
+      expect(canApproveSubmission("LIST_MODERATOR", 2)).toBe(false);
+      expect(canApproveSubmission("LIST_MODERATOR", 3)).toBe(false);
+      expect(canApproveSubmission("LIST_MODERATOR", 4)).toBe(true);
+      expect(canApproveSubmission("LIST_MODERATOR", 5)).toBe(true);
+      expect(canApproveSubmission("LIST_MODERATOR", 10)).toBe(true);
       expect(canApproveSubmission("LIST_MODERATOR", 11)).toBe(true);
       expect(canApproveSubmission("LIST_MODERATOR", 50)).toBe(true);
       expect(canUnlistRecord("LIST_MODERATOR")).toBe(true);
@@ -68,14 +71,16 @@ describe("NDL Role-Based Access Control (RBAC) Matrix", () => {
     it("allows List Reviewers to review normal submissions", () => {
       expect(isListReviewerRole("LIST_REVIEWER")).toBe(true);
       expect(canReviewSubmissions("LIST_REVIEWER")).toBe(true);
+      expect(canApproveSubmission("LIST_REVIEWER", 4)).toBe(true);
       expect(canApproveSubmission("LIST_REVIEWER", 11)).toBe(true);
       expect(canApproveSubmission("LIST_REVIEWER", 75)).toBe(true);
     });
 
-    it("strictly blocks List Reviewers from approving Top 10 record submissions", () => {
+    it("strictly blocks List Reviewers from approving Top 3 record submissions", () => {
       expect(canApproveSubmission("LIST_REVIEWER", 1)).toBe(false);
-      expect(canApproveSubmission("LIST_REVIEWER", 5)).toBe(false);
-      expect(canApproveSubmission("LIST_REVIEWER", 10)).toBe(false);
+      expect(canApproveSubmission("LIST_REVIEWER", 2)).toBe(false);
+      expect(canApproveSubmission("LIST_REVIEWER", 3)).toBe(false);
+      expect(canApproveSubmission("LIST_REVIEWER", 4)).toBe(true);
     });
 
     it("strictly blocks List Reviewers from unlisting/restoring records or managing staff applications", () => {
@@ -99,58 +104,70 @@ describe("NDL Role-Based Access Control (RBAC) Matrix", () => {
     });
   });
 
-  describe("Top 10 Submission Final Decision Gates (Admin-Only Outcomes)", () => {
-    it("Reviewer -> Top 10 ACCEPT denied, REJECT denied, NEEDS_CHANGES allowed", () => {
-      // Top 10 (ranks 1, 5, 10):
+  describe("Top 3 Submission Final Decision Gates (Admin-Only Outcomes)", () => {
+    it("Reviewer -> Top 3 ACCEPT denied, REJECT denied, NEEDS_CHANGES allowed", () => {
+      // Top 3 (ranks 1, 2, 3):
       expect(canFinalDecideSubmission("ACCEPTED", "LIST_REVIEWER", 1)).toBe(false);
-      expect(canFinalDecideSubmission("ACCEPTED", "LIST_REVIEWER", 5)).toBe(false);
-      expect(canFinalDecideSubmission("ACCEPTED", "LIST_REVIEWER", 10)).toBe(false);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_REVIEWER", 2)).toBe(false);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_REVIEWER", 3)).toBe(false);
 
       expect(canFinalDecideSubmission("REJECTED", "LIST_REVIEWER", 1)).toBe(false);
-      expect(canFinalDecideSubmission("REJECTED", "LIST_REVIEWER", 5)).toBe(false);
-      expect(canFinalDecideSubmission("REJECTED", "LIST_REVIEWER", 10)).toBe(false);
+      expect(canFinalDecideSubmission("REJECTED", "LIST_REVIEWER", 2)).toBe(false);
+      expect(canFinalDecideSubmission("REJECTED", "LIST_REVIEWER", 3)).toBe(false);
 
       expect(canApproveSubmission("LIST_REVIEWER", 1)).toBe(false);
       expect(canRejectSubmission("LIST_REVIEWER", 1)).toBe(false);
 
-      // Reviewer CAN request changes or leave review notes on Top 10
+      // Reviewer CAN request changes or leave review notes on Top 3
       expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_REVIEWER", 1)).toBe(true);
-      expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_REVIEWER", 10)).toBe(true);
+      expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_REVIEWER", 3)).toBe(true);
 
-      // Allowed for normal list levels > 10
+      // Allowed for normal list levels > 3
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_REVIEWER", 4)).toBe(true);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_REVIEWER", 5)).toBe(true);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_REVIEWER", 10)).toBe(true);
       expect(canFinalDecideSubmission("ACCEPTED", "LIST_REVIEWER", 11)).toBe(true);
+      expect(canFinalDecideSubmission("REJECTED", "LIST_REVIEWER", 4)).toBe(true);
       expect(canFinalDecideSubmission("REJECTED", "LIST_REVIEWER", 11)).toBe(true);
       expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_REVIEWER", 11)).toBe(true);
     });
 
-    it("Moderator -> Top 10 ACCEPT denied, REJECT denied, NEEDS_CHANGES allowed", () => {
+    it("Moderator -> Top 3 ACCEPT denied, REJECT denied, NEEDS_CHANGES allowed", () => {
       expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 1)).toBe(false);
-      expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 5)).toBe(false);
-      expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 10)).toBe(false);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 2)).toBe(false);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 3)).toBe(false);
 
       expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 1)).toBe(false);
-      expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 5)).toBe(false);
-      expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 10)).toBe(false);
+      expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 2)).toBe(false);
+      expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 3)).toBe(false);
 
       expect(canApproveSubmission("LIST_MODERATOR", 1)).toBe(false);
       expect(canRejectSubmission("LIST_MODERATOR", 1)).toBe(false);
 
-      // Moderator CAN request changes or leave review notes on Top 10
+      // Moderator CAN request changes or leave review notes on Top 3
       expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_MODERATOR", 1)).toBe(true);
-      expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_MODERATOR", 10)).toBe(true);
+      expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_MODERATOR", 3)).toBe(true);
 
-      // Allowed for normal list levels > 10
+      // Allowed for normal list levels > 3
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 4)).toBe(true);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 5)).toBe(true);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 10)).toBe(true);
       expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 11)).toBe(true);
+      expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 4)).toBe(true);
       expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 11)).toBe(true);
       expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_MODERATOR", 11)).toBe(true);
     });
 
-    it("Admin -> both ACCEPT and REJECT allowed on Top 10", () => {
+    it("Admin -> both ACCEPT and REJECT allowed on Top 3 and beyond", () => {
       expect(canFinalDecideSubmission("ACCEPTED", "ADMIN", 1)).toBe(true);
+      expect(canFinalDecideSubmission("ACCEPTED", "ADMIN", 2)).toBe(true);
+      expect(canFinalDecideSubmission("ACCEPTED", "ADMIN", 3)).toBe(true);
       expect(canFinalDecideSubmission("ACCEPTED", "ADMIN", 5)).toBe(true);
       expect(canFinalDecideSubmission("ACCEPTED", "ADMIN", 10)).toBe(true);
 
       expect(canFinalDecideSubmission("REJECTED", "ADMIN", 1)).toBe(true);
+      expect(canFinalDecideSubmission("REJECTED", "ADMIN", 2)).toBe(true);
+      expect(canFinalDecideSubmission("REJECTED", "ADMIN", 3)).toBe(true);
       expect(canFinalDecideSubmission("REJECTED", "ADMIN", 5)).toBe(true);
       expect(canFinalDecideSubmission("REJECTED", "ADMIN", 10)).toBe(true);
 

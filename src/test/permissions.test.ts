@@ -7,9 +7,16 @@ import {
 } from "../lib/permissions";
 
 describe("permissions", () => {
-  it("restricts level management to admins", () => {
-    expect(canManageLevels("ADMIN")).toBe(true);
-    expect(canManageLevels("MODERATOR")).toBe(false);
+  it("allows moderators to manage levels except Top 1, 2, or 3", () => {
+    expect(canManageLevels("ADMIN", null, 1)).toBe(true);
+    expect(canManageLevels("ADMIN", null, 2)).toBe(true);
+    expect(canManageLevels("ADMIN", null, 3)).toBe(true);
+    expect(canManageLevels("ADMIN", null, 4)).toBe(true);
+    expect(canManageLevels("MODERATOR", null, 1)).toBe(false);
+    expect(canManageLevels("MODERATOR", null, 2)).toBe(false);
+    expect(canManageLevels("MODERATOR", null, 3)).toBe(false);
+    expect(canManageLevels("MODERATOR", null, 4)).toBe(true);
+    expect(canManageLevels("MODERATOR", null, 50)).toBe(true);
     expect(canManageLevels("PLAYER")).toBe(false);
   });
 

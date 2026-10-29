@@ -30,7 +30,10 @@ export function loadBotConfig(env: NodeJS.ProcessEnv = process.env): BotConfig {
     env.DISCORD_APPLICATION_ID?.trim() ||
     requiredEnv(env, "DISCORD_CLIENT_ID");
   const ndlPublicApiBase = normalizeBaseUrl(
-    env.NDL_PUBLIC_API_BASE || "https://nerfeddemonlist.net",
+    env.NDL_PUBLIC_API_BASE ||
+      env.NEXT_PUBLIC_SITE_URL ||
+      env.APP_URL ||
+      "https://www.nerfeddemonlist.net",
   );
 
   return {

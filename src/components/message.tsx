@@ -31,9 +31,17 @@ const messages: Record<string, string> = {
   "conflict-of-interest":
     "Security Policy: Network conflict detected. This submission originated from the same public network IP. Another moderator or administrator must review this record.",
   top10_admin_only:
-    "Security Policy: 100% completions on Top 10 demons require Admin confirmation before being added to the list.",
+    "Security Policy: Record decisions on Top 3 demons (ranks 1–3) require Administrator confirmation before being added to the list.",
   "top10-admin-only":
-    "Security Policy: 100% completions on Top 10 demons require Admin confirmation before being added to the list.",
+    "Security Policy: Record decisions on Top 3 demons (ranks 1–3) require Administrator confirmation before being added to the list.",
+  top3_admin_only:
+    "Security Policy: Record decisions on Top 3 demons (ranks 1–3) require Administrator confirmation before being added to the list.",
+  "top3-admin-only":
+    "Security Policy: Record decisions on Top 3 demons (ranks 1–3) require Administrator confirmation before being added to the list.",
+  top3_level_admin_only:
+    "Security Policy: Top 3 demons (ranks 1–3) are protected and can only be managed, edited, or placed by Administrators.",
+  "top3-level-admin-only":
+    "Security Policy: Top 3 demons (ranks 1–3) are protected and can only be managed, edited, or placed by Administrators.",
   verification_admin_only:
     "Security Policy: Verification runs on upcoming levels must be officially confirmed and ranked by an Admin.",
   "verification-admin-only":

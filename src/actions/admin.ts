@@ -6,7 +6,8 @@ import { redirect } from "next/navigation";
 import type { Prisma } from "@/generated/prisma/client";
 import { ModerationActionType } from "@/generated/prisma/enums";
 import { writeAuditLog, type AuditLogClient } from "@/lib/audit-log";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireUser } from "@/lib/auth";
+import { isAdminRole, isModeratorRole } from "@/lib/permissions";
 import { normalizeChangelogSlug } from "@/lib/changelog";
 import { COUNTRIES } from "@/lib/countries";
 import { prisma } from "@/lib/db";
@@ -69,11 +70,24 @@ export async function createLevelAction(
   _prevState: LevelFormState,
   formData: FormData,
 ): Promise<LevelFormState> {
-  const admin = await requireAdmin();
+  const actor = await requireUser();
+  if (!isModeratorRole(actor.role)) {
+    await requireAdmin();
+  }
+  const admin = actor;
   const parsed = validateLevelFormSubmission(formData);
 
   if (!parsed.success) {
     return parsed.state;
+  }
+
+  const isAdmin = isAdminRole(admin.role, admin.playerName);
+  if (!isAdmin && typeof parsed.data.rank === "number" && parsed.data.rank >= 1 && parsed.data.rank <= 3) {
+    return createLevelFormErrorState(parsed.values, {
+      fieldErrors: {
+        rank: ["Only Administrators can place levels into the Top 3 (ranks 1–3)."],
+      },
+    });
   }
 
   const baseSlug = slugify(parsed.data.name);
@@ -276,7 +290,11 @@ export async function updateLevelAction(
   _prevState: LevelFormState,
   formData: FormData,
 ): Promise<LevelFormState> {
-  const admin = await requireAdmin();
+  const actor = await requireUser();
+  if (!isModeratorRole(actor.role)) {
+    await requireAdmin();
+  }
+  const admin = actor;
   const parsed = validateLevelFormSubmission(formData);
 
   if (!parsed.success) {
@@ -290,6 +308,31 @@ export async function updateLevelAction(
   }
 
   const levelId = parsed.data.id;
+  const existingLevel = await prisma.level.findUnique({
+    where: { id: levelId },
+    select: { rank: true },
+  });
+  const isAdmin = isAdminRole(admin.role, admin.playerName);
+  if (!isAdmin) {
+    if (existingLevel?.rank && existingLevel.rank <= 3) {
+      return createLevelFormErrorState(parsed.values, {
+        formErrors: [
+          "Top 3 demons (ranks 1–3) are protected and can only be managed by Administrators.",
+        ],
+      });
+    }
+    if (
+      typeof parsed.data.rank === "number" &&
+      parsed.data.rank >= 1 &&
+      parsed.data.rank <= 3
+    ) {
+      return createLevelFormErrorState(parsed.values, {
+        fieldErrors: {
+          rank: ["Only Administrators can place levels into the Top 3 (ranks 1–3)."],
+        },
+      });
+    }
+  }
   const upload = await applyThumbnailUpload(formData, parsed.values, parsed.data);
 
   if (!upload.ok) {

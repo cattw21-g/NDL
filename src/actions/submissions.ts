@@ -529,7 +529,7 @@ export async function reviewSubmissionAction(formData: FormData) {
     redirect("/moderation?error=verification_admin_only");
   }
 
-  // Security: Top 10 Demon High-Stakes Gate (Admin Confirmation Required for Top 10 Final Decisions)
+  // Security: Top 3 Demon High-Stakes Gate (Admin Confirmation Required for Top 1, 2, or 3 Final Decisions)
   if (
     (parsed.data.status === "ACCEPTED" || parsed.data.status === "REJECTED") &&
     !canFinalDecideSubmission(
@@ -539,7 +539,7 @@ export async function reviewSubmissionAction(formData: FormData) {
       moderator.playerName,
     )
   ) {
-    redirect("/moderation?error=top10_admin_only");
+    redirect("/moderation?error=top3_admin_only");
   }
 
   // Security: Prevent rapid zero-reason rejection spam by moderators

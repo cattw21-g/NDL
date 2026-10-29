@@ -20,10 +20,14 @@ export async function GET(
   }
 
   const { handle } = await params;
+  const cleanHandle = decodeURIComponent(handle).trim().replace(/^@/, "");
   const limit = parseApiLimit(request.nextUrl.searchParams);
   const player = await prisma.user.findFirst({
     where: publicUserWhere({
-      playerName: handle,
+      OR: [
+        { playerName: { equals: cleanHandle, mode: "insensitive" } },
+        { displayName: { equals: cleanHandle, mode: "insensitive" } },
+      ],
     }),
     select: {
       id: true,

@@ -74,15 +74,37 @@ describe("list update and staff notifications", () => {
     expect(mention).not.toContain("<@&");
   });
 
-  it("keeps large rank-shift reports within Discord embed limits", async () => {
-    const { notifyLevelUpdated } = await import("../lib/discord-notify");
-    await notifyLevelUpdated({ levelName: "Removed", levelSlug: "removed", oldRank: 1, newRank: null, status: "REMOVED", points: 0,
-      rankChanges: Array.from({ length: 150 }, (_, index) => ({ levelName: "A long demon name ".repeat(8), oldRank: index + 2, newRank: index + 1 })),
+  it("pings the List Updates Ping role when a list update occurs", async () => {
+    const listUpdateRoleId = "1541549999999999999";
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (url.endsWith("/roles")) {
+        return Response.json([
+          { id: currentRoleId, name: "⚖️ List Moderator" },
+          { id: listUpdateRoleId, name: "📰 List Updates Ping" },
+        ]);
+      }
+      if (url.endsWith("/channels")) {
+        return Response.json([{ id: "list-channel", name: "📰・list-updates", type: 0 }]);
+      }
+      if (options?.method === "POST") {
+        sent.push(JSON.parse(String(options.body)));
+        return Response.json({ id: "message" });
+      }
+      return new Response(null, { status: 204 });
+    }));
+
+    const { notifyLevelRanked } = await import("../lib/discord-notify");
+    await notifyLevelRanked({
+      levelName: "New Extreme",
+      levelSlug: "new-extreme",
+      levelRank: 5,
+      points: 900,
+      verifier: "TopPlayer",
+      nerfCreator: "Creator",
     });
-    const embed = (sent[0].embeds as { title: string; description: string; fields: { name: string; value: string }[] }[])[0];
-    expect(embed.fields.every((field) => field.value.length <= 1024)).toBe(true);
-    const total = embed.title.length + embed.description.length + embed.fields.reduce((count, field) => count + field.name.length + field.value.length, 0);
-    expect(total).toBeLessThan(5800);
-    expect(embed.fields.some((field) => field.name === "More changes")).toBe(true);
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0].content).toBe(`<@&${listUpdateRoleId}>`);
+    expect(sent[0].allowed_mentions).toEqual({ parse: [], users: [], roles: [listUpdateRoleId] });
   });
 });

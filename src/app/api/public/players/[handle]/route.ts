@@ -20,32 +20,55 @@ export async function GET(
   }
 
   const { handle } = await params;
-  const player = await prisma.user.findFirst({
-    where: publicUserWhere({
-      playerName: handle,
-    }),
-    include: {
-      records: {
-        where: publicRecordWhere({
-          level: {
-            status: {
-              in: ["RANKED", "LEGACY"],
+  const cleanHandle = decodeURIComponent(handle).trim().replace(/^@/, "");
+
+  const [player, allLeaderboardRecords] = await Promise.all([
+    prisma.user.findFirst({
+      where: publicUserWhere({
+        OR: [
+          { playerName: { equals: cleanHandle, mode: "insensitive" } },
+          { displayName: { equals: cleanHandle, mode: "insensitive" } },
+        ],
+      }),
+      include: {
+        records: {
+          where: publicRecordWhere({
+            level: {
+              status: {
+                in: ["RANKED", "LEGACY"],
+              },
             },
+          }),
+          include: {
+            player: true,
+            level: true,
           },
-        }),
-        include: {
-          player: true,
-          level: true,
         },
       },
-    },
-  });
+    }),
+    prisma.record.findMany({
+      where: publicRecordWhere({
+        level: {
+          status: {
+            in: ["RANKED", "LEGACY"],
+          },
+        },
+      }),
+      include: {
+        player: true,
+        level: true,
+      },
+    }),
+  ]);
 
   if (!player) {
     return apiNotFound("Player not found.");
   }
 
-  const leaderboardRow = serializePublicLeaderboard(player.records)[0] ?? {
+  const globalLeaderboard = serializePublicLeaderboard(allLeaderboardRecords);
+  const leaderboardRow = globalLeaderboard.find(
+    (row) => row.handle.toLowerCase() === player.playerName.toLowerCase(),
+  ) ?? {
     rank: null,
     handle: player.playerName,
     displayName: player.displayName,

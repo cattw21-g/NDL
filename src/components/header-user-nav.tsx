@@ -69,9 +69,9 @@ export function HeaderUserNav() {
         </Link>
       )}
       <LogoutButton />
-      {isUserAdmin && (
+      {(isUserAdmin || isUserMod) && (
         <div className="ml-1 shrink-0 border-l border-slate-300 pl-2 dark:border-slate-700">
-          <AdminDropdownMenu />
+          <AdminDropdownMenu isModeratorOnly={!isUserAdmin} />
         </div>
       )}
     </div>

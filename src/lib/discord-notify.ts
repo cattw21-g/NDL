@@ -175,6 +175,43 @@ export async function resolveStaffMention(
   return "@here";
 }
 
+/**
+ * Resolves the Discord role mention for list update announcements in #list-updates.
+ * Finds the "📰 List Updates Ping" or "List Updates Ping" role, or uses DISCORD_LIST_UPDATES_ROLE_ID.
+ */
+export async function resolveListUpdatesMention(
+  guildId?: string,
+  botToken?: string,
+): Promise<string> {
+  const customRoleId = process.env.DISCORD_LIST_UPDATES_ROLE_ID?.trim();
+  const token = botToken || process.env.DISCORD_BOT_TOKEN?.trim();
+  const gId = guildId || process.env.DISCORD_GUILD_ID?.trim() || "1541532007304003595";
+
+  if (gId && token) {
+    const roles = await getMentionRoles(gId, token);
+    if (customRoleId && roles.some((r) => r.id === customRoleId)) {
+      return `<@&${customRoleId}>`;
+    }
+    const updateRole = roles.find((r) => {
+      const lower = r.name.toLowerCase();
+      return (
+        lower.includes("list updates ping") ||
+        lower.includes("list update ping") ||
+        lower.includes("list updates")
+      );
+    });
+    if (updateRole) {
+      return `<@&${updateRole.id}>`;
+    }
+  }
+
+  if (customRoleId) {
+    return `<@&${customRoleId}>`;
+  }
+
+  return "";
+}
+
 async function sendDiscordEmbed(
   channelName: string,
   embed: Record<string, unknown>,
@@ -513,7 +550,9 @@ export async function notifyLevelRanked(data: {
     timestamp: new Date().toISOString(),
   };
 
-  await sendDiscordEmbed("list-updates", embed, ["🔥"]);
+  const token = process.env.DISCORD_BOT_TOKEN?.trim();
+  const pingMention = await resolveListUpdatesMention(undefined, token);
+  await sendDiscordEmbed("list-updates", embed, ["🔥"], pingMention || undefined);
 }
 
 /**
@@ -620,7 +659,9 @@ export async function notifyChangelogPosted(data: {
     timestamp: new Date().toISOString(),
   };
 
-  await sendDiscordEmbed("list-updates", embed, ["🔥"]);
+  const token = process.env.DISCORD_BOT_TOKEN?.trim();
+  const pingMention = await resolveListUpdatesMention(undefined, token);
+  await sendDiscordEmbed("list-updates", embed, ["🔥"], pingMention || undefined);
 }
 
 /**
@@ -705,7 +746,9 @@ export async function notifyLevelUpdated(data: {
     timestamp: new Date().toISOString(),
   };
 
-  await sendDiscordEmbed("list-updates", embed, ["🔥"]);
+  const token = process.env.DISCORD_BOT_TOKEN?.trim();
+  const pingMention = await resolveListUpdatesMention(undefined, token);
+  await sendDiscordEmbed("list-updates", embed, ["🔥"], pingMention || undefined);
 }
 
 function rankChangeFields(changes: ListRankChange[]) {

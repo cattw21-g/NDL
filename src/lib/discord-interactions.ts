@@ -353,6 +353,8 @@ type DiscordEmbed = {
   description?: string;
   color?: number;
   url?: string;
+  thumbnail?: { url: string };
+  image?: { url: string };
   fields?: Array<{
     name: string;
     value: string;
@@ -866,11 +868,15 @@ export function createDiscordDataService() {
       return serializePublicLeaderboard(records).slice(0, limit);
     },
     async getPlayer(handle: string) {
+      const cleanHandle = handle.trim().replace(/^@/, "");
       const db = await getPrisma();
       const [player, leaderboardRecords] = await Promise.all([
         db.user.findFirst({
           where: publicUserWhere({
-            playerName: handle,
+            OR: [
+              { playerName: { equals: cleanHandle, mode: "insensitive" } },
+              { displayName: { equals: cleanHandle, mode: "insensitive" } },
+            ],
           }),
           include: {
             records: {
@@ -908,7 +914,7 @@ export function createDiscordDataService() {
       }
 
       const summary = serializePublicLeaderboard(leaderboardRecords).find(
-        (row) => row.handle === player.playerName,
+        (row) => row.handle.toLowerCase() === player.playerName.toLowerCase(),
       );
 
       return {
@@ -927,10 +933,14 @@ export function createDiscordDataService() {
       };
     },
     async getPlayerRecords(handle: string, limit: number) {
+      const cleanHandle = handle.trim().replace(/^@/, "");
       const db = await getPrisma();
       const player = await db.user.findFirst({
         where: publicUserWhere({
-          playerName: handle,
+          OR: [
+            { playerName: { equals: cleanHandle, mode: "insensitive" } },
+            { displayName: { equals: cleanHandle, mode: "insensitive" } },
+          ],
         }),
         select: {
           id: true,
@@ -1885,12 +1895,22 @@ function embed(
   description: string,
   url?: string,
   fields?: DiscordEmbed["fields"],
+  extra?: {
+    color?: number;
+    thumbnailUrl?: string | null;
+  },
 ): DiscordEmbed {
+  const validThumb =
+    extra?.thumbnailUrl && extra.thumbnailUrl.startsWith("http")
+      ? { url: extra.thumbnailUrl }
+      : undefined;
+
   return {
     title: truncate(title, 256),
     description: truncate(description, 4096),
-    color: ndlColor,
+    color: extra?.color ?? ndlColor,
     url,
+    thumbnail: validThumb,
     fields: fields?.slice(0, 25).map((field) => ({
       ...field,
       name: truncate(field.name, 256),
@@ -1940,7 +1960,19 @@ function levelEmbed(
     value: markdownLink("Open level page", levelUrl(env, level.slug)),
   });
 
-  return embed(level.name, `${level.status.toLowerCase()} - ${level.points} pts`, levelUrl(env, level.slug), fields);
+  const isTop3 = typeof level.rank === "number" && level.rank >= 1 && level.rank <= 3;
+  const color = isTop3 ? 0xf59e0b : level.status === "LEGACY" ? 0x64748b : 0x0ea5e9;
+
+  return embed(
+    level.name,
+    `${level.status.toLowerCase()} - ${level.points} pts`,
+    levelUrl(env, level.slug),
+    fields,
+    {
+      color,
+      thumbnailUrl: level.thumbnailUrl?.startsWith("http") ? level.thumbnailUrl : undefined,
+    },
+  );
 }
 
 function formatLevelList(levels: ApiLevel[]) {

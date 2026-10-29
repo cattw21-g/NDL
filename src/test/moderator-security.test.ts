@@ -52,23 +52,27 @@ describe("Moderator Security Safeguards & Threat Prevention", () => {
           return { allowed: false, reason: "verification_admin_only" };
         }
 
-        // Top 10 completion
-        if (levelRank !== null && levelRank <= 10 && progress === 100 && !isAdmin) {
-          return { allowed: false, reason: "top10_admin_only" };
+        // Top 3 completion
+        if (levelRank !== null && levelRank <= 3 && progress === 100 && !isAdmin) {
+          return { allowed: false, reason: "top3_admin_only" };
         }
 
         return { allowed: true };
       };
 
-      // Top 10 100% run
+      // Top 3 100% run
       expect(canAcceptRecord({ levelRank: 1, progress: 100, userRole: "MODERATOR", levelStatus: "RANKED" }))
-        .toEqual({ allowed: false, reason: "top10_admin_only" });
-      expect(canAcceptRecord({ levelRank: 10, progress: 100, userRole: "MODERATOR", levelStatus: "RANKED" }))
-        .toEqual({ allowed: false, reason: "top10_admin_only" });
+        .toEqual({ allowed: false, reason: "top3_admin_only" });
+      expect(canAcceptRecord({ levelRank: 3, progress: 100, userRole: "MODERATOR", levelStatus: "RANKED" }))
+        .toEqual({ allowed: false, reason: "top3_admin_only" });
       expect(canAcceptRecord({ levelRank: 1, progress: 100, userRole: "ADMIN", levelStatus: "RANKED" }))
         .toEqual({ allowed: true });
 
-      // Extended list / Top 11+ is allowed for regular moderators
+      // Ranks 4+ allowed for regular moderators
+      expect(canAcceptRecord({ levelRank: 4, progress: 100, userRole: "MODERATOR", levelStatus: "RANKED" }))
+        .toEqual({ allowed: true });
+      expect(canAcceptRecord({ levelRank: 10, progress: 100, userRole: "MODERATOR", levelStatus: "RANKED" }))
+        .toEqual({ allowed: true });
       expect(canAcceptRecord({ levelRank: 11, progress: 100, userRole: "MODERATOR", levelStatus: "RANKED" }))
         .toEqual({ allowed: true });
       expect(canAcceptRecord({ levelRank: 50, progress: 100, userRole: "MODERATOR", levelStatus: "RANKED" }))

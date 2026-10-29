@@ -291,11 +291,13 @@ describe("Real Application Full E2E Workflow & Privacy Suite", () => {
       otherAdminCount: 1,
     });
     expect(roleChangeAttempt.allowed).toBe(false);
-    // 4. User A CANNOT final-approve Top 10 completions (Ranks 1–10):
+    // 4. User A CANNOT final-approve Top 3 completions (Ranks 1–3):
     expect(canApproveSubmission(finalUserA?.role, 1, finalUserA?.playerName)).toBe(false);
-    expect(canApproveSubmission(finalUserA?.role, 5, finalUserA?.playerName)).toBe(false);
-    expect(canApproveSubmission(finalUserA?.role, 10, finalUserA?.playerName)).toBe(false);
-    // 5. User A CAN review standard list demons (> 10):
+    expect(canApproveSubmission(finalUserA?.role, 2, finalUserA?.playerName)).toBe(false);
+    expect(canApproveSubmission(finalUserA?.role, 3, finalUserA?.playerName)).toBe(false);
+    // 5. User A CAN review standard list demons (> 3):
+    expect(canApproveSubmission(finalUserA?.role, 4, finalUserA?.playerName)).toBe(true);
+    expect(canApproveSubmission(finalUserA?.role, 10, finalUserA?.playerName)).toBe(true);
     expect(canApproveSubmission(finalUserA?.role, 11, finalUserA?.playerName)).toBe(true);
 
     // STEP 7: VERIFY USER B STATE & PERMISSIONS
@@ -378,9 +380,11 @@ describe("Real Application Full E2E Workflow & Privacy Suite", () => {
     const updatedModUser = await prisma.user.findUnique({ where: { id: modUser.id } });
     expect(updatedModUser?.role).toBe("LIST_MODERATOR");
     expect(isListModeratorRole(updatedModUser?.role)).toBe(true);
-    // Moderator CANNOT final-approve Top 10 completions
+    // Moderator CANNOT final-approve Top 3 completions
     expect(canApproveSubmission(updatedModUser?.role, 1)).toBe(false);
-    expect(canApproveSubmission(updatedModUser?.role, 10)).toBe(false);
+    expect(canApproveSubmission(updatedModUser?.role, 3)).toBe(false);
+    expect(canApproveSubmission(updatedModUser?.role, 4)).toBe(true);
+    expect(canApproveSubmission(updatedModUser?.role, 10)).toBe(true);
 
     // Reduced Beta Tester workflow
     const betaOpening = await prisma.applicationOpening.create({
