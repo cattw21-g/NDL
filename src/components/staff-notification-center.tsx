@@ -113,7 +113,7 @@ export function StaffNotificationCenter({
 
     const interval = setInterval(() => {
       fetchNotifications(false);
-    }, 60000);
+    }, 120000);
 
     return () => {
       if (initialTimer) clearTimeout(initialTimer);

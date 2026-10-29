@@ -8,15 +8,23 @@ import {
 } from "@/lib/rate-limit";
 
 export async function enforceApiRateLimit(action: RateLimitAction) {
-  const { prisma } = await import("@/lib/db");
-  const key = await requestRateLimitKey();
-  const decision = await checkRateLimit(prisma, action, key);
+  try {
+    const { prisma } = await import("@/lib/db");
+    const key = await requestRateLimitKey();
+    const decision = await checkRateLimit(prisma, action, key);
 
-  if (!decision.allowed) {
-    return apiRateLimited(decision.message, decision.retryAfterSeconds);
+    if (!decision.allowed) {
+      return apiRateLimited(decision.message, decision.retryAfterSeconds);
+    }
+
+    return null;
+  } catch (error) {
+    if (action === "public-api") {
+      console.warn("Public API rate limit check failed, failing open:", error);
+      return null;
+    }
+    throw error;
   }
-
-  return null;
 }
 
 export async function requireBotApiSecret(request: Request) {

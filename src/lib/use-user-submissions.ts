@@ -8,6 +8,10 @@ export type UserLevelSubmissionInfo = {
   progress: number;
   submittedAt: string;
   moderatorNotes: string | null;
+  levelId?: string;
+  videoUrl?: string;
+  fps?: number | null;
+  cbfUsed?: boolean | null;
 };
 
 const STORAGE_KEY = "ndl_dismissed_submission_badges";
@@ -102,7 +106,7 @@ export function useUserSubmissions() {
 
     intervalId = setInterval(() => {
       void load(true);
-    }, 60_000);
+    }, 120_000);
 
     return () => {
       active = false;

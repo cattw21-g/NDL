@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useCurrentUser } from "@/lib/use-current-user";
 
 const footerColumns = [
   {
@@ -36,7 +37,7 @@ const footerColumns = [
 ] as const;
 
 export function SiteFooter({
-  user,
+  user: userProp,
 }: {
   user?: {
     playerName: string;
@@ -44,8 +45,10 @@ export function SiteFooter({
     isAdmin: boolean;
     isBetaTester?: boolean;
   } | null;
-}) {
+} = {}) {
   const pathname = usePathname();
+  const { user: clientUser } = useCurrentUser();
+  const user = userProp !== undefined && userProp !== null ? userProp : clientUser;
 
   if (pathname === "/moderation" || pathname === "/review" || pathname.startsWith("/admin")) {
     return null;

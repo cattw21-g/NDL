@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
 import { calculateLeaderboard, calculateLevelPoints, type ScoredLevelStatus } from "@/lib/points";
 import { publicLevelWhere, publicRecordWhere } from "@/lib/demo-visibility";
@@ -36,125 +37,125 @@ export type HistoricalListState = {
   };
 };
 
-export async function getListStateAtDate(targetDate: Date): Promise<HistoricalListState> {
+async function computeListStateAtDate(targetDate: Date): Promise<HistoricalListState> {
   const asOf = new Date(targetDate);
 
   try {
     // 1. Fetch levels created on or before target date
-  const levels = await prisma.level.findMany({
-    where: {
-      ...publicLevelWhere(),
-      createdAt: { lte: asOf },
-    },
-    include: {
-      positionSnapshots: {
-        where: { recordedAt: { lte: asOf } },
-        orderBy: { recordedAt: "desc" },
-        take: 1,
-      },
-    },
-  });
-
-  // 2. Fetch records accepted on or before target date
-  const records = await prisma.record.findMany({
-    where: {
-      ...publicRecordWhere(),
-      acceptedAt: { lte: asOf },
-      level: {
+    const levels = await prisma.level.findMany({
+      where: {
+        ...publicLevelWhere(),
         createdAt: { lte: asOf },
       },
-    },
-    include: {
-      player: {
-        select: {
-          id: true,
-          playerName: true,
-          displayName: true,
+      include: {
+        positionSnapshots: {
+          where: { recordedAt: { lte: asOf } },
+          orderBy: { recordedAt: "desc" },
+          take: 1,
         },
       },
-      level: {
-        select: {
-          id: true,
-          rank: true,
-          status: true,
-        },
-      },
-    },
-  });
-
-  // 3. Reconstruct level ranks at target date
-  const historicalLevels = levels
-    .map((lvl) => {
-      const latestSnapshot = lvl.positionSnapshots[0];
-      const rank = latestSnapshot ? latestSnapshot.rank : lvl.rank;
-      const status = (latestSnapshot ? latestSnapshot.status : lvl.status) as ScoredLevelStatus;
-      const points = calculateLevelPoints(rank, status);
-
-      return {
-        id: lvl.id,
-        slug: lvl.slug,
-        name: lvl.name,
-        originalName: lvl.originalName,
-        rank,
-        status,
-        points,
-        difficulty: lvl.difficulty,
-        publisher: lvl.publisher,
-        nerfCreator: lvl.nerfCreator,
-        verifier: lvl.verifier,
-        thumbnailUrl: lvl.thumbnailUrl,
-        showcaseUrl: lvl.showcaseUrl,
-      };
-    })
-    .filter((lvl) => lvl.status === "RANKED" || lvl.status === "LEGACY")
-    .sort((a, b) => {
-      if (a.rank && b.rank) return a.rank - b.rank;
-      if (a.rank) return -1;
-      if (b.rank) return 1;
-      return a.name.localeCompare(b.name);
     });
 
-  // 4. Reconstruct player leaderboard at target date
-  const levelPointsMap = new Map(historicalLevels.map((l) => [l.id, l.points]));
+    // 2. Fetch records accepted on or before target date
+    const records = await prisma.record.findMany({
+      where: {
+        ...publicRecordWhere(),
+        acceptedAt: { lte: asOf },
+        level: {
+          createdAt: { lte: asOf },
+        },
+      },
+      include: {
+        player: {
+          select: {
+            id: true,
+            playerName: true,
+            displayName: true,
+          },
+        },
+        level: {
+          select: {
+            id: true,
+            rank: true,
+            status: true,
+          },
+        },
+      },
+    });
 
-  const leaderboardRecords = records.map((r) => {
-    const levelPts = levelPointsMap.get(r.levelId) ?? 0;
-    const pointsAwarded = r.progress >= 100 ? levelPts : r.pointsAwarded;
+    // 3. Reconstruct level ranks at target date
+    const historicalLevels = levels
+      .map((lvl) => {
+        const latestSnapshot = lvl.positionSnapshots[0];
+        const rank = latestSnapshot ? latestSnapshot.rank : lvl.rank;
+        const status = (latestSnapshot ? latestSnapshot.status : lvl.status) as ScoredLevelStatus;
+        const points = calculateLevelPoints(rank, status);
+
+        return {
+          id: lvl.id,
+          slug: lvl.slug,
+          name: lvl.name,
+          originalName: lvl.originalName,
+          rank,
+          status,
+          points,
+          difficulty: lvl.difficulty,
+          publisher: lvl.publisher,
+          nerfCreator: lvl.nerfCreator,
+          verifier: lvl.verifier,
+          thumbnailUrl: lvl.thumbnailUrl,
+          showcaseUrl: lvl.showcaseUrl,
+        };
+      })
+      .filter((lvl) => lvl.status === "RANKED" || lvl.status === "LEGACY")
+      .sort((a, b) => {
+        if (a.rank && b.rank) return a.rank - b.rank;
+        if (a.rank) return -1;
+        if (b.rank) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+    // 4. Reconstruct player leaderboard at target date
+    const levelPointsMap = new Map(historicalLevels.map((l) => [l.id, l.points]));
+
+    const leaderboardRecords = records.map((r) => {
+      const levelPts = levelPointsMap.get(r.levelId) ?? 0;
+      const pointsAwarded = r.progress >= 100 ? levelPts : r.pointsAwarded;
+      return {
+        playerId: r.player.id,
+        playerName: r.player.playerName,
+        displayName: r.player.displayName,
+        levelId: r.levelId,
+        pointsAwarded,
+        acceptedAt: r.acceptedAt,
+        progress: r.progress,
+      };
+    });
+
+    const rawLeaderboard = calculateLeaderboard(leaderboardRecords);
+    const leaderboard = rawLeaderboard.map((entry, index) => ({
+      rank: index + 1,
+      playerId: entry.playerId,
+      playerName: entry.playerName,
+      displayName: entry.displayName,
+      points: entry.points,
+      recordsCount: entry.records,
+    }));
+
+    const top1Demon = historicalLevels.find((l) => l.rank === 1)?.name || null;
+    const top1Player = leaderboard[0]?.displayName || null;
+
     return {
-      playerId: r.player.id,
-      playerName: r.player.playerName,
-      displayName: r.player.displayName,
-      levelId: r.levelId,
-      pointsAwarded,
-      acceptedAt: r.acceptedAt,
-      progress: r.progress,
+      asOfDate: asOf.toISOString(),
+      levels: historicalLevels,
+      leaderboard,
+      stats: {
+        totalDemons: historicalLevels.length,
+        totalRecords: records.length,
+        topDemonName: top1Demon,
+        topPlayerName: top1Player,
+      },
     };
-  });
-
-  const rawLeaderboard = calculateLeaderboard(leaderboardRecords);
-  const leaderboard = rawLeaderboard.map((entry, index) => ({
-    rank: index + 1,
-    playerId: entry.playerId,
-    playerName: entry.playerName,
-    displayName: entry.displayName,
-    points: entry.points,
-    recordsCount: entry.records,
-  }));
-
-  const top1Demon = historicalLevels.find((l) => l.rank === 1)?.name || null;
-  const top1Player = leaderboard[0]?.displayName || null;
-
-  return {
-    asOfDate: asOf.toISOString(),
-    levels: historicalLevels,
-    leaderboard,
-    stats: {
-      totalDemons: historicalLevels.length,
-      totalRecords: records.length,
-      topDemonName: top1Demon,
-      topPlayerName: top1Player,
-    },
-  };
   } catch (err) {
     console.error("Database error in getListStateAtDate, using static fallback:", err);
     const fallbackLevels = FALLBACK_RANKED_LEVELS.map((lvl) => ({
@@ -183,5 +184,29 @@ export async function getListStateAtDate(targetDate: Date): Promise<HistoricalLi
         topPlayerName: null,
       },
     };
+  }
+}
+
+const getCachedListStateAtDate = unstable_cache(
+  async (dateIso: string) => {
+    return computeListStateAtDate(new Date(dateIso));
+  },
+  ["archive-history-state"],
+  { revalidate: 300, tags: ["archive"] },
+);
+
+export async function getListStateAtDate(targetDate: Date): Promise<HistoricalListState> {
+  const asOf = new Date(targetDate);
+  const dateKey = asOf.toISOString().slice(0, 10);
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const isToday = dateKey === todayKey;
+  const bucketKey = isToday
+    ? `${dateKey}T${Math.floor(asOf.getTime() / (5 * 60 * 1000))}`
+    : dateKey;
+
+  try {
+    return await getCachedListStateAtDate(bucketKey);
+  } catch {
+    return computeListStateAtDate(asOf);
   }
 }

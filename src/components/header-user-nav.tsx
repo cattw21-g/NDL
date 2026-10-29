@@ -1,11 +1,13 @@
+"use client";
+
 import { Settings, UserRound, Sparkles, ClipboardCheck } from "lucide-react";
 import Link from "next/link";
 
 import { AdminDropdownMenu } from "@/components/admin-dropdown-menu";
 import { LoginButton, LogoutButton } from "@/components/app-shell-i18n";
 import { StaffNotificationCenter } from "@/components/staff-notification-center";
-import { getCurrentUser } from "@/lib/auth";
-import { isAdminRole, isModeratorRole, isBetaTester } from "@/lib/permissions";
+import { isModeratorRole } from "@/lib/permissions";
+import { useCurrentUser } from "@/lib/use-current-user";
 
 export function HeaderUserSkeleton() {
   return (
@@ -16,18 +18,19 @@ export function HeaderUserSkeleton() {
   );
 }
 
-export async function HeaderUserNav() {
-  const user = await getCurrentUser();
+export function HeaderUserNav() {
+  const { user, loading } = useCurrentUser();
+
+  if (loading) {
+    return <HeaderUserSkeleton />;
+  }
 
   if (!user) {
     return <LoginButton />;
   }
 
-  const isUserAdmin =
-    isAdminRole(user.role, user.playerName) ||
-    user.playerName.toLowerCase() === "cattw21" ||
-    user.playerName.toLowerCase() === "ndl_admin";
-  const isUserMod = isModeratorRole(user.role) || isUserAdmin;
+  const isUserMod = user.isModerator || isModeratorRole(user.role);
+  const isUserAdmin = user.isAdmin;
 
   return (
     <div className="flex items-center gap-1.5 sm:gap-2">
@@ -55,7 +58,7 @@ export async function HeaderUserNav() {
       >
         <Settings className="h-3.5 w-3.5" />
       </Link>
-      {isBetaTester(user.role) && !isUserAdmin && (
+      {user.isBetaTester && !isUserAdmin && (
         <Link
           href="/beta/feedback"
           title="Beta Feedback Hub"
