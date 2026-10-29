@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { usePathname } from "next/navigation";
 
 export type CurrentUser = {
   id: string;
@@ -16,25 +17,38 @@ let cachedUser: CurrentUser | null | undefined = undefined;
 let activeFetch: Promise<CurrentUser | null> | null = null;
 const listeners = new Set<(user: CurrentUser | null) => void>();
 
-export async function fetchCurrentUser(): Promise<CurrentUser | null> {
-  if (activeFetch) return activeFetch;
+function notify(user: CurrentUser | null) {
+  cachedUser = user;
+  listeners.forEach((fn) => {
+    try {
+      fn(user);
+    } catch {
+      // Ignore listener error
+    }
+  });
+}
+
+export async function fetchCurrentUser(force = false): Promise<CurrentUser | null> {
+  if (activeFetch && !force) return activeFetch;
 
   activeFetch = (async () => {
     try {
-      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      const res = await fetch("/api/auth/me", {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+      });
       if (!res.ok) {
-        cachedUser = null;
-        listeners.forEach((fn) => fn(null));
+        notify(null);
         return null;
       }
       const json = await res.json();
       const user = json?.data?.user ?? null;
-      cachedUser = user;
-      listeners.forEach((fn) => fn(user));
+      notify(user);
       return user;
     } catch {
-      cachedUser = null;
-      listeners.forEach((fn) => fn(null));
+      notify(null);
       return null;
     } finally {
       activeFetch = null;
@@ -46,16 +60,18 @@ export async function fetchCurrentUser(): Promise<CurrentUser | null> {
 
 export function invalidateCurrentUser() {
   cachedUser = undefined;
-  void fetchCurrentUser();
+  void fetchCurrentUser(true);
 }
 
 export function useCurrentUser() {
+  const pathname = usePathname();
   const [user, setUser] = useState<CurrentUser | null | undefined>(() => {
     if (typeof window === "undefined") return undefined;
     return cachedUser;
   });
   const [loading, setLoading] = useState<boolean>(() => cachedUser === undefined);
 
+  // Subscribe to changes from any fetchCurrentUser call
   useEffect(() => {
     let mounted = true;
 
@@ -68,8 +84,26 @@ export function useCurrentUser() {
 
     listeners.add(listener);
 
-    if (cachedUser === undefined) {
-      void fetchCurrentUser().then((u) => {
+    return () => {
+      mounted = false;
+      listeners.delete(listener);
+    };
+  }, []);
+
+  // Fetch or re-check on mount and whenever pathname changes
+  useEffect(() => {
+    let mounted = true;
+
+    // Always fetch if we don't have a user, or if navigating from login/register
+    const shouldFetch =
+      cachedUser === undefined ||
+      cachedUser === null ||
+      pathname === "/submissions" ||
+      pathname?.startsWith("/admin") ||
+      pathname === "/settings";
+
+    if (shouldFetch) {
+      void fetchCurrentUser(true).then((u) => {
         if (mounted) {
           setUser(u);
           setLoading(false);
@@ -80,11 +114,21 @@ export function useCurrentUser() {
       setLoading(false);
     }
 
+    const handleFocus = () => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        void fetchCurrentUser(true);
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
+
     return () => {
       mounted = false;
-      listeners.delete(listener);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
     };
-  }, []);
+  }, [pathname]);
 
   return { user: user ?? null, loading };
 }

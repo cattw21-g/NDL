@@ -4,6 +4,7 @@ import { LogIn, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { logoutAction } from "@/actions/auth";
+import { invalidateCurrentUser } from "@/lib/use-current-user";
 
 export function HeaderTagline() {
   const { t } = useTranslation();
@@ -30,9 +31,10 @@ export function LoginButton() {
 export function LogoutButton() {
   const { t } = useTranslation();
   return (
-    <form action={logoutAction}>
+    <form action={logoutAction} onSubmit={() => invalidateCurrentUser()}>
       <button
         type="submit"
+        onClick={() => invalidateCurrentUser()}
         className="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-600 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-red-400 dark:hover:bg-red-950 dark:hover:text-red-100"
       >
         <LogOut className="h-3.5 w-3.5" />
