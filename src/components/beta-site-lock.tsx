@@ -32,6 +32,10 @@ export function BetaSiteLock({
     return <>{children}</>;
   }
 
-  // 4. Fully locked: render only the Enter Key screen
-  return <LockedBetaScreen />;
+  // 4. Fully locked: render ONLY the Enter Key screen (no header, no navbar, no footer)
+  return (
+    <div className="relative flex min-h-screen w-full items-center justify-center bg-[#080c13] px-4 text-slate-100">
+      <LockedBetaScreen />
+    </div>
+  );
 }

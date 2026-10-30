@@ -53,8 +53,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   const isUnlocked = isUnlockedByCookie || isUnlockedByRole;
 
   return (
-    <div
-      id="top"
+    <BetaSiteLock isBetaSite={isBetaSite} isUnlocked={isUnlocked}>
+      <div
+        id="top"
       className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#f6f8fb] text-slate-950 dark:bg-[#080c13] dark:text-slate-100"
     >
       <SplashScreen />
@@ -165,14 +166,13 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       ) : null}
 
       <main className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-5 px-3 py-5 sm:px-5 sm:py-7">
-        <BetaSiteLock isBetaSite={isBetaSite} isUnlocked={isUnlocked}>
-          {children}
-        </BetaSiteLock>
+        {children}
       </main>
       <Suspense fallback={<SiteFooter user={null} />}>
         <SiteFooterServer />
       </Suspense>
     </div>
+    </BetaSiteLock>
   );
 }
 
