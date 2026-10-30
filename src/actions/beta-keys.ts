@@ -1,14 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { getCurrentUser, requireAdmin, revokeAllUserSessions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { writeAuditLog } from "@/lib/audit-log";
 import { checkRateLimit, userRateLimitKey } from "@/lib/rate-limit";
 import { extractClientIp, hashClientIp } from "@/lib/anti-alt";
 import { syncAllLinkedDiscordUsers } from "@/lib/discord-role-sync";
-import { generateSecureBetaKey, normalizeBetaKey, isValidBetaKeyFormat } from "@/lib/beta-keys";
+import {
+  generateSecureBetaKey,
+  normalizeBetaKey,
+  isValidBetaKeyFormat,
+  BETA_ACCESS_COOKIE,
+  createBetaAccessToken,
+} from "@/lib/beta-keys";
 import { ensureBetaKeysSchema } from "@/lib/ensure-beta-keys-schema";
 import { isAllowedInClosedBeta } from "@/lib/closed-beta";
 
@@ -256,6 +262,16 @@ export async function redeemBetaKeyAction(
       };
     }
 
+    // Set unlocked cookie
+    const cookieStore = await cookies();
+    cookieStore.set(BETA_ACCESS_COOKIE, createBetaAccessToken(), {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 30 * 24 * 60 * 60,
+    });
+
     // Trigger background Discord role sync for the newly promoted tester
     void syncAllLinkedDiscordUsers().catch((err) => {
       console.error("Discord role sync on beta key redeem:", err);
@@ -276,6 +292,116 @@ export async function redeemBetaKeyAction(
       error: "An unexpected error occurred while verifying your key. Please try again.",
     };
   }
+}
+
+/**
+ * Validates a single-use Beta Key to unlock the entire Beta site for the current browser session.
+ */
+export async function unlockBetaSiteWithKeyAction(
+  formData: FormData,
+): Promise<BetaKeyActionResult> {
+  await ensureBetaKeysSchema();
+
+  const rawKey = formData.get("key");
+  if (typeof rawKey !== "string" || !rawKey.trim()) {
+    return {
+      success: false,
+      error: "Please enter your Beta Key.",
+    };
+  }
+
+  const normalizedKey = normalizeBetaKey(rawKey);
+  if (!isValidBetaKeyFormat(normalizedKey)) {
+    return {
+      success: false,
+      error: "Invalid Beta Key format. Expected format: NDL-XXXX-YYYY.",
+    };
+  }
+
+  const headerList = await headers();
+  const clientIp = extractClientIp(headerList);
+  const ipHash = hashClientIp(clientIp);
+
+  const rateLimit = await checkRateLimit(
+    prisma,
+    "beta-key-redeem",
+    `ip:${clientIp || "anon"}`,
+  );
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      error: "Too many key attempts. Please wait 10 minutes before trying again.",
+    };
+  }
+
+  const user = await getCurrentUser();
+
+  const inviteKey = await prisma.betaInviteKey.findUnique({
+    where: { key: normalizedKey },
+    include: { redeemedBy: true },
+  });
+
+  if (!inviteKey) {
+    return {
+      success: false,
+      error: "Invalid Beta Key. Please check the code and try again.",
+    };
+  }
+
+  if (inviteKey.isRevoked) {
+    return {
+      success: false,
+      error: "This Beta Key has been revoked by an administrator.",
+    };
+  }
+
+  if (inviteKey.expiresAt && inviteKey.expiresAt < new Date()) {
+    return {
+      success: false,
+      error: "This Beta Key has expired. Please request a new invite key.",
+    };
+  }
+
+  if (inviteKey.redeemedById || inviteKey.redeemedAt) {
+    return {
+      success: false,
+      error: "This Beta Key has already been used and cannot be shared.",
+    };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.betaInviteKey.update({
+      where: { id: inviteKey.id },
+      data: {
+        redeemedById: user?.id ?? null,
+        redeemedAt: new Date(),
+        redeemedIp: ipHash,
+      },
+    });
+
+    if (user) {
+      await tx.user.update({
+        where: { id: user.id },
+        data: { role: "BETA_TESTER" },
+      });
+    }
+  });
+
+  const cookieStore = await cookies();
+  cookieStore.set(BETA_ACCESS_COOKIE, createBetaAccessToken(), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 30 * 24 * 60 * 60,
+  });
+
+  revalidatePath("/");
+
+  return {
+    success: true,
+    message: "Beta Key verified! Welcome to Nerfed Demonlist.",
+  };
 }
 
 /**

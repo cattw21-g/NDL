@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isClosedBetaActive,
+  isBetaSiteHost,
   isAllowedInClosedBeta,
   isClosedBetaExemptPath,
 } from "@/lib/closed-beta";
@@ -25,6 +26,23 @@ describe("Closed Beta Guardrails", () => {
 
     it("returns false when CLOSED_BETA_MODE=false", () => {
       expect(isClosedBetaActive({ CLOSED_BETA_MODE: "false" })).toBe(false);
+    });
+  });
+
+  describe("isBetaSiteHost", () => {
+    it("identifies beta domain hosts", () => {
+      expect(isBetaSiteHost("nerfeddemonlist-beta.vercel.app", {})).toBe(true);
+      expect(isBetaSiteHost("beta.nerfeddemonlist.net", {})).toBe(true);
+      expect(isBetaSiteHost("nerfeddemonlist-git-beta-ndl.vercel.app", {})).toBe(true);
+      expect(isBetaSiteHost("localhost:3000", { CLOSED_BETA_MODE: "true" })).toBe(true);
+    });
+
+    it("identifies official non-beta domain hosts", () => {
+      expect(isBetaSiteHost("nerfeddemonlist.net", {})).toBe(false);
+      expect(isBetaSiteHost("www.nerfeddemonlist.net", {})).toBe(false);
+      expect(isBetaSiteHost("nerfeddemonlist.vercel.app", {})).toBe(false);
+      expect(isBetaSiteHost(null, {})).toBe(false);
+      expect(isBetaSiteHost(undefined, {})).toBe(false);
     });
   });
 
@@ -76,19 +94,15 @@ describe("Closed Beta Guardrails", () => {
       expect(isClosedBetaExemptPath("/api/auth/callback/discord")).toBe(true);
     });
 
-    it("allows beta tester application paths", () => {
-      expect(isClosedBetaExemptPath("/applications/beta-tester")).toBe(true);
-      expect(isClosedBetaExemptPath("/api/applications/submit")).toBe(true);
-    });
-
     it("allows static assets", () => {
       expect(isClosedBetaExemptPath("/favicon.ico")).toBe(true);
       expect(isClosedBetaExemptPath("/logo.png")).toBe(true);
       expect(isClosedBetaExemptPath("/_next/static/css/app.css")).toBe(true);
     });
 
-    it("blocks general content paths during closed beta", () => {
+    it("blocks general content paths during closed beta until key is entered", () => {
       expect(isClosedBetaExemptPath("/")).toBe(false);
+      expect(isClosedBetaExemptPath("/applications/beta-tester")).toBe(false);
       expect(isClosedBetaExemptPath("/levels/bloodbath-nerfed")).toBe(false);
       expect(isClosedBetaExemptPath("/players/cattw21")).toBe(false);
       expect(isClosedBetaExemptPath("/submit")).toBe(false);

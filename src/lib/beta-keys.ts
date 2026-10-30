@@ -1,4 +1,7 @@
-import { randomInt } from "node:crypto";
+import { randomInt, createHmac } from "node:crypto";
+import { requireSessionSecret } from "@/lib/production-env";
+
+export const BETA_ACCESS_COOKIE = "ndl_beta_access";
 
 // Unambiguous alphanumeric characters (excluding 0, O, 1, I, L)
 const SAFE_CHARS = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
@@ -42,4 +45,20 @@ export function isValidBetaKeyFormat(key: string): boolean {
   return /^NDL-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{4}$/.test(
     key,
   );
+}
+
+/**
+ * Creates an HMAC signed session token that unlocks the Beta Website for a browser.
+ */
+export function createBetaAccessToken(): string {
+  const secret = requireSessionSecret(process.env);
+  return createHmac("sha256", secret).update("ndl_beta_preview_unlocked").digest("hex");
+}
+
+/**
+ * Validates whether an incoming cookie matches the signed Beta Access Token.
+ */
+export function isBetaAccessTokenValid(token?: string | null): boolean {
+  if (!token) return false;
+  return token === createBetaAccessToken();
 }

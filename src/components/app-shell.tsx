@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { headers, cookies } from "next/headers";
 
 import { CommandPalette, CommandPaletteTrigger } from "@/components/command-palette";
 import { HeaderTagline } from "@/components/app-shell-i18n";
@@ -10,8 +11,10 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteFooterServer } from "@/components/site-footer-server";
 import { SplashScreen } from "@/components/splash-screen";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { ClosedBetaGate } from "@/components/closed-beta-gate";
-import { isClosedBetaActive } from "@/lib/closed-beta";
+import { BetaSiteLock } from "@/components/beta-site-lock";
+import { getCurrentUser } from "@/lib/auth";
+import { isBetaSiteHost, isAllowedInClosedBeta } from "@/lib/closed-beta";
+import { BETA_ACCESS_COOKIE, isBetaAccessTokenValid } from "@/lib/beta-keys";
 import { getRecentNewsSlugs } from "@/lib/news-cache";
 import { demoModeEnabled } from "@/lib/demo-visibility";
 
@@ -36,8 +39,18 @@ const secondaryNavItems = [
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const isDemoMode = demoModeEnabled();
-  const isBetaActive = isClosedBetaActive();
   const recentNewsSlugs = await getRecentNewsSlugs().catch(() => []);
+
+  const headerList = await headers();
+  const host = headerList.get("host") || "";
+  const isBetaSite = isBetaSiteHost(host);
+
+  const cookieStore = await cookies();
+  const betaCookie = cookieStore.get(BETA_ACCESS_COOKIE)?.value;
+  const isUnlockedByCookie = isBetaAccessTokenValid(betaCookie);
+  const user = await getCurrentUser();
+  const isUnlockedByRole = Boolean(user && isAllowedInClosedBeta(user.role, user.playerName));
+  const isUnlocked = isUnlockedByCookie || isUnlockedByRole;
 
   return (
     <div
@@ -64,13 +77,8 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="notranslate" translate="no">NDL</span>
               </span>
               <span className="min-w-0">
-                <span className="notranslate flex items-center gap-2 truncate text-lg font-black uppercase leading-tight text-slate-950 dark:text-slate-50" translate="no">
+                <span className="notranslate block truncate text-lg font-black uppercase leading-tight text-slate-950 dark:text-slate-50" translate="no">
                   Nerfed Demonlist
-                  {isBetaActive ? (
-                    <span className="rounded border border-purple-500/40 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">
-                      Beta
-                    </span>
-                  ) : null}
                 </span>
                 <HeaderTagline />
               </span>
@@ -157,9 +165,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       ) : null}
 
       <main className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-5 px-3 py-5 sm:px-5 sm:py-7">
-        <ClosedBetaGate isClosedBetaActive={isBetaActive}>
+        <BetaSiteLock isBetaSite={isBetaSite} isUnlocked={isUnlocked}>
           {children}
-        </ClosedBetaGate>
+        </BetaSiteLock>
       </main>
       <Suspense fallback={<SiteFooter user={null} />}>
         <SiteFooterServer />
