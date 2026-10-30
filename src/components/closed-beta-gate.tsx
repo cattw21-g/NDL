@@ -1,10 +1,12 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, Shield, LogIn, ExternalLink, UserPlus, FileText } from "lucide-react";
+import { Sparkles, Shield, LogIn, ExternalLink, UserPlus, FileText, Key, CheckCircle } from "lucide-react";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { isAllowedInClosedBeta, isClosedBetaExemptPath } from "@/lib/closed-beta";
+import { redeemBetaKeyAction } from "@/actions/beta-keys";
 
 interface ClosedBetaGateProps {
   children: React.ReactNode;
@@ -17,6 +19,30 @@ export function ClosedBetaGate({
 }: ClosedBetaGateProps) {
   const pathname = usePathname() || "/";
   const { user, loading } = useCurrentUser();
+  const [inviteKey, setInviteKey] = useState("");
+  const [keyStatus, setKeyStatus] = useState<{ text: string; success: boolean } | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const handleRedeemKey = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!inviteKey.trim()) return;
+    setKeyStatus(null);
+
+    const formData = new FormData();
+    formData.append("key", inviteKey);
+
+    startTransition(async () => {
+      const res = await redeemBetaKeyAction(formData);
+      if (res.success) {
+        setKeyStatus({ text: res.message || "Beta Key verified!", success: true });
+        setTimeout(() => {
+          window.location.reload();
+        }, 800);
+      } else {
+        setKeyStatus({ text: res.error || "Failed to redeem key.", success: false });
+      }
+    });
+  };
 
   // If closed beta mode is disabled, render children normally
   if (!isClosedBetaActive) {
@@ -101,7 +127,7 @@ export function ClosedBetaGate({
       {/* Account Status Card */}
       <div className="mt-8 w-full rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-xl backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80 sm:p-8">
         {isPlayerLoggedIn ? (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center justify-center gap-2 text-sm text-slate-600 dark:text-slate-300">
               <Shield className="h-4 w-4 text-amber-500" />
               <span>
@@ -109,9 +135,43 @@ export function ClosedBetaGate({
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-              Your account does not currently hold a Beta Tester or Staff role. If you would like early access to participate in testing, apply below!
+              Your account does not currently hold a Beta Tester or Staff role. If you received an invite code from staff, redeem it below!
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+
+            {/* Key Redemption Form */}
+            <form onSubmit={handleRedeemKey} className="mx-auto max-w-sm space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Key className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={inviteKey}
+                    onChange={(e) => setInviteKey(e.target.value)}
+                    placeholder="NDL-XXXX-YYYY"
+                    className="w-full rounded-lg border border-purple-500/30 bg-purple-50/30 pl-9 pr-3 py-2 font-mono text-xs uppercase tracking-wider text-slate-900 placeholder-slate-400 focus:border-purple-500 focus:outline-none dark:bg-purple-950/20 dark:text-white"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isPending || !inviteKey.trim()}
+                  className="rounded-lg bg-purple-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-purple-500 disabled:opacity-50 transition"
+                >
+                  {isPending ? "Verifying..." : "Redeem"}
+                </button>
+              </div>
+
+              {keyStatus && (
+                <p
+                  className={`text-xs font-semibold ${
+                    keyStatus.success ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                  }`}
+                >
+                  {keyStatus.text}
+                </p>
+              )}
+            </form>
+
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
               <Link
                 href="/applications/beta-tester"
                 className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md transition hover:from-purple-500 hover:to-indigo-500 focus:outline-none focus:ring-2 focus:ring-purple-400"
@@ -133,7 +193,7 @@ export function ClosedBetaGate({
         ) : (
           <div className="space-y-6">
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Are you an invited Beta Tester or NDL Staff member? Sign in to unlock full access.
+              Are you an invited Beta Tester or NDL Staff member? Sign in or redeem your key to unlock access.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Link
@@ -141,25 +201,26 @@ export function ClosedBetaGate({
                 className="inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md transition hover:bg-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
               >
                 <LogIn className="h-4 w-4" />
-                <span>Sign In to Access</span>
+                <span>Sign In with Account</span>
+              </Link>
+              <Link
+                href={`/register?redirect=${encodeURIComponent(pathname)}`}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-50 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              >
+                <UserPlus className="h-4 w-4" />
+                <span>Create Account</span>
               </Link>
               <Link
                 href="/applications/beta-tester"
                 className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-md transition hover:from-purple-500 hover:to-indigo-500 focus:outline-none focus:ring-2 focus:ring-purple-400"
               >
-                <UserPlus className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
                 <span>Apply for Beta Tester</span>
               </Link>
-              <a
-                href="https://discord.gg/kyYBkQzTCq"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-700 transition hover:bg-slate-50 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              >
-                <span>NDL Discord</span>
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
             </div>
+            <p className="text-[11px] text-slate-400">
+              Have a 1-time Beta Invite Key? Sign in or register above to permanently bind it to your account.
+            </p>
           </div>
         )}
       </div>

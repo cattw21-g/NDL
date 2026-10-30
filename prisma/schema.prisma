@@ -161,6 +161,8 @@ model User {
   applicationNotes        ApplicationNote[]
   notifications           UserNotification[]
   betaFeedbacks           BetaFeedback[]
+  createdBetaKeys         BetaInviteKey[]          @relation("CreatedBetaKeys")
+  redeemedBetaKey         BetaInviteKey?           @relation("RedeemedBetaKey")
 
   @@index([role])
   @@index([countryCode])
@@ -623,5 +625,27 @@ model BetaFeedback {
   @@index([status, createdAt])
   @@index([userId, createdAt])
 }
+
+model BetaInviteKey {
+  id           String    @id @default(cuid())
+  key          String    @unique
+  createdById  String
+  createdBy    User      @relation("CreatedBetaKeys", fields: [createdById], references: [id], onDelete: Cascade)
+  redeemedById String?   @unique
+  redeemedBy   User?     @relation("RedeemedBetaKey", fields: [redeemedById], references: [id], onDelete: SetNull)
+  redeemedAt   DateTime?
+  redeemedIp   String?
+  isRevoked    Boolean   @default(false)
+  notes        String?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([key])
+  @@index([redeemedById])
+  @@index([createdById])
+  @@index([isRevoked])
+}
+
 
 

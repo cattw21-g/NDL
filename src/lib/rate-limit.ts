@@ -18,6 +18,7 @@ export type RateLimitAction =
   | "moderation-review"
   | "moderation-suggestion-review"
   | "profile-update"
+  | "beta-key-redeem"
   | "public-api"
   | "bot-staff-api";
 
@@ -133,6 +134,11 @@ const rules: Record<
     limit: 15,
     windowMs: 5 * 60 * 1000,
     message: "Too many profile updates. Please wait a few minutes before trying again.",
+  },
+  "beta-key-redeem": {
+    limit: 5,
+    windowMs: 10 * 60 * 1000,
+    message: "Too many key redemption attempts. Please wait 10 minutes before trying again.",
   },
   "public-api": {
     limit: 60,

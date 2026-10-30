@@ -4,9 +4,11 @@ import {
   ClipboardCheck,
   FileText,
   Hourglass,
+  Key,
   ListPlus,
   ScrollText,
   ShieldCheck,
+  Sparkles,
   Trophy,
   Users,
 } from "lucide-react";
@@ -58,6 +60,20 @@ const adminLinks = [
     description: "Publish active proof and submission rules.",
     icon: BookOpen,
     tone: "emerald",
+  },
+  {
+    href: "/admin/beta-keys",
+    label: "Beta Invite Keys",
+    description: "Generate single-use invite codes to grant verified testers instant Closed Beta access.",
+    icon: Key,
+    tone: "purple",
+  },
+  {
+    href: "/admin/beta-feedback",
+    label: "Beta Feedback",
+    description: "Review bug reports, UI issues, and tester feedback.",
+    icon: Sparkles,
+    tone: "purple",
   },
   {
     href: "/admin/changelog",
