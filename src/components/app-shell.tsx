@@ -52,10 +52,19 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   const isUnlockedByRole = Boolean(user && isAllowedInClosedBeta(user.role, user.playerName));
   const isUnlocked = isUnlockedByCookie || isUnlockedByRole;
 
+  if (isBetaSite && !isUnlocked) {
+    return (
+      <BetaSiteLock isBetaSite={isBetaSite} isUnlocked={isUnlocked}>
+        <div className="flex min-h-screen w-full items-center justify-center bg-[#060910] p-4 text-white">
+          {children}
+        </div>
+      </BetaSiteLock>
+    );
+  }
+
   return (
-    <BetaSiteLock isBetaSite={isBetaSite} isUnlocked={isUnlocked}>
-      <div
-        id="top"
+    <div
+      id="top"
       className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#f6f8fb] text-slate-950 dark:bg-[#080c13] dark:text-slate-100"
     >
       <SplashScreen />
@@ -172,7 +181,6 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         <SiteFooterServer />
       </Suspense>
     </div>
-    </BetaSiteLock>
   );
 }
 
