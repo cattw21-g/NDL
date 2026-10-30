@@ -34,6 +34,14 @@ const messages: Record<string, string> = {
     "Security Policy: Record decisions on Top 3 demons (ranks 1–3) require Administrator confirmation before being added to the list.",
   "top10-admin-only":
     "Security Policy: Record decisions on Top 3 demons (ranks 1–3) require Administrator confirmation before being added to the list.",
+  top1_admin_only:
+    "Security Policy: Record decisions on the Top 1 demon require Administrator confirmation before being added to the list.",
+  "top1-admin-only":
+    "Security Policy: Record decisions on the Top 1 demon require Administrator confirmation before being added to the list.",
+  top1_level_admin_only:
+    "Security Policy: The Top 1 demon is protected and can only be managed, edited, or placed by Administrators.",
+  "top1-level-admin-only":
+    "Security Policy: The Top 1 demon is protected and can only be managed, edited, or placed by Administrators.",
   top3_admin_only:
     "Security Policy: Record decisions on Top 3 demons (ranks 1–3) require Administrator confirmation before being added to the list.",
   "top3-admin-only":

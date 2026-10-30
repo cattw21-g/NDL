@@ -47,11 +47,11 @@ describe("NDL Role-Based Access Control (RBAC) Matrix", () => {
       expect(isModeratorRole("MODERATOR")).toBe(true);
     });
 
-    it("allows List Moderators to review normal completions and manage records, but DENIES Top 3 final approval", () => {
+    it("allows List Moderators to review normal completions and manage records, but DENIES Top 1 final approval", () => {
       expect(canReviewSubmissions("LIST_MODERATOR")).toBe(true);
       expect(canApproveSubmission("LIST_MODERATOR", 1)).toBe(false);
-      expect(canApproveSubmission("LIST_MODERATOR", 2)).toBe(false);
-      expect(canApproveSubmission("LIST_MODERATOR", 3)).toBe(false);
+      expect(canApproveSubmission("LIST_MODERATOR", 2)).toBe(true);
+      expect(canApproveSubmission("LIST_MODERATOR", 3)).toBe(true);
       expect(canApproveSubmission("LIST_MODERATOR", 4)).toBe(true);
       expect(canApproveSubmission("LIST_MODERATOR", 5)).toBe(true);
       expect(canApproveSubmission("LIST_MODERATOR", 10)).toBe(true);
@@ -132,19 +132,22 @@ describe("NDL Role-Based Access Control (RBAC) Matrix", () => {
       expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_REVIEWER", 11)).toBe(true);
     });
 
-    it("Moderator -> Top 3 ACCEPT denied, REJECT denied, NEEDS_CHANGES allowed", () => {
+    it("Moderator -> Top 1 ACCEPT denied, REJECT denied, NEEDS_CHANGES allowed; Top 2+ allowed", () => {
       expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 1)).toBe(false);
-      expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 2)).toBe(false);
-      expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 3)).toBe(false);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 2)).toBe(true);
+      expect(canFinalDecideSubmission("ACCEPTED", "LIST_MODERATOR", 3)).toBe(true);
 
       expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 1)).toBe(false);
-      expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 2)).toBe(false);
-      expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 3)).toBe(false);
+      expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 2)).toBe(true);
+      expect(canFinalDecideSubmission("REJECTED", "LIST_MODERATOR", 3)).toBe(true);
 
       expect(canApproveSubmission("LIST_MODERATOR", 1)).toBe(false);
+      expect(canApproveSubmission("LIST_MODERATOR", 2)).toBe(true);
+      expect(canApproveSubmission("LIST_MODERATOR", 3)).toBe(true);
       expect(canRejectSubmission("LIST_MODERATOR", 1)).toBe(false);
+      expect(canRejectSubmission("LIST_MODERATOR", 2)).toBe(true);
 
-      // Moderator CAN request changes or leave review notes on Top 3
+      // Moderator CAN request changes or leave review notes on Top 1
       expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_MODERATOR", 1)).toBe(true);
       expect(canFinalDecideSubmission("NEEDS_CHANGES", "LIST_MODERATOR", 3)).toBe(true);
 

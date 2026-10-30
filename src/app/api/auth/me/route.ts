@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { isAdminRole, isModeratorRole, isBetaTester } from "@/lib/permissions";
+import { isAdminRole, isModeratorRole, isListReviewerRole, isBetaTester } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +24,7 @@ export async function GET() {
       user.playerName.toLowerCase() === "cattw21" ||
       user.playerName.toLowerCase() === "ndl_admin";
     const isUserMod = isModeratorRole(user.role) || isUserAdmin;
+    const isUserReviewer = isListReviewerRole(user.role) || isUserAdmin;
 
     return NextResponse.json(
       {
@@ -36,6 +37,7 @@ export async function GET() {
             role: user.role,
             isAdmin: isUserAdmin,
             isModerator: isUserMod,
+            isReviewer: isUserReviewer,
             isBetaTester: isBetaTester(user.role),
           },
         },

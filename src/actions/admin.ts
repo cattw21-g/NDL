@@ -82,10 +82,10 @@ export async function createLevelAction(
   }
 
   const isAdmin = isAdminRole(admin.role, admin.playerName);
-  if (!isAdmin && typeof parsed.data.rank === "number" && parsed.data.rank >= 1 && parsed.data.rank <= 3) {
+  if (!isAdmin && typeof parsed.data.rank === "number" && parsed.data.rank === 1) {
     return createLevelFormErrorState(parsed.values, {
       fieldErrors: {
-        rank: ["Only Administrators can place levels into the Top 3 (ranks 1–3)."],
+        rank: ["Only Administrators can place levels into the Top 1."],
       },
     });
   }
@@ -314,21 +314,20 @@ export async function updateLevelAction(
   });
   const isAdmin = isAdminRole(admin.role, admin.playerName);
   if (!isAdmin) {
-    if (existingLevel?.rank && existingLevel.rank <= 3) {
+    if (existingLevel?.rank && existingLevel.rank === 1) {
       return createLevelFormErrorState(parsed.values, {
         formErrors: [
-          "Top 3 demons (ranks 1–3) are protected and can only be managed by Administrators.",
+          "The Top 1 demon is protected and can only be managed by Administrators.",
         ],
       });
     }
     if (
       typeof parsed.data.rank === "number" &&
-      parsed.data.rank >= 1 &&
-      parsed.data.rank <= 3
+      parsed.data.rank === 1
     ) {
       return createLevelFormErrorState(parsed.values, {
         fieldErrors: {
-          rank: ["Only Administrators can place levels into the Top 3 (ranks 1–3)."],
+          rank: ["Only Administrators can place levels into the Top 1."],
         },
       });
     }

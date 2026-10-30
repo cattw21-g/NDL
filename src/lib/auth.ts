@@ -6,7 +6,7 @@ import { Role } from "@/generated/prisma/enums";
 import { isVerifiedAccount } from "@/lib/account-state";
 import { prisma } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password-hashing";
-import { isAdminRole, isModeratorRole } from "@/lib/permissions";
+import { isAdminRole, isModeratorRole, isListReviewerRole } from "@/lib/permissions";
 import { requireSessionSecret, type EnvMap } from "@/lib/production-env";
 
 const SESSION_DAYS = 30;
@@ -203,7 +203,7 @@ export async function requireUser() {
 export async function requireModerator() {
   const user = await requireUser();
 
-  if (!isModeratorRole(user.role)) {
+  if (!isListReviewerRole(user.role)) {
     redirect("/");
   }
 

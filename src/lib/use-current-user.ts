@@ -10,6 +10,7 @@ export type CurrentUser = {
   role: string;
   isAdmin: boolean;
   isModerator: boolean;
+  isReviewer?: boolean;
   isBetaTester: boolean;
 };
 

@@ -382,7 +382,14 @@ export const levelSchema = z.object({
 
 export const userRoleSchema = z.object({
   userId: z.string().min(1),
-  role: z.enum(["ADMIN", "MODERATOR", "PLAYER"]),
+  role: z.enum([
+    "ADMIN",
+    "MODERATOR",
+    "LIST_MODERATOR",
+    "LIST_REVIEWER",
+    "BETA_TESTER",
+    "PLAYER",
+  ]),
 });
 
 export const rulesSchema = z.object({

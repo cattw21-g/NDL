@@ -13,7 +13,7 @@ import {
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
-import { isModeratorRole } from "@/lib/permissions";
+import { isListReviewerRole } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -28,7 +28,7 @@ export default async function LevelSuggestionsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const user = await requireUser();
-  const canSeeAll = isModeratorRole(user.role);
+  const canSeeAll = isListReviewerRole(user.role);
   const [params, suggestions] = await Promise.all([
     searchParams,
     prisma.levelSuggestion.findMany({

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { AdminDropdownMenu } from "@/components/admin-dropdown-menu";
 import { LoginButton, LogoutButton } from "@/components/app-shell-i18n";
 import { StaffNotificationCenter } from "@/components/staff-notification-center";
-import { isModeratorRole } from "@/lib/permissions";
+import { isModeratorRole, isListReviewerRole } from "@/lib/permissions";
 import { useCurrentUser } from "@/lib/use-current-user";
 
 export function HeaderUserSkeleton() {
@@ -29,12 +29,14 @@ export function HeaderUserNav() {
     return <LoginButton />;
   }
 
+  const isUserReviewer = Boolean(user.isReviewer) || isListReviewerRole(user.role);
   const isUserMod = user.isModerator || isModeratorRole(user.role);
   const isUserAdmin = user.isAdmin;
+  const isStaff = isUserAdmin || isUserMod || isUserReviewer;
 
   return (
     <div className="flex items-center gap-1.5 sm:gap-2">
-      {isUserMod ? <StaffNotificationCenter /> : null}
+      {isStaff ? <StaffNotificationCenter /> : null}
       <Link
         href={`/players/${user.playerName}`}
         className="inline-flex min-h-8 min-w-0 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-700 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-900 focus:outline-none focus:ring-2 focus:ring-cyan-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-cyan-400 dark:hover:bg-cyan-950 dark:hover:text-cyan-100"
@@ -69,9 +71,12 @@ export function HeaderUserNav() {
         </Link>
       )}
       <LogoutButton />
-      {(isUserAdmin || isUserMod) && (
+      {isStaff && (
         <div className="ml-1 shrink-0 border-l border-slate-300 pl-2 dark:border-slate-700">
-          <AdminDropdownMenu isModeratorOnly={!isUserAdmin} />
+          <AdminDropdownMenu
+            isModeratorOnly={!isUserAdmin && isUserMod}
+            isReviewerOnly={!isUserAdmin && !isUserMod && isUserReviewer}
+          />
         </div>
       )}
     </div>

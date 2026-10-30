@@ -6,6 +6,7 @@ import {
   canChangeUserRole,
   type RoleChangeClient,
 } from "../lib/user-role-management";
+import { userRoleSchema } from "../lib/validation";
 
 function asRecord(value: unknown) {
   return value as Record<string, unknown>;
@@ -21,6 +22,25 @@ describe("user role management", () => {
         otherAdminCount: 1,
       }),
     ).toEqual({ allowed: true });
+  });
+
+  it("allows an admin to promote a player to list reviewer", () => {
+    expect(
+      canChangeUserRole({
+        actorRole: Role.ADMIN,
+        targetRole: Role.PLAYER,
+        nextRole: Role.LIST_REVIEWER,
+        otherAdminCount: 1,
+      }),
+    ).toEqual({ allowed: true });
+  });
+
+  it("validates role assignment schema includes LIST_REVIEWER", () => {
+    const parsed = userRoleSchema.safeParse({
+      userId: "user-123",
+      role: "LIST_REVIEWER",
+    });
+    expect(parsed.success).toBe(true);
   });
 
   it("allows an admin to promote a player to admin", () => {

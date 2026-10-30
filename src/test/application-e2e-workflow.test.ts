@@ -380,9 +380,10 @@ describe("Real Application Full E2E Workflow & Privacy Suite", () => {
     const updatedModUser = await prisma.user.findUnique({ where: { id: modUser.id } });
     expect(updatedModUser?.role).toBe("LIST_MODERATOR");
     expect(isListModeratorRole(updatedModUser?.role)).toBe(true);
-    // Moderator CANNOT final-approve Top 3 completions
+    // Moderator CANNOT final-approve Top 1 completion (Top 1 is protected from moderators)
     expect(canApproveSubmission(updatedModUser?.role, 1)).toBe(false);
-    expect(canApproveSubmission(updatedModUser?.role, 3)).toBe(false);
+    expect(canApproveSubmission(updatedModUser?.role, 2)).toBe(true);
+    expect(canApproveSubmission(updatedModUser?.role, 3)).toBe(true);
     expect(canApproveSubmission(updatedModUser?.role, 4)).toBe(true);
     expect(canApproveSubmission(updatedModUser?.role, 10)).toBe(true);
 

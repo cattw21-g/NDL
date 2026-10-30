@@ -119,9 +119,9 @@ export default async function AdminLevelsPage({
                   <StatusBadge value={level.status} />
                 </div>
               </div>
-              {typeof level.rank === "number" && level.rank >= 1 && level.rank <= 3 && !isAdmin ? (
+              {typeof level.rank === "number" && level.rank === 1 && !isAdmin ? (
                 <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs font-bold text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200">
-                  🔒 Top 3 demon (Rank #{level.rank}) is protected. Only Administrators can manage or re-rank this level.
+                  🔒 Top 1 demon (Rank #{level.rank}) is protected. Only Administrators can manage or re-rank this level.
                 </div>
               ) : (
                 <AdminLevelForm

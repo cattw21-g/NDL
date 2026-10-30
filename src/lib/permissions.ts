@@ -37,11 +37,16 @@ export function canReviewSubmissions(role?: string | null): boolean {
   return isListReviewerRole(role);
 }
 
+export function canReviewSuggestions(role?: string | null): boolean {
+  return isListReviewerRole(role);
+}
+
 /**
- * Top 3 record submission final decisions (ACCEPTED or REJECTED) require Admin authority.
- * List Reviewers and List Moderators CANNOT give final approval or final rejection to Top 1, 2, or 3.
- * They may inspect, leave notes, request changes (NEEDS_CHANGES), and escalate to Admins.
- * Submissions beyond Top 3 (ranks 4 and below) can be decided by List Reviewers, List Moderators, and Admins.
+ * Record submission final decisions (ACCEPTED or REJECTED) gate:
+ * - Top 1 demon decisions require Admin authority (Moderators and Reviewers cannot accept or reject Top 1).
+ * - Top 2 and Top 3 demons can be decided by Moderators and Admins, but CANNOT be decided by List Reviewers.
+ * - Levels beyond Top 3 (ranks 4 and below) can be decided by List Reviewers, List Moderators, and Admins.
+ * - Staff (Reviewers, Moderators, Admins) may leave review notes and set NEEDS_CHANGES on any level.
  */
 export function canFinalDecideSubmission(
   action: "ACCEPTED" | "REJECTED" | "NEEDS_CHANGES",
@@ -55,11 +60,22 @@ export function canFinalDecideSubmission(
   if (!isListReviewerRole(role)) {
     return false;
   }
-  if (typeof levelRank === "number" && levelRank >= 1 && levelRank <= 3) {
-    if (action === "ACCEPTED" || action === "REJECTED") {
+  if (action === "NEEDS_CHANGES") {
+    return true;
+  }
+
+  if (typeof levelRank === "number") {
+    // Top 1 is strictly restricted to Admins (Moderators and Reviewers cannot decide Top 1)
+    if (levelRank === 1) {
+      return false;
+    }
+
+    // Top 2 and Top 3 are blocked for List Reviewers (Moderators and Admins CAN decide them)
+    if (role === "LIST_REVIEWER" && levelRank >= 1 && levelRank <= 3) {
       return false;
     }
   }
+
   return true;
 }
 
@@ -80,8 +96,9 @@ export function canRejectSubmission(
 }
 
 /**
- * Moderators can manage every level except Top 1, 2, or 3.
+ * Moderators can manage every level except Top 1.
  * Admins can manage all levels without restriction.
+ * List Reviewers cannot manage levels.
  */
 export function canManageLevels(
   role?: string | null,
@@ -94,7 +111,7 @@ export function canManageLevels(
   if (!isListModeratorRole(role)) {
     return false;
   }
-  if (typeof levelRank === "number" && levelRank >= 1 && levelRank <= 3) {
+  if (typeof levelRank === "number" && levelRank === 1) {
     return false;
   }
   return true;

@@ -35,7 +35,7 @@ import {
   type ModerationSearchParams,
   type RecordSubmissionListItem,
 } from "@/lib/moderation-queue";
-import { isAdminRole } from "@/lib/permissions";
+import { isAdminRole, canFinalDecideSubmission } from "@/lib/permissions";
 import { calculateCurrentLevelPoints } from "@/lib/points";
 import {
   autoExpireOverdueSubmissions,
@@ -189,6 +189,7 @@ export default async function ModerationPage({
                     key={submission.id}
                     submission={submission}
                     currentUserId={moderator.id}
+                    moderator={moderator}
                   />
                 ))}
                 <PaginationControls
@@ -693,9 +694,11 @@ function QueueBlock({
 function RecordReviewCard({
   submission,
   currentUserId,
+  moderator,
 }: {
   submission: RecordSubmissionListItem;
   currentUserId: string;
+  moderator: { id: string; role: string; playerName: string };
 }) {
   const isSelfSubmission = submission.playerId === currentUserId;
   const canReview =
@@ -703,6 +706,13 @@ function RecordReviewCard({
     (submission.status === "PENDING" ||
       submission.status === "NEEDS_CHANGES" ||
       submission.status === "UNDER_CONSIDERATION");
+
+  const canFinalDecide = canFinalDecideSubmission(
+    "ACCEPTED",
+    moderator.role,
+    submission.level.rank,
+    moderator.playerName,
+  );
 
   const deadline = getEvidenceTimeoutRemaining(
     submission.status,
@@ -797,11 +807,16 @@ function RecordReviewCard({
           className="grid gap-3 border-t border-slate-300 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-950/60"
         >
           <input type="hidden" name="submissionId" value={submission.id} />
+          {typeof submission.level.rank === "number" && !canFinalDecide && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 p-2.5 text-xs font-bold text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200">
+              🔒 {submission.level.rank === 1 ? "Top 1 demon" : `Top 3 demon (Rank #${submission.level.rank})`}: Final approval or rejection requires Administrator confirmation. You can review proof, set Under Consideration, or request changes.
+            </div>
+          )}
           <div className="grid gap-3 md:grid-cols-[14rem_1fr]">
             <FieldLabel label="Decision">
               <select name="status" required className={inputClass}>
-                <option value="ACCEPTED">Accept</option>
-                <option value="REJECTED">Reject</option>
+                {canFinalDecide && <option value="ACCEPTED">Accept</option>}
+                {canFinalDecide && <option value="REJECTED">Reject</option>}
                 <option value="UNDER_CONSIDERATION">Under Consideration (UC)</option>
                 <option value="NEEDS_CHANGES">Needs changes</option>
               </select>

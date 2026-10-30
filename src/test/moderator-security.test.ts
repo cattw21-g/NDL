@@ -52,19 +52,21 @@ describe("Moderator Security Safeguards & Threat Prevention", () => {
           return { allowed: false, reason: "verification_admin_only" };
         }
 
-        // Top 3 completion
-        if (levelRank !== null && levelRank <= 3 && progress === 100 && !isAdmin) {
-          return { allowed: false, reason: "top3_admin_only" };
+        // Top 1 completion for moderators
+        if (levelRank !== null && levelRank === 1 && progress === 100 && !isAdmin) {
+          return { allowed: false, reason: "top1_admin_only" };
         }
 
         return { allowed: true };
       };
 
-      // Top 3 100% run
+      // Top 1 100% run
       expect(canAcceptRecord({ levelRank: 1, progress: 100, userRole: "MODERATOR", levelStatus: "RANKED" }))
-        .toEqual({ allowed: false, reason: "top3_admin_only" });
+        .toEqual({ allowed: false, reason: "top1_admin_only" });
+      expect(canAcceptRecord({ levelRank: 2, progress: 100, userRole: "MODERATOR", levelStatus: "RANKED" }))
+        .toEqual({ allowed: true });
       expect(canAcceptRecord({ levelRank: 3, progress: 100, userRole: "MODERATOR", levelStatus: "RANKED" }))
-        .toEqual({ allowed: false, reason: "top3_admin_only" });
+        .toEqual({ allowed: true });
       expect(canAcceptRecord({ levelRank: 1, progress: 100, userRole: "ADMIN", levelStatus: "RANKED" }))
         .toEqual({ allowed: true });
 

@@ -22,7 +22,23 @@ import type { Prisma } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 
-const roles = ["ADMIN", "MODERATOR", "PLAYER"];
+const roles = [
+  "ADMIN",
+  "MODERATOR",
+  "LIST_MODERATOR",
+  "LIST_REVIEWER",
+  "BETA_TESTER",
+  "PLAYER",
+] as const;
+
+const roleLabels: Record<(typeof roles)[number], string> = {
+  ADMIN: "Administrator",
+  MODERATOR: "Moderator",
+  LIST_MODERATOR: "List Moderator",
+  LIST_REVIEWER: "List Reviewer",
+  BETA_TESTER: "Beta Tester",
+  PLAYER: "Player",
+};
 
 export default async function AdminUsersPage({
   searchParams,
@@ -42,8 +58,8 @@ export default async function AdminUsersPage({
       { email: { contains: q, mode: "insensitive" } },
     ];
   }
-  if (roleFilter && roles.includes(roleFilter)) {
-    where.role = roleFilter as "ADMIN" | "MODERATOR" | "PLAYER";
+  if (roleFilter && (roles as readonly string[]).includes(roleFilter)) {
+    where.role = roleFilter as (typeof roles)[number];
   }
 
   const [totalUsers, users] = await Promise.all([
@@ -89,7 +105,7 @@ export default async function AdminUsersPage({
               <option value="">All Roles</option>
               {roles.map((r) => (
                 <option key={r} value={r}>
-                  {r}
+                  {roleLabels[r] || r}
                 </option>
               ))}
             </select>
@@ -179,7 +195,7 @@ export default async function AdminUsersPage({
                   >
                     {roles.map((role) => (
                       <option key={role} value={role}>
-                        {role}
+                        {roleLabels[role] || role} ({role})
                       </option>
                     ))}
                   </select>
