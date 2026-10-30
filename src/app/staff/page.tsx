@@ -50,7 +50,7 @@ export default async function StaffPage() {
       where: {
         ...publicUserWhere(),
         role: {
-          in: ["ADMIN", "MODERATOR"],
+          in: ["ADMIN", "MODERATOR", "LIST_MODERATOR", "LIST_REVIEWER"],
         },
       },
       select: {
@@ -103,7 +103,10 @@ export default async function StaffPage() {
   }
 
   const admins = staffUsers.filter((u) => u.role === "ADMIN");
-  const moderators = staffUsers.filter((u) => u.role === "MODERATOR");
+  const moderators = staffUsers.filter(
+    (u) => u.role === "MODERATOR" || u.role === "LIST_MODERATOR",
+  );
+  const reviewers = staffUsers.filter((u) => u.role === "LIST_REVIEWER");
 
   return (
     <div className="space-y-8">
@@ -188,17 +191,17 @@ export default async function StaffPage() {
         </div>
       </section>
 
-      {/* Moderators & List Editors */}
+      {/* List Moderators */}
       <section className="space-y-4">
         <div className="flex items-center gap-2 border-b border-zinc-800 pb-3">
           <Shield className="h-5 w-5 text-cyan-400" />
-          <h2 className="text-xl font-extrabold text-white">List Moderators & Reviewers</h2>
+          <h2 className="text-xl font-extrabold text-white">List Moderators</h2>
           <span className="ml-2 rounded-full bg-cyan-500/10 px-2.5 py-0.5 text-xs font-bold text-cyan-400 border border-cyan-500/20">
             {moderators.length}
           </span>
         </div>
         <p className="text-xs text-zinc-400">
-          Reviews incoming record submissions, validates click audio, FPS authenticity, and verifies legitimate completions.
+          Reviews incoming record submissions, validates click audio and FPS authenticity, manages level updates, and oversees the upcoming queue.
         </p>
 
         {moderators.length > 0 ? (
@@ -206,7 +209,7 @@ export default async function StaffPage() {
             {moderators.map((mod) => {
               const country = mod.countryCode ? getCountryMeta(mod.countryCode) : null;
               return (
-                <SectionPanel key={mod.id} className="p-5 flex flex-col justify-between border-zinc-800 bg-zinc-900/60">
+                <SectionPanel key={mod.id} className="p-5 flex flex-col justify-between border-cyan-500/20 bg-zinc-900/60">
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div>
@@ -219,7 +222,7 @@ export default async function StaffPage() {
                         <p className="text-xs text-zinc-400">@{mod.playerName}</p>
                       </div>
                       <span className="inline-flex items-center rounded-md border border-cyan-500/40 bg-cyan-500/10 px-2 py-0.5 text-xs font-black uppercase text-cyan-300">
-                        Moderator
+                        {mod.role === "LIST_MODERATOR" ? "List Mod" : "Moderator"}
                       </span>
                     </div>
 
@@ -252,6 +255,74 @@ export default async function StaffPage() {
         ) : (
           <SectionPanel className="p-6 text-center text-zinc-400 text-sm">
             Staff applications for list moderators will open as submission volume expands.
+          </SectionPanel>
+        )}
+      </section>
+
+      {/* List Reviewers */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 border-b border-zinc-800 pb-3">
+          <Shield className="h-5 w-5 text-indigo-400" />
+          <h2 className="text-xl font-extrabold text-white">List Reviewers</h2>
+          <span className="ml-2 rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-xs font-bold text-indigo-400 border border-indigo-500/20">
+            {reviewers.length}
+          </span>
+        </div>
+        <p className="text-xs text-zinc-400">
+          Reviews incoming record submissions and evaluates community level suggestions according to official Demonlist quality standards.
+        </p>
+
+        {reviewers.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {reviewers.map((rev) => {
+              const country = rev.countryCode ? getCountryMeta(rev.countryCode) : null;
+              return (
+                <SectionPanel key={rev.id} className="p-5 flex flex-col justify-between border-indigo-500/20 bg-zinc-900/60">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <Link
+                          href={`/players/${rev.playerName}`}
+                          className="text-lg font-black text-white hover:text-indigo-300 transition"
+                        >
+                          {rev.displayName}
+                        </Link>
+                        <p className="text-xs text-zinc-400">@{rev.playerName}</p>
+                      </div>
+                      <span className="inline-flex items-center rounded-md border border-indigo-500/40 bg-indigo-500/10 px-2 py-0.5 text-xs font-black uppercase text-indigo-300">
+                        Reviewer
+                      </span>
+                    </div>
+
+                    {country ? (
+                      <p className="text-xs text-zinc-400 flex items-center gap-1.5">
+                        <span>{country.flag}</span>
+                        <span>{country.name}</span>
+                      </p>
+                    ) : null}
+
+                    {rev.bio ? (
+                      <p className="text-xs text-zinc-300 line-clamp-3 leading-relaxed">
+                        {rev.bio}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-400">
+                    <span>{rev._count.reviewedSubmissions} Reviews</span>
+                    {rev.discordUsername ? (
+                      <span className="font-mono text-[11px] text-indigo-400">
+                        {rev.discordUsername}
+                      </span>
+                    ) : null}
+                  </div>
+                </SectionPanel>
+              );
+            })}
+          </div>
+        ) : (
+          <SectionPanel className="p-6 text-center text-zinc-400 text-sm">
+            List reviewer positions are appointed through staff applications.
           </SectionPanel>
         )}
       </section>

@@ -10,6 +10,7 @@ import {
   isAdminRole,
   canFinalDecideSubmission,
 } from "@/lib/permissions";
+import { isAllowedInClosedBeta, isClosedBetaActive } from "@/lib/closed-beta";
 import { prisma } from "@/lib/db";
 import { normalizeVideoUrl } from "@/lib/video-validation";
 import {
@@ -76,6 +77,18 @@ export async function submitRecordAction(
 
   if (!parsed.success) {
     return parsed.state;
+  }
+
+  // Closed Beta Gate: Only authorized Beta Testers and Staff may submit during closed beta
+  if (
+    isClosedBetaActive() &&
+    (!sessionUser || !isAllowedInClosedBeta(sessionUser.role, sessionUser.playerName))
+  ) {
+    return createSubmissionFormErrorState(parsed.values, {
+      formErrors: [
+        "Nerfed Demonlist is currently in Closed Beta. Only verified Beta Testers and Staff may submit records.",
+      ],
+    });
   }
 
   // Security & Anti-Cheat: Validate proof platform and physics limits

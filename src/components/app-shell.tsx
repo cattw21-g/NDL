@@ -10,6 +10,8 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteFooterServer } from "@/components/site-footer-server";
 import { SplashScreen } from "@/components/splash-screen";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ClosedBetaGate } from "@/components/closed-beta-gate";
+import { isClosedBetaActive } from "@/lib/closed-beta";
 import { getRecentNewsSlugs } from "@/lib/news-cache";
 import { demoModeEnabled } from "@/lib/demo-visibility";
 
@@ -34,6 +36,7 @@ const secondaryNavItems = [
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const isDemoMode = demoModeEnabled();
+  const isBetaActive = isClosedBetaActive();
   const recentNewsSlugs = await getRecentNewsSlugs().catch(() => []);
 
   return (
@@ -61,8 +64,13 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="notranslate" translate="no">NDL</span>
               </span>
               <span className="min-w-0">
-                <span className="notranslate block truncate text-lg font-black uppercase leading-tight text-slate-950 dark:text-slate-50" translate="no">
+                <span className="notranslate flex items-center gap-2 truncate text-lg font-black uppercase leading-tight text-slate-950 dark:text-slate-50" translate="no">
                   Nerfed Demonlist
+                  {isBetaActive ? (
+                    <span className="rounded border border-purple-500/40 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">
+                      Beta
+                    </span>
+                  ) : null}
                 </span>
                 <HeaderTagline />
               </span>
@@ -149,7 +157,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       ) : null}
 
       <main className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-5 px-3 py-5 sm:px-5 sm:py-7">
-        {children}
+        <ClosedBetaGate isClosedBetaActive={isBetaActive}>
+          {children}
+        </ClosedBetaGate>
       </main>
       <Suspense fallback={<SiteFooter user={null} />}>
         <SiteFooterServer />

@@ -14,6 +14,7 @@ import { ModerationActionType } from "@/generated/prisma/enums";
 import { writeAuditLog } from "@/lib/audit-log";
 import { requireAdmin, requireModerator, requireUser } from "@/lib/auth";
 import { isAdminRole } from "@/lib/permissions";
+import { isAllowedInClosedBeta, isClosedBetaActive } from "@/lib/closed-beta";
 import { prisma } from "@/lib/db";
 import { deleteBlobSafely, isVercelBlobUrl } from "@/lib/blob-cleanup";
 import {
@@ -64,6 +65,18 @@ export async function submitLevelSuggestionAction(
 
   if (!parsed.success) {
     return parsed.state;
+  }
+
+  // Closed Beta Gate: Only authorized Beta Testers and Staff may submit during closed beta
+  if (
+    isClosedBetaActive() &&
+    !isAllowedInClosedBeta(user.role, user.playerName)
+  ) {
+    return createLevelSuggestionFormErrorState(parsed.values, {
+      formErrors: [
+        "Nerfed Demonlist is currently in Closed Beta. Only verified Beta Testers and Staff may submit level suggestions.",
+      ],
+    });
   }
 
   // Duplicate GD Level ID Prevention: Block duplicates of existing levels or pending suggestions

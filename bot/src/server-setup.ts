@@ -139,8 +139,8 @@ export const SERVER_ROLES = [
   {
     name: "🧪 Beta Tester",
     color: 0x22c55e,
-    hoist: false,
-    mentionable: false,
+    hoist: true,
+    mentionable: true,
     permissions: [],
   },
   {
@@ -217,6 +217,8 @@ export async function provisionNdlServer(
 
   const modRole = createdRoles.get("🛡️ List Moderator") ?? guild.roles.cache.find((r) => r.name.includes("Moderator"));
   const ownerRole = createdRoles.get("👑 List Owner") ?? guild.roles.cache.find((r) => r.name.includes("Owner"));
+  const betaRole = createdRoles.get("🧪 Beta Tester") ?? guild.roles.cache.find((r) => r.name.toLowerCase().includes("beta"));
+  const reviewerRole = createdRoles.get("✨ List Reviewer") ?? guild.roles.cache.find((r) => r.name.toLowerCase().includes("reviewer"));
 
   // Helper to find or create category
   async function ensureCategory(name: string, permissionOverwrites: OverwriteResolvable[] = []) {
@@ -335,6 +337,78 @@ export async function provisionNdlServer(
       ],
       deny: [],
     });
+  }
+
+  // Private Beta Hub Overwrites
+  const betaChatOverwrites: OverwriteResolvable[] = [
+    {
+      id: guild.id, // @everyone hidden
+      type: OverwriteType.Role,
+      deny: [PermissionFlagsBits.ViewChannel],
+      allow: [],
+    },
+  ];
+
+  const betaAnnounceOverwrites: OverwriteResolvable[] = [
+    {
+      id: guild.id, // @everyone hidden
+      type: OverwriteType.Role,
+      deny: [PermissionFlagsBits.ViewChannel],
+      allow: [],
+    },
+  ];
+
+  if (betaRole) {
+    betaChatOverwrites.push({
+      id: betaRole.id,
+      type: OverwriteType.Role,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.ReadMessageHistory,
+        PermissionFlagsBits.AttachFiles,
+        PermissionFlagsBits.EmbedLinks,
+      ],
+      deny: [],
+    });
+    betaAnnounceOverwrites.push({
+      id: betaRole.id,
+      type: OverwriteType.Role,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.ReadMessageHistory,
+      ],
+      deny: [PermissionFlagsBits.SendMessages],
+    });
+  }
+
+  for (const staffRole of [reviewerRole, modRole, ownerRole]) {
+    if (staffRole) {
+      betaChatOverwrites.push({
+        id: staffRole.id,
+        type: OverwriteType.Role,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ReadMessageHistory,
+          PermissionFlagsBits.AttachFiles,
+          PermissionFlagsBits.EmbedLinks,
+        ],
+        deny: [],
+      });
+      betaAnnounceOverwrites.push({
+        id: staffRole.id,
+        type: OverwriteType.Role,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ReadMessageHistory,
+          PermissionFlagsBits.AttachFiles,
+          PermissionFlagsBits.EmbedLinks,
+        ],
+        deny: [],
+      });
+    }
   }
 
   try {
@@ -478,6 +552,23 @@ export async function provisionNdlServer(
       ChannelType.GuildText,
       catSupp.id,
       "Report bugs, glitches, or suggest website features.",
+    );
+
+    // 6.5. Category: 🧪 BETA TESTING (Private to Beta Testers & Staff)
+    const catBeta = await ensureCategory("🧪 BETA TESTING", betaChatOverwrites);
+    await ensureChannel(
+      "📢・beta-announcements",
+      ChannelType.GuildText,
+      catBeta.id,
+      "Official updates and announcements for NDL Beta Testers.",
+      betaAnnounceOverwrites,
+    );
+    await ensureChannel(
+      "💬・beta-chat",
+      ChannelType.GuildText,
+      catBeta.id,
+      "Private discussion and testing feedback for Beta Testers and Staff.",
+      betaChatOverwrites,
     );
 
     // 7. Category: 🛡️ STAFF HQ (Private)
