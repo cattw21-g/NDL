@@ -33,7 +33,9 @@ export default async function LevelSuggestionsPage({
     searchParams,
     prisma.levelSuggestion.findMany({
       where: canSeeAll
-        ? {}
+        ? user.role === "LIST_REVIEWER"
+          ? { submitterId: { not: user.id } }
+          : {}
         : {
             submitterId: user.id,
           },

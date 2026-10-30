@@ -58,6 +58,7 @@ export type RecordModerationFilters = {
   page: number;
   pageSize: number;
   q: string;
+  excludePlayerId?: string;
 };
 
 export type SuggestionModerationFilters = {
@@ -74,6 +75,7 @@ export type SuggestionModerationFilters = {
   page: number;
   pageSize: number;
   q: string;
+  excludeSubmitterId?: string;
 };
 
 export type ModerationFilters = {
@@ -154,6 +156,14 @@ export function recordSubmissionWhere(filters: RecordModerationFilters) {
       },
     },
   ];
+
+  if (filters.excludePlayerId) {
+    and.push({
+      playerId: {
+        not: filters.excludePlayerId,
+      },
+    });
+  }
 
   if (filters.level) {
     and.push({
@@ -253,6 +263,14 @@ export function levelSuggestionWhere(filters: SuggestionModerationFilters) {
       ),
     },
   ];
+
+  if (filters.excludeSubmitterId) {
+    and.push({
+      submitterId: {
+        not: filters.excludeSubmitterId,
+      },
+    });
+  }
 
   if (filters.name) {
     and.push({ name: contains(filters.name) });

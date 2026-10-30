@@ -243,8 +243,11 @@ export async function reviewLevelSuggestionAction(formData: FormData) {
     redirect("/moderation?error=missing");
   }
 
-  // Security: Moderators cannot approve their own level suggestions
-  if (suggestion.submitterId === moderator.id && parsed.data.status === "APPROVED") {
+  // Security: Reviewers cannot review their own suggestions, and moderators cannot approve their own suggestions
+  if (
+    suggestion.submitterId === moderator.id &&
+    (moderator.role === "LIST_REVIEWER" || parsed.data.status === "APPROVED")
+  ) {
     redirect("/moderation?error=self_approval_forbidden");
   }
 

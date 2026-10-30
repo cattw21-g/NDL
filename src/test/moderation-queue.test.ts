@@ -149,4 +149,24 @@ describe("moderation queue query", () => {
     expect(serialized).toContain("moderatorNotes");
     expect(serialized).toContain("host");
   });
+
+  it("excludes reviewer self-submissions when excludePlayerId is specified", () => {
+    const filters = parseModerationFilters({});
+    filters.record.excludePlayerId = "reviewer-user-id";
+    const where = recordSubmissionWhere(filters.record);
+
+    expect(where.AND).toEqual(
+      expect.arrayContaining([{ playerId: { not: "reviewer-user-id" } }]),
+    );
+  });
+
+  it("excludes reviewer self-suggestions when excludeSubmitterId is specified", () => {
+    const filters = parseModerationFilters({});
+    filters.suggestion.excludeSubmitterId = "reviewer-user-id";
+    const where = levelSuggestionWhere(filters.suggestion);
+
+    expect(where.AND).toEqual(
+      expect.arrayContaining([{ submitterId: { not: "reviewer-user-id" } }]),
+    );
+  });
 });

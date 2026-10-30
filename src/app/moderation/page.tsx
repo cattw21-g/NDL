@@ -58,6 +58,14 @@ export default async function ModerationPage({
   await autoExpireOverdueSubmissions(prisma);
   const params = await searchParams;
   const filters = parseModerationFilters(params);
+
+  // Reviewers submitting their own records or level suggestions cannot see them
+  // in the staff review queue ("like they never submitted"), while other staff can review them.
+  if (moderator.role === "LIST_REVIEWER") {
+    filters.record.excludePlayerId = moderator.id;
+    filters.suggestion.excludeSubmitterId = moderator.id;
+  }
+
   const [
     recordSubmissions,
     recordSubmissionCount,
@@ -86,6 +94,7 @@ export default async function ModerationPage({
       take: 5,
       where: {
         status: "REJECTED",
+        ...(moderator.role === "LIST_REVIEWER" ? { playerId: { not: moderator.id } } : {}),
       },
       include: {
         player: true,
@@ -101,6 +110,7 @@ export default async function ModerationPage({
         status: {
           in: ["APPROVED", "REJECTED", "CONVERTED"],
         },
+        ...(moderator.role === "LIST_REVIEWER" ? { submitterId: { not: moderator.id } } : {}),
       },
       include: {
         submitter: true,
