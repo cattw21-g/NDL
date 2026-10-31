@@ -58,23 +58,63 @@ export function isStaffMember(
 ): boolean {
   if (!member || typeof member !== "object") return false;
 
-  // 1. Server Owner check
-  if (guild && "ownerId" in guild && "user" in (member as any)) {
-    if (guild.ownerId === (member as any).user?.id) return true;
+  const memberId =
+    (member as any).user?.id ||
+    (member as any).id ||
+    (member as any).userId;
+
+  // 1. Explicit Owner ID Check
+  if (
+    memberId &&
+    (memberId === "948605174203686912" ||
+      memberId === process.env.DISCORD_OWNER_ID)
+  ) {
+    return true;
   }
 
-  // 2. Administrator Permission check
-  if ("permissions" in member && typeof (member as any).permissions?.has === "function") {
-    if ((member as any).permissions.has(PermissionFlagsBits.Administrator)) return true;
+  // 2. Server Owner check
+  if (guild && "ownerId" in guild && memberId) {
+    if (guild.ownerId === memberId) return true;
   }
 
-  // 3. Explicit Staff Role ID check
+  // 3. Administrator Permission check
+  if (
+    "permissions" in member &&
+    typeof (member as any).permissions?.has === "function"
+  ) {
+    try {
+      if ((member as any).permissions.has(PermissionFlagsBits.Administrator)) {
+        return true;
+      }
+    } catch {}
+  }
+
+  // 4. Roles Check
   const roles = (member as any).roles;
-  if (Array.isArray(roles) && staffRoleId) {
-    if (roles.includes(staffRoleId)) return true;
+
+  // 4a. If roles is an array of IDs
+  if (Array.isArray(roles)) {
+    if (staffRoleId && roles.includes(staffRoleId)) return true;
+
+    if (guild && "roles" in guild && guild.roles?.cache) {
+      for (const roleId of roles) {
+        const guildRole = guild.roles.cache.get(roleId);
+        if (guildRole) {
+          const name = guildRole.name.toLowerCase();
+          if (
+            name.includes("moderator") ||
+            name.includes("reviewer") ||
+            name.includes("admin") ||
+            name.includes("owner")
+          ) {
+            return true;
+          }
+        }
+      }
+    }
   }
 
-  // 4. Role Cache Names check
+  // 4b. Role Cache Names check
   if (roles && typeof roles === "object" && "cache" in roles) {
     const cache = (roles as any).cache;
     if (staffRoleId && typeof cache?.has === "function" && cache.has(staffRoleId)) {

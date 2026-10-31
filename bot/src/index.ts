@@ -247,14 +247,15 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
       error,
     });
 
-    const content = "NDL bot hit an unexpected error. Try again later.";
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    const content = `⚠️ **NDL Bot Error (${interaction.commandName})**: \`${errorMsg}\``;
 
     if (interaction.deferred || interaction.replied) {
-      await interaction.editReply({ content, embeds: [] });
+      await interaction.editReply({ content, embeds: [] }).catch(() => {});
       return;
     }
 
-    await interaction.reply({ content, ephemeral: true });
+    await interaction.reply({ content, ephemeral: true }).catch(() => {});
   }
 });
 
