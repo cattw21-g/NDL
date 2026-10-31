@@ -99,6 +99,13 @@ client.on(Events.GuildMemberAdd, async (member) => {
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
   if (interaction.isButton()) {
     const customId = interaction.customId;
+
+    if (customId.startsWith("staff_vote_")) {
+      const { handleStaffVoteButtonInteraction } = await import("./staff-voting.js");
+      await handleStaffVoteButtonInteraction(interaction, config.discordStaffRoleId);
+      return;
+    }
+
     if (!interaction.guild) {
       await interaction.reply({ content: "This button can only be used in the NDL server.", ephemeral: true });
       return;

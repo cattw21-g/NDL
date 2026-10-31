@@ -21,6 +21,7 @@ import {
   staffNotConfiguredMessage,
   staffPermissionDeniedMessage,
 } from "./permissions.js";
+import { createStaffVotePayload, isStaffMember } from "../staff-voting.js";
 
 type StaffContext = {
   api: NdlApiClient;
@@ -131,6 +132,107 @@ export const staffCommands: BotCommand[] = [
         const data = await api.getStats();
         return formatStatsEmbed(data.stats);
       });
+    },
+  },
+  {
+    data: new SlashCommandBuilder()
+      .setName("staff-vote")
+      .setDescription("Create an interactive staff voting poll in #staff-voting.")
+      .addStringOption((option) =>
+        option
+          .setName("title")
+          .setDescription("The title or question being voted on.")
+          .setRequired(true),
+      )
+      .addStringOption((option) =>
+        option
+          .setName("description")
+          .setDescription("Context, level details, proof video link, or instructions.")
+          .setRequired(false),
+      )
+      .addStringOption((option) =>
+        option
+          .setName("option1")
+          .setDescription("First voting option (default: 'Approve / Yes').")
+          .setRequired(false),
+      )
+      .addStringOption((option) =>
+        option
+          .setName("option2")
+          .setDescription("Second voting option (default: 'Reject / No').")
+          .setRequired(false),
+      )
+      .addStringOption((option) =>
+        option
+          .setName("option3")
+          .setDescription("Third voting option (optional).")
+          .setRequired(false),
+      )
+      .addStringOption((option) =>
+        option
+          .setName("option4")
+          .setDescription("Fourth voting option (optional).")
+          .setRequired(false),
+      ),
+    async execute(interaction, context) {
+      if (
+        !isStaffMember(
+          interaction.member,
+          interaction.guild,
+          context.config.discordStaffRoleId,
+        )
+      ) {
+        await interaction.reply({
+          content:
+            "⛔ **Access Denied**: Only Nerfed Demonlist Staff members (Reviewers, Moderators, Admins) can start a staff vote.",
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+
+      const title = interaction.options.getString("title", true);
+      const description = interaction.options.getString("description");
+      const opt1 =
+        interaction.options.getString("option1")?.trim() || "Approve / Yes";
+      const opt2 =
+        interaction.options.getString("option2")?.trim() || "Reject / No";
+      const opt3 = interaction.options.getString("option3")?.trim();
+      const opt4 = interaction.options.getString("option4")?.trim();
+
+      const options = [opt1, opt2];
+      if (opt3) options.push(opt3);
+      if (opt4) options.push(opt4);
+
+      const payload = createStaffVotePayload({
+        title,
+        description,
+        options,
+        creatorId: interaction.user.id,
+        creatorName: interaction.user.displayName || interaction.user.username,
+      });
+
+      const targetChannel =
+        interaction.guild?.channels.cache.find(
+          (c) =>
+            c.isTextBased() &&
+            (c.name.includes("staff-voting") ||
+              c.name === "🗳️・staff-voting" ||
+              c.name.includes("voting")),
+        ) ?? interaction.channel;
+
+      if (
+        targetChannel &&
+        "send" in targetChannel &&
+        targetChannel.id !== interaction.channelId
+      ) {
+        const message = await targetChannel.send(payload);
+        await interaction.reply({
+          content: `✅ **Staff vote created!**\nPosted to <#${targetChannel.id}>: [Jump to Vote](${message.url})`,
+          flags: MessageFlags.Ephemeral,
+        });
+      } else {
+        await interaction.reply(payload);
+      }
     },
   },
 ];

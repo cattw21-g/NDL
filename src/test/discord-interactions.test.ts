@@ -555,6 +555,8 @@ describe("Discord HTTP interactions", () => {
 
   it("allows staff commands with the configured role and keeps replies ephemeral", async () => {
     for (const commandName of getDiscordCommandGroups().staff) {
+      if (commandName === "staff-vote") continue; // staff-vote creates an open public channel poll
+
       const response = await handleDiscordInteraction(
         staffInteractionFor(commandName, ["staff-role"]),
         {
@@ -570,6 +572,65 @@ describe("Discord HTTP interactions", () => {
       expect(data.flags).toBe(DiscordMessageFlags.Ephemeral);
       expect(containsSensitiveDiscordOutput(response)).toBe(false);
     }
+  });
+
+  it("handles staff-vote slash command and interactive voting buttons", async () => {
+    const response = await handleDiscordInteraction(
+      {
+        type: DiscordInteractionType.ApplicationCommand,
+        data: {
+          name: "staff-vote",
+          options: [
+            { name: "title", value: "Should Kocmoc Nerfed be placed at #1?" },
+            { name: "description", value: "Review verification run." },
+            { name: "option1", value: "Place at #1" },
+            { name: "option2", value: "Place at #2" },
+          ],
+        },
+        member: {
+          roles: ["staff-role"],
+          user: { id: "123456", username: "staff_member" },
+        },
+      },
+      {
+        env: {
+          DISCORD_STAFF_ROLE_ID: "staff-role",
+        },
+      },
+    );
+
+    const data = messageData(response);
+    expect(data.embeds).toBeDefined();
+    expect(data.embeds?.[0].title).toContain("Staff Vote: Should Kocmoc Nerfed be placed at #1?");
+    expect(data.components).toHaveLength(2);
+
+    // Cast vote interaction
+    const voteClickResponse = await handleDiscordInteraction(
+      {
+        type: DiscordInteractionType.MessageComponent,
+        data: {
+          custom_id: "staff_vote_cast_0",
+        },
+        member: {
+          roles: ["staff-role"],
+          user: { id: "999888", username: "voter_mod" },
+        },
+        message: {
+          embeds: data.embeds,
+          components: data.components,
+        },
+      },
+      {
+        env: {
+          DISCORD_STAFF_ROLE_ID: "staff-role",
+        },
+      },
+    );
+
+    expect(voteClickResponse.type).toBe(DiscordInteractionResponseType.UpdateMessage);
+    const updatedData = (voteClickResponse as any).data;
+    expect(updatedData.embeds?.[0].fields?.[0].value).toContain("<@999888>");
+    expect(updatedData.embeds?.[0].fields?.[0].value).toContain("1 vote");
   });
 
   it("truncates oversized embed content to Discord-safe limits", async () => {
@@ -625,6 +686,7 @@ describe("Discord HTTP interactions", () => {
       "suggestion",
       "audit",
       "stats",
+      "staff-vote",
       "sync",
       "link",
     ]);

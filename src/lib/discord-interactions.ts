@@ -31,6 +31,7 @@ export const DiscordInteractionType = {
 export const DiscordInteractionResponseType = {
   Pong: 1,
   ChannelMessageWithSource: 4,
+  UpdateMessage: 7,
   ApplicationCommandAutocompleteResult: 8,
 } as const;
 
@@ -74,6 +75,7 @@ const staffCommandNames = [
   "suggestion",
   "audit",
   "stats",
+  "staff-vote",
 ] as const;
 
 type TopStatusFilter = "ranked" | "legacy" | "all-public";
@@ -304,6 +306,48 @@ export const discordCommandDefinitions: DiscordCommandDefinition[] = [
     description: "Show NDL staff queue and site stats.",
   },
   {
+    name: "staff-vote",
+    description: "Create an interactive staff voting poll in #staff-voting.",
+    options: [
+      {
+        name: "title",
+        description: "The title or question being voted on.",
+        type: commandOptionType.String,
+        required: true,
+      },
+      {
+        name: "description",
+        description: "Context, level details, proof video link, or instructions.",
+        type: commandOptionType.String,
+        required: false,
+      },
+      {
+        name: "option1",
+        description: "First voting option (default: 'Approve / Yes').",
+        type: commandOptionType.String,
+        required: false,
+      },
+      {
+        name: "option2",
+        description: "Second voting option (default: 'Reject / No').",
+        type: commandOptionType.String,
+        required: false,
+      },
+      {
+        name: "option3",
+        description: "Third voting option (optional).",
+        type: commandOptionType.String,
+        required: false,
+      },
+      {
+        name: "option4",
+        description: "Fourth voting option (optional).",
+        type: commandOptionType.String,
+        required: false,
+      },
+    ],
+  },
+  {
     name: "sync",
     description: "Synchronize your Discord roles with your NDL website profile and rank.",
   },
@@ -339,6 +383,10 @@ export type DiscordInteraction = {
   user?: {
     id?: string;
     username?: string;
+  };
+  message?: {
+    embeds?: DiscordEmbed[];
+    components?: unknown[];
   };
 };
 
@@ -384,10 +432,20 @@ export type DiscordInteractionResponse =
       data: {
         content?: string;
         embeds?: DiscordEmbed[];
+        components?: unknown[];
         flags?: number;
         allowed_mentions: {
           parse: [];
         };
+      };
+    }
+  | {
+      type: typeof DiscordInteractionResponseType.UpdateMessage;
+      data: {
+        content?: string;
+        embeds?: DiscordEmbed[];
+        components?: unknown[];
+        flags?: number;
       };
     }
   | {
@@ -504,6 +562,8 @@ export async function handleDiscordInteraction(
         return await auditCommand(interaction, service, env);
       case "stats":
         return await statsCommand(service, env);
+      case "staff-vote":
+        return staffVoteHttpCommand(interaction, env);
       case "sync":
         return await syncCommand(interaction, env);
       case "link":
@@ -521,6 +581,11 @@ async function handleMessageComponentInteraction(
   env: Record<string, string | undefined>,
 ): Promise<DiscordInteractionResponse> {
   const customId = interaction.data?.custom_id;
+
+  if (customId && customId.startsWith("staff_vote_")) {
+    return handleStaffVoteComponentInteraction(interaction, env);
+  }
+
   const token = env.DISCORD_BOT_TOKEN?.trim();
   const guildId = interaction.guild_id || env.DISCORD_GUILD_ID?.trim();
   const userId = interaction.member?.user?.id || interaction.user?.id;
@@ -1845,6 +1910,368 @@ async function statsCommand(
     ],
     true,
   );
+}
+
+const RAW_OPTION_EMOJIS = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"] as const;
+
+function renderProgressBar(ratio: number, length = 12): string {
+  const safeRatio = Math.max(0, Math.min(1, Number.isFinite(ratio) ? ratio : 0));
+  const filled = Math.round(safeRatio * length);
+  const empty = length - filled;
+  return "█".repeat(filled) + "░".repeat(empty);
+}
+
+function buildRawStaffVoteComponents(
+  options: Array<{ index: number; emoji: string; name: string }>,
+  disabled = false,
+) {
+  const isBinary = options.length === 2;
+  const row1 = {
+    type: 1, // ActionRow
+    components: options.map((opt, idx) => ({
+      type: 2, // Button
+      custom_id: `staff_vote_cast_${opt.index}`,
+      label: `${opt.emoji} ${opt.name}`.slice(0, 80),
+      style: isBinary ? (idx === 0 ? 3 : 4) : 1, // 3: Success, 4: Danger, 1: Primary
+      disabled,
+    })),
+  };
+
+  const row2 = {
+    type: 1, // ActionRow
+    components: [
+      {
+        type: 2,
+        custom_id: "staff_vote_retract",
+        label: "🔄 Retract Vote",
+        style: 2, // Secondary
+        disabled,
+      },
+      {
+        type: 2,
+        custom_id: "staff_vote_close",
+        label: "🔒 Close Vote",
+        style: 2, // Secondary
+        disabled,
+      },
+    ],
+  };
+
+  return [row1, row2];
+}
+
+function buildRawStaffVoteEmbed(state: {
+  title: string;
+  description: string;
+  isClosed: boolean;
+  creatorId: string;
+  options: Array<{ index: number; emoji: string; name: string; voters: string[] }>;
+  totalVotes: number;
+}): DiscordEmbed {
+  const { title, description, isClosed, creatorId, options, totalVotes } = state;
+
+  let descText = description ? `> ${description.replace(/\n/g, "\n> ")}\n\n` : "";
+
+  if (isClosed) {
+    let maxVotes = -1;
+    let winners: typeof options = [];
+    for (const opt of options) {
+      if (opt.voters.length > maxVotes) {
+        maxVotes = opt.voters.length;
+        winners = [opt];
+      } else if (opt.voters.length === maxVotes && maxVotes > 0) {
+        winners.push(opt);
+      }
+    }
+
+    if (maxVotes <= 0) {
+      descText += "🏆 **Voting Closed! Result:**\n> *No votes were cast.*";
+    } else if (winners.length > 1) {
+      const tiedNames = winners.map((w) => `**${w.name}**`).join(" and ");
+      descText += `🏆 **Voting Closed! Result:**\n> **Tie** between ${tiedNames} with **${maxVotes}** votes each!`;
+    } else {
+      const winner = winners[0];
+      const percent = totalVotes > 0 ? Math.round((winner.voters.length / totalVotes) * 100) : 0;
+      descText += `🏆 **Voting Closed! Winning Outcome:**\n> **${winner.emoji} ${winner.name}** with **${winner.voters.length}** votes (${percent}%)!`;
+    }
+  } else {
+    descText += "📢 **Staff Deliberation & Voting**\nCast your vote using the buttons below. You can change or retract your vote at any time before the vote closes.";
+  }
+
+  const fields: NonNullable<DiscordEmbed["fields"]> = [];
+
+  for (const opt of options) {
+    const count = opt.voters.length;
+    const ratio = totalVotes > 0 ? count / totalVotes : 0;
+    const bar = renderProgressBar(ratio, 12);
+    const percent = Math.round(ratio * 100);
+
+    const voterList =
+      opt.voters.length > 0
+        ? `👥 ${opt.voters.map((id) => `<@${id}>`).join(", ")}`
+        : "*No votes yet*";
+
+    fields.push({
+      name: `${opt.emoji} ${opt.name.slice(0, 200)}`,
+      value: `\`[${bar}]\` **${count} ${count === 1 ? "vote" : "votes"}** (${percent}%)\n${voterList}`,
+      inline: false,
+    });
+  }
+
+  fields.push({
+    name: "📊 Poll Details",
+    value: [
+      `• **Status**: ${isClosed ? "🔒 Closed" : "🟢 Open for Voting"}`,
+      `• **Total Votes**: ${totalVotes}`,
+      `• **Created by**: <@${creatorId}>`,
+    ].join("\n"),
+    inline: false,
+  });
+
+  return {
+    title: `${isClosed ? "🗳️ [CLOSED]" : "🗳️"} Staff Vote: ${title.slice(0, 200)}`,
+    description: descText.slice(0, 4000),
+    color: isClosed ? 0x64748b : 0xf59e0b,
+    fields,
+    footer: {
+      text: `NDL Staff Vote • Creator: ${creatorId} • Real-time Staff Tally`,
+    },
+    timestamp: new Date().toISOString(),
+  };
+}
+
+function parseRawStaffVoteState(embed: DiscordEmbed) {
+  if (!embed || !embed.title || !embed.title.includes("Staff Vote:")) {
+    return null;
+  }
+
+  const isClosed = embed.title.includes("[CLOSED]");
+  const title = embed.title.replace(/^🗳️\s*(\[CLOSED\]\s*)?Staff Vote:\s*/, "");
+
+  const footerText = embed.footer?.text ?? "";
+  const creatorMatch = footerText.match(/Creator:\s*([a-zA-Z0-9_-]+)/);
+  const creatorId = creatorMatch ? creatorMatch[1] : "";
+
+  let description = embed.description ?? "";
+  if (description.startsWith("> ")) {
+    const splitIndex = description.indexOf("\n\n");
+    if (splitIndex !== -1) {
+      description = description.slice(2, splitIndex).replace(/\n> /g, "\n");
+    } else {
+      description = description.slice(2);
+    }
+  } else {
+    description = "";
+  }
+
+  const options: Array<{ index: number; emoji: string; name: string; voters: string[] }> = [];
+  let totalVotes = 0;
+
+  for (const field of embed.fields ?? []) {
+    const match = field.name.match(/^([1-4]️⃣)\s*(.*)$/);
+    if (match) {
+      const emoji = match[1];
+      const name = match[2];
+      const index = RAW_OPTION_EMOJIS.indexOf(emoji as any);
+
+      const voters = [...field.value.matchAll(/<@!?([a-zA-Z0-9_-]+)>/g)].map((m) => m[1]);
+      totalVotes += voters.length;
+
+      options.push({
+        index: index !== -1 ? index : options.length,
+        emoji,
+        name,
+        voters,
+      });
+    }
+  }
+
+  return {
+    title,
+    description,
+    isClosed,
+    creatorId,
+    options,
+    totalVotes,
+  };
+}
+
+function staffVoteHttpCommand(
+  interaction: DiscordInteraction,
+  _env: Record<string, string | undefined>,
+): DiscordInteractionResponse {
+  const options = interaction.data?.options ?? [];
+  const title = (options.find((o) => o.name === "title")?.value as string)?.trim() ?? "";
+  const description = options.find((o) => o.name === "description")?.value as string | undefined;
+  const opt1 = ((options.find((o) => o.name === "option1")?.value as string) || "Approve / Yes").trim();
+  const opt2 = ((options.find((o) => o.name === "option2")?.value as string) || "Reject / No").trim();
+  const opt3 = (options.find((o) => o.name === "option3")?.value as string | undefined)?.trim();
+  const opt4 = (options.find((o) => o.name === "option4")?.value as string | undefined)?.trim();
+
+  const optionsList = [opt1, opt2];
+  if (opt3) optionsList.push(opt3);
+  if (opt4) optionsList.push(opt4);
+
+  const creatorId = interaction.member?.user?.id || interaction.user?.id || "";
+
+  const voteOptions = optionsList.slice(0, 4).map((opt, i) => ({
+    index: i,
+    emoji: RAW_OPTION_EMOJIS[i] || `${i + 1}️⃣`,
+    name: opt,
+    voters: [] as string[],
+  }));
+
+  const embed = buildRawStaffVoteEmbed({
+    title,
+    description: description?.trim() || "",
+    isClosed: false,
+    creatorId,
+    options: voteOptions,
+    totalVotes: 0,
+  });
+
+  const components = buildRawStaffVoteComponents(voteOptions, false);
+
+  return {
+    type: DiscordInteractionResponseType.ChannelMessageWithSource,
+    data: {
+      embeds: [embed],
+      components,
+      allowed_mentions: { parse: [] },
+    },
+  };
+}
+
+function handleStaffVoteComponentInteraction(
+  interaction: DiscordInteraction,
+  env: Record<string, string | undefined>,
+): DiscordInteractionResponse {
+  const customId = interaction.data?.custom_id ?? "";
+  const userId = interaction.member?.user?.id || interaction.user?.id;
+
+  if (!userId) {
+    return messageResponse("Could not verify your Discord identity.", true);
+  }
+
+  const isStaff = hasDiscordStaffRole(interaction, env);
+  if (!isStaff) {
+    return messageResponse(
+      "⛔ **Access Denied**: Only Nerfed Demonlist Staff members (Reviewers, Moderators, Admins) can vote on staff polls.",
+      true,
+    );
+  }
+
+  const embed = interaction.message?.embeds?.[0];
+  if (!embed) {
+    return messageResponse("Could not read poll data from message.", true);
+  }
+
+  const state = parseRawStaffVoteState(embed);
+  if (!state) {
+    return messageResponse("This message is not a valid NDL staff vote.", true);
+  }
+
+  // 1. Close Vote Handler
+  if (customId === "staff_vote_close") {
+    if (state.isClosed) {
+      return messageResponse("ℹ️ This staff vote has already been closed.", true);
+    }
+
+    const isCreator = userId === state.creatorId;
+    const isOwner = userId === (env.DISCORD_OWNER_ID || "948605174203686912");
+
+    if (!isCreator && !isOwner) {
+      return messageResponse(
+        "⛔ **Permission Denied**: Only the poll creator or the Owner can close this vote.",
+        true,
+      );
+    }
+
+    state.isClosed = true;
+    const newEmbed = buildRawStaffVoteEmbed(state);
+    const disabledComponents = buildRawStaffVoteComponents(state.options, true);
+
+    return {
+      type: DiscordInteractionResponseType.UpdateMessage,
+      data: {
+        embeds: [newEmbed],
+        components: disabledComponents,
+      },
+    };
+  }
+
+  if (state.isClosed) {
+    return messageResponse("🔒 This staff vote is closed and no longer accepting votes.", true);
+  }
+
+  // 2. Retract Vote Handler
+  if (customId === "staff_vote_retract") {
+    let removed = false;
+    for (const opt of state.options) {
+      const idx = opt.voters.indexOf(userId);
+      if (idx !== -1) {
+        opt.voters.splice(idx, 1);
+        removed = true;
+      }
+    }
+
+    if (!removed) {
+      return messageResponse("ℹ️ You haven't cast a vote in this poll yet.", true);
+    }
+
+    state.totalVotes = Math.max(0, state.totalVotes - 1);
+    const newEmbed = buildRawStaffVoteEmbed(state);
+    const components = buildRawStaffVoteComponents(state.options, false);
+
+    return {
+      type: DiscordInteractionResponseType.UpdateMessage,
+      data: {
+        embeds: [newEmbed],
+        components,
+      },
+    };
+  }
+
+  // 3. Cast Vote Handler
+  if (customId.startsWith("staff_vote_cast_")) {
+    const targetIndex = parseInt(customId.replace("staff_vote_cast_", ""), 10);
+    const targetOption = state.options.find((o) => o.index === targetIndex);
+
+    if (!targetOption) {
+      return messageResponse("Invalid option selected.", true);
+    }
+
+    if (targetOption.voters.includes(userId)) {
+      return messageResponse(`ℹ️ You have already voted for **${targetOption.name}**!`, true);
+    }
+
+    let previousOption: (typeof state.options)[number] | null = null;
+    for (const opt of state.options) {
+      const idx = opt.voters.indexOf(userId);
+      if (idx !== -1) {
+        opt.voters.splice(idx, 1);
+        previousOption = opt;
+      }
+    }
+
+    targetOption.voters.push(userId);
+    if (!previousOption) {
+      state.totalVotes += 1;
+    }
+
+    const newEmbed = buildRawStaffVoteEmbed(state);
+    const components = buildRawStaffVoteComponents(state.options, false);
+
+    return {
+      type: DiscordInteractionResponseType.UpdateMessage,
+      data: {
+        embeds: [newEmbed],
+        components,
+      },
+    };
+  }
+
+  return messageResponse("Unknown button interaction.", true);
 }
 
 function isStaffCommand(commandName: string) {
