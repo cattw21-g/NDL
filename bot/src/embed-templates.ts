@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, GuildMember } from "discord.js";
 
 export const NDL_COLORS = {
   CYAN: 0x06b6d4,
@@ -62,6 +62,30 @@ export function createWelcomeEmbed(
     )
     .setFooter({
       text: "Nerfed Demonlist • Official Community",
+    })
+    .setTimestamp();
+}
+
+export function createMemberJoinEmbed(member: GuildMember): EmbedBuilder {
+  const guild = member.guild;
+  const avatarUrl = member.user.displayAvatarURL({ size: 256 });
+  const rulesChan = guild.channels.cache.find((c) => c.name.includes("rules"));
+  const linkChan = guild.channels.cache.find((c) => c.name.includes("link-account"));
+  const chatChan = guild.channels.cache.find((c) => c.name.includes("general"));
+
+  return new EmbedBuilder()
+    .setTitle(`🌟 A new member has arrived!`)
+    .setDescription(
+      `Welcome to **Nerfed Demonlist**, <@${member.id}>!\n\n` +
+      `📜 Read the rules in ${rulesChan ? `<#${rulesChan.id}>` : "**#rules**"}\n` +
+      `🔗 Link your account in ${linkChan ? `<#${linkChan.id}>` : "**#link-account**"} for automated roles\n` +
+      `💬 Say hi in ${chatChan ? `<#${chatChan.id}>` : "**#general-chat**"}!`
+    )
+    .setColor(NDL_COLORS.CYAN)
+    .setThumbnail(avatarUrl)
+    .setFooter({
+      text: `Member #${guild.memberCount} • Nerfed Demonlist`,
+      iconURL: guild.iconURL() || undefined,
     })
     .setTimestamp();
 }

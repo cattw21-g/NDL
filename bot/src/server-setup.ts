@@ -421,6 +421,14 @@ export async function provisionNdlServer(
       "Welcome to Nerfed Demonlist! Official links and getting started.",
       readOnlyOverwrites,
     );
+    const chanNewMembers = await ensureChannel(
+      "👋・new-members",
+      ChannelType.GuildText,
+      catInfo.id,
+      "Welcome notifications for new members joining the Nerfed Demonlist community!",
+      readOnlyOverwrites,
+    );
+    await guild.setSystemChannel(chanNewMembers.id).catch(() => {});
     const chanRules = await ensureChannel(
       "📜・rules",
       ChannelType.GuildText,

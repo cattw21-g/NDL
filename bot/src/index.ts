@@ -9,11 +9,12 @@ import {
 import { loadBotConfig } from "./config.js";
 import { createNdlApiClient } from "./ndl-api.js";
 import { commands } from "./commands/index.js";
+import { createMemberJoinEmbed } from "./embed-templates.js";
 
 const config = loadBotConfig();
 const api = createNdlApiClient(config);
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
 });
 const commandByName = new Map(
   commands.map((command) => [command.data.name, command]),
@@ -51,8 +52,9 @@ client.once(Events.ClientReady, (readyClient) => {
   setInterval(runAutoSync, 2 * 60 * 1000);
 });
 
-// Auto-assign 'Verified Member' role whenever a new user joins the Discord server
+// Auto-assign 'Verified Member' role and announce new members in the welcome/new-members channel
 client.on(Events.GuildMemberAdd, async (member) => {
+  // 1. Role assignment
   try {
     const verifiedRole = member.guild.roles.cache.find((r) =>
       r.name.toLowerCase().includes("verified member"),
@@ -63,6 +65,34 @@ client.on(Events.GuildMemberAdd, async (member) => {
     }
   } catch (err) {
     console.error("Failed to auto-assign verified member role on join:", err);
+  }
+
+  // 2. Welcome announcement in new-members channel
+  try {
+    const targetChannel =
+      member.guild.channels.cache.find(
+        (c) =>
+          c.isTextBased() &&
+          (c.name.includes("new-member") ||
+            c.name.includes("joins") ||
+            c.name === "👋・new-members") &&
+          c.name !== "👋・welcome",
+      ) ||
+      member.guild.systemChannel ||
+      member.guild.channels.cache.find(
+        (c) => c.isTextBased() && (c.name.includes("new-member") || c.name.includes("joins") || c.name.includes("welcome")),
+      );
+
+    if (targetChannel && targetChannel.isTextBased() && "send" in targetChannel) {
+      const embed = createMemberJoinEmbed(member);
+      await targetChannel.send({
+        content: `👋 Welcome <@${member.id}> to **Nerfed Demonlist**! Enjoy your stay! 🎉 (Member #${member.guild.memberCount})`,
+        embeds: [embed],
+      });
+      console.log(`📢 Sent welcome message for ${member.user.tag} in #${targetChannel.name}`);
+    }
+  } catch (err) {
+    console.error("Failed to send welcome message for new member:", err);
   }
 });
 

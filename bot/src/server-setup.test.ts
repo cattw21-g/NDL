@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createHowToSubmitEmbed,
+  createMemberJoinEmbed,
   createOfficialLinksEmbed,
   createRulesEmbed,
   createWelcomeEmbed,
@@ -83,5 +84,39 @@ describe("Discord server setup & embed templates", () => {
     expect(str).toContain("How to Submit Runs to Nerfed Demonlist");
     expect(str).toContain("PENDING");
     expect(str).toContain("nerfeddemonlist.net/submit");
+  });
+
+  it("creates member join embed with user mention and channels", () => {
+    const mockMember = {
+      id: "123456789",
+      guild: {
+        memberCount: 42,
+        iconURL: () => "https://example.com/icon.png",
+        channels: {
+          cache: {
+            find: (fn: any) =>
+              [
+                { id: "111", name: "📜・rules" },
+                { id: "222", name: "🔗・link-account" },
+                { id: "333", name: "💬・general-chat" },
+              ].find(fn),
+          },
+        },
+      },
+      user: {
+        displayAvatarURL: () => "https://example.com/avatar.png",
+      },
+    } as any;
+
+    const embed = createMemberJoinEmbed(mockMember);
+    const json = embed.toJSON();
+    const str = JSON.stringify(json);
+
+    expect(str).toContain("<@123456789>");
+    expect(str).toContain("<#111>");
+    expect(str).toContain("<#222>");
+    expect(str).toContain("<#333>");
+    expect(str).toContain("Member #42");
+    expect(json.color).toBe(NDL_COLORS.CYAN);
   });
 });
