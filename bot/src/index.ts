@@ -97,6 +97,14 @@ client.on(Events.GuildMemberAdd, async (member) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
+  if (interaction.isModalSubmit()) {
+    if (interaction.customId === "staff_vote_modal") {
+      const { handleStaffVoteModalSubmit } = await import("./staff-voting.js");
+      await handleStaffVoteModalSubmit(interaction, config.discordStaffRoleId);
+      return;
+    }
+  }
+
   if (interaction.isButton()) {
     const customId = interaction.customId;
 

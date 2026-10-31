@@ -26,6 +26,7 @@ export const DiscordInteractionType = {
   ApplicationCommand: 2,
   MessageComponent: 3,
   ApplicationCommandAutocomplete: 4,
+  ModalSubmit: 5,
 } as const;
 
 export const DiscordInteractionResponseType = {
@@ -33,6 +34,7 @@ export const DiscordInteractionResponseType = {
   ChannelMessageWithSource: 4,
   UpdateMessage: 7,
   ApplicationCommandAutocompleteResult: 8,
+  Modal: 9,
 } as const;
 
 export const DiscordMessageFlags = {
@@ -307,45 +309,7 @@ export const discordCommandDefinitions: DiscordCommandDefinition[] = [
   },
   {
     name: "staff-vote",
-    description: "Create an interactive staff voting poll in #staff-voting.",
-    options: [
-      {
-        name: "title",
-        description: "The title or question being voted on.",
-        type: commandOptionType.String,
-        required: true,
-      },
-      {
-        name: "description",
-        description: "Context, level details, proof video link, or instructions.",
-        type: commandOptionType.String,
-        required: false,
-      },
-      {
-        name: "option1",
-        description: "First voting option (default: 'Approve / Yes').",
-        type: commandOptionType.String,
-        required: false,
-      },
-      {
-        name: "option2",
-        description: "Second voting option (default: 'Reject / No').",
-        type: commandOptionType.String,
-        required: false,
-      },
-      {
-        name: "option3",
-        description: "Third voting option (optional).",
-        type: commandOptionType.String,
-        required: false,
-      },
-      {
-        name: "option4",
-        description: "Fourth voting option (optional).",
-        type: commandOptionType.String,
-        required: false,
-      },
-    ],
+    description: "Open a popup window to easily create an interactive staff voting poll in #staff-voting.",
   },
   {
     name: "sync",
@@ -453,6 +417,14 @@ export type DiscordInteractionResponse =
       data: {
         choices: DiscordAutocompleteChoice[];
       };
+    }
+  | {
+      type: typeof DiscordInteractionResponseType.Modal;
+      data: {
+        custom_id: string;
+        title: string;
+        components: unknown[];
+      };
     };
 
 export type DiscordDataService = ReturnType<typeof createDiscordDataService>;
@@ -514,6 +486,10 @@ export async function handleDiscordInteraction(
 
   if (interaction.type === DiscordInteractionType.MessageComponent) {
     return handleMessageComponentInteraction(interaction, env);
+  }
+
+  if (interaction.type === DiscordInteractionType.ModalSubmit) {
+    return handleModalSubmitInteraction(interaction, env);
   }
 
   if (interaction.type !== DiscordInteractionType.ApplicationCommand) {
@@ -2097,49 +2073,156 @@ function parseRawStaffVoteState(embed: DiscordEmbed) {
 }
 
 function staffVoteHttpCommand(
-  interaction: DiscordInteraction,
+  _interaction: DiscordInteraction,
   _env: Record<string, string | undefined>,
 ): DiscordInteractionResponse {
-  const options = interaction.data?.options ?? [];
-  const title = (options.find((o) => o.name === "title")?.value as string)?.trim() ?? "";
-  const description = options.find((o) => o.name === "description")?.value as string | undefined;
-  const opt1 = ((options.find((o) => o.name === "option1")?.value as string) || "Approve / Yes").trim();
-  const opt2 = ((options.find((o) => o.name === "option2")?.value as string) || "Reject / No").trim();
-  const opt3 = (options.find((o) => o.name === "option3")?.value as string | undefined)?.trim();
-  const opt4 = (options.find((o) => o.name === "option4")?.value as string | undefined)?.trim();
-
-  const optionsList = [opt1, opt2];
-  if (opt3) optionsList.push(opt3);
-  if (opt4) optionsList.push(opt4);
-
-  const creatorId = interaction.member?.user?.id || interaction.user?.id || "";
-
-  const voteOptions = optionsList.slice(0, 4).map((opt, i) => ({
-    index: i,
-    emoji: RAW_OPTION_EMOJIS[i] || `${i + 1}️⃣`,
-    name: opt,
-    voters: [] as string[],
-  }));
-
-  const embed = buildRawStaffVoteEmbed({
-    title,
-    description: description?.trim() || "",
-    isClosed: false,
-    creatorId,
-    options: voteOptions,
-    totalVotes: 0,
-  });
-
-  const components = buildRawStaffVoteComponents(voteOptions, false);
-
   return {
-    type: DiscordInteractionResponseType.ChannelMessageWithSource,
+    type: DiscordInteractionResponseType.Modal,
     data: {
-      embeds: [embed],
-      components,
-      allowed_mentions: { parse: [] },
+      custom_id: "staff_vote_modal",
+      title: "Create Staff Vote",
+      components: [
+        {
+          type: 1,
+          components: [
+            {
+              type: 4,
+              custom_id: "vote_title",
+              label: "Question / Title",
+              style: 1,
+              min_length: 3,
+              max_length: 200,
+              placeholder: "e.g. Should Nerfed Acheron be placed at #1?",
+              required: true,
+            },
+          ],
+        },
+        {
+          type: 1,
+          components: [
+            {
+              type: 4,
+              custom_id: "vote_description",
+              label: "Context & Proof Notes (Optional)",
+              style: 2,
+              max_length: 1000,
+              placeholder: "Provide context, video proof link, CBF notes...",
+              required: false,
+            },
+          ],
+        },
+        {
+          type: 1,
+          components: [
+            {
+              type: 4,
+              custom_id: "vote_opt1",
+              label: "Option 1",
+              style: 1,
+              max_length: 80,
+              placeholder: "Approve / Yes (leave blank for default)",
+              required: false,
+            },
+          ],
+        },
+        {
+          type: 1,
+          components: [
+            {
+              type: 4,
+              custom_id: "vote_opt2",
+              label: "Option 2",
+              style: 1,
+              max_length: 80,
+              placeholder: "Reject / No (leave blank for default)",
+              required: false,
+            },
+          ],
+        },
+        {
+          type: 1,
+          components: [
+            {
+              type: 4,
+              custom_id: "vote_opt3",
+              label: "Option 3 (Optional)",
+              style: 1,
+              max_length: 80,
+              placeholder: "e.g. Needs More Review / Hold",
+              required: false,
+            },
+          ],
+        },
+      ],
     },
   };
+}
+
+function handleModalSubmitInteraction(
+  interaction: DiscordInteraction,
+  env: Record<string, string | undefined>,
+): DiscordInteractionResponse {
+  const customId = (interaction.data as any)?.custom_id;
+
+  if (customId === "staff_vote_modal") {
+    if (!hasDiscordStaffRole(interaction, env)) {
+      return messageResponse(
+        "⛔ **Access Denied**: Only Nerfed Demonlist Staff members can create a staff vote.",
+        true,
+      );
+    }
+
+    const rows = (interaction.data as any)?.components ?? [];
+    const values: Record<string, string> = {};
+    for (const row of rows) {
+      for (const comp of row.components ?? []) {
+        if (comp.custom_id) {
+          values[comp.custom_id] = comp.value?.trim() ?? "";
+        }
+      }
+    }
+
+    const title = values.vote_title || "Staff Vote";
+    const description = values.vote_description || undefined;
+    const opt1 = values.vote_opt1 || "Approve / Yes";
+    const opt2 = values.vote_opt2 || "Reject / No";
+    const opt3 = values.vote_opt3 || undefined;
+
+    const optionsList = [opt1, opt2];
+    if (opt3) optionsList.push(opt3);
+
+    const creatorId =
+      interaction.member?.user?.id || interaction.user?.id || "";
+
+    const voteOptions = optionsList.slice(0, 4).map((opt, i) => ({
+      index: i,
+      emoji: RAW_OPTION_EMOJIS[i] || `${i + 1}️⃣`,
+      name: opt,
+      voters: [] as string[],
+    }));
+
+    const embed = buildRawStaffVoteEmbed({
+      title,
+      description: description || "",
+      isClosed: false,
+      creatorId,
+      options: voteOptions,
+      totalVotes: 0,
+    });
+
+    const components = buildRawStaffVoteComponents(voteOptions, false);
+
+    return {
+      type: DiscordInteractionResponseType.ChannelMessageWithSource,
+      data: {
+        embeds: [embed],
+        components,
+        allowed_mentions: { parse: [] },
+      },
+    };
+  }
+
+  return messageResponse("Unknown modal interaction.", true);
 }
 
 function handleStaffVoteComponentInteraction(

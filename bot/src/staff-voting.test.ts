@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildStaffVoteComponents,
   buildStaffVoteEmbed,
+  createStaffVoteModal,
   createStaffVotePayload,
   isStaffMember,
   parseStaffVoteState,
@@ -59,6 +60,28 @@ describe("Staff voting system and interactive poll engine", () => {
     expect(row1.components).toHaveLength(4);
     expect(row1.components[0].custom_id).toBe("staff_vote_cast_0");
     expect(row1.components[3].custom_id).toBe("staff_vote_cast_3");
+  });
+
+  it("builds the interactive staff vote popup modal with all required form rows", () => {
+    const modal = createStaffVoteModal();
+    const json = modal.toJSON();
+
+    expect(json.custom_id).toBe("staff_vote_modal");
+    expect(json.title).toBe("Create Staff Vote");
+    expect(json.components).toHaveLength(5);
+
+    // Row 0: Question / Title
+    expect((json.components[0] as any).components[0].custom_id).toBe("vote_title");
+    expect((json.components[0] as any).components[0].required).toBe(true);
+
+    // Row 1: Description
+    expect((json.components[1] as any).components[0].custom_id).toBe("vote_description");
+    expect((json.components[1] as any).components[0].required).toBe(false);
+
+    // Rows 2-4: Options 1, 2, 3
+    expect((json.components[2] as any).components[0].custom_id).toBe("vote_opt1");
+    expect((json.components[3] as any).components[0].custom_id).toBe("vote_opt2");
+    expect((json.components[4] as any).components[0].custom_id).toBe("vote_opt3");
   });
 
   it("parses state from embed and handles round-trip serialization", () => {

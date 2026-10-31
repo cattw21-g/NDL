@@ -574,18 +574,13 @@ describe("Discord HTTP interactions", () => {
     }
   });
 
-  it("handles staff-vote slash command and interactive voting buttons", async () => {
-    const response = await handleDiscordInteraction(
+  it("handles staff-vote slash command opening modal and interactive voting buttons", async () => {
+    // 1. Invoking /staff-vote opens UI modal popup
+    const modalResponse = await handleDiscordInteraction(
       {
         type: DiscordInteractionType.ApplicationCommand,
         data: {
           name: "staff-vote",
-          options: [
-            { name: "title", value: "Should Kocmoc Nerfed be placed at #1?" },
-            { name: "description", value: "Review verification run." },
-            { name: "option1", value: "Place at #1" },
-            { name: "option2", value: "Place at #2" },
-          ],
         },
         member: {
           roles: ["staff-role"],
@@ -599,12 +594,42 @@ describe("Discord HTTP interactions", () => {
       },
     );
 
-    const data = messageData(response);
+    expect(modalResponse.type).toBe(DiscordInteractionResponseType.Modal);
+    expect((modalResponse as any).data.custom_id).toBe("staff_vote_modal");
+    expect((modalResponse as any).data.title).toBe("Create Staff Vote");
+
+    // 2. Submitting the modal publishes the poll
+    const submitResponse = await handleDiscordInteraction(
+      {
+        type: DiscordInteractionType.ModalSubmit,
+        data: {
+          custom_id: "staff_vote_modal",
+          components: [
+            { components: [{ custom_id: "vote_title", value: "Should Kocmoc Nerfed be placed at #1?" }] },
+            { components: [{ custom_id: "vote_description", value: "Review verification run." }] },
+            { components: [{ custom_id: "vote_opt1", value: "Place at #1" }] },
+            { components: [{ custom_id: "vote_opt2", value: "Place at #2" }] },
+            { components: [{ custom_id: "vote_opt3", value: "" }] },
+          ],
+        } as any,
+        member: {
+          roles: ["staff-role"],
+          user: { id: "123456", username: "staff_member" },
+        },
+      },
+      {
+        env: {
+          DISCORD_STAFF_ROLE_ID: "staff-role",
+        },
+      },
+    );
+
+    const data = messageData(submitResponse);
     expect(data.embeds).toBeDefined();
     expect(data.embeds?.[0].title).toContain("Staff Vote: Should Kocmoc Nerfed be placed at #1?");
     expect(data.components).toHaveLength(2);
 
-    // Cast vote interaction
+    // 3. Cast vote button click
     const voteClickResponse = await handleDiscordInteraction(
       {
         type: DiscordInteractionType.MessageComponent,

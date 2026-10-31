@@ -4,12 +4,16 @@ import {
   ButtonStyle,
   EmbedBuilder,
   MessageFlags,
+  ModalBuilder,
   PermissionFlagsBits,
+  TextInputBuilder,
+  TextInputStyle,
   type APIEmbed,
   type ButtonInteraction,
   type ChatInputCommandInteraction,
   type Guild,
   type GuildMember,
+  type ModalSubmitInteraction,
   type OverwriteResolvable,
 } from "discord.js";
 
@@ -137,6 +141,120 @@ export function createStaffVotePayload(params: {
     embeds: [embed],
     components,
   };
+}
+
+export function createStaffVoteModal(): ModalBuilder {
+  const modal = new ModalBuilder()
+    .setCustomId("staff_vote_modal")
+    .setTitle("Create Staff Vote");
+
+  const titleInput = new TextInputBuilder()
+    .setCustomId("vote_title")
+    .setLabel("Question / Title")
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder("e.g. Should Nerfed Acheron be placed at #1?")
+    .setRequired(true)
+    .setMinLength(3)
+    .setMaxLength(200);
+
+  const descInput = new TextInputBuilder()
+    .setCustomId("vote_description")
+    .setLabel("Context & Proof Notes (Optional)")
+    .setStyle(TextInputStyle.Paragraph)
+    .setPlaceholder("Provide context, video proof link, CBF notes...")
+    .setRequired(false)
+    .setMaxLength(1000);
+
+  const opt1Input = new TextInputBuilder()
+    .setCustomId("vote_opt1")
+    .setLabel("Option 1")
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder("Approve / Yes (leave blank for default)")
+    .setRequired(false)
+    .setMaxLength(80);
+
+  const opt2Input = new TextInputBuilder()
+    .setCustomId("vote_opt2")
+    .setLabel("Option 2")
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder("Reject / No (leave blank for default)")
+    .setRequired(false)
+    .setMaxLength(80);
+
+  const opt3Input = new TextInputBuilder()
+    .setCustomId("vote_opt3")
+    .setLabel("Option 3 (Optional)")
+    .setStyle(TextInputStyle.Short)
+    .setPlaceholder("e.g. Needs More Review / Hold")
+    .setRequired(false)
+    .setMaxLength(80);
+
+  modal.addComponents(
+    new ActionRowBuilder<TextInputBuilder>().addComponents(titleInput),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(descInput),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(opt1Input),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(opt2Input),
+    new ActionRowBuilder<TextInputBuilder>().addComponents(opt3Input),
+  );
+
+  return modal;
+}
+
+export async function handleStaffVoteModalSubmit(
+  interaction: ModalSubmitInteraction,
+  staffRoleId?: string | null,
+) {
+  if (!isStaffMember(interaction.member, interaction.guild, staffRoleId)) {
+    await interaction.reply({
+      content:
+        "⛔ **Access Denied**: Only Nerfed Demonlist Staff members (Reviewers, Moderators, Admins) can create a staff vote.",
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  const title = interaction.fields.getTextInputValue("vote_title").trim();
+  const description =
+    interaction.fields.getTextInputValue("vote_description")?.trim() || null;
+  const opt1 =
+    interaction.fields.getTextInputValue("vote_opt1")?.trim() || "Approve / Yes";
+  const opt2 =
+    interaction.fields.getTextInputValue("vote_opt2")?.trim() || "Reject / No";
+  const opt3 = interaction.fields.getTextInputValue("vote_opt3")?.trim();
+
+  const options = [opt1, opt2];
+  if (opt3) options.push(opt3);
+
+  const payload = createStaffVotePayload({
+    title,
+    description,
+    options,
+    creatorId: interaction.user.id,
+    creatorName: interaction.user.displayName || interaction.user.username,
+  });
+
+  const targetChannel =
+    interaction.guild?.channels.cache.find(
+      (c) =>
+        c.isTextBased() &&
+        (c.name.includes("staff-voting") ||
+          c.name === "🗳️・staff-voting" ||
+          c.name.includes("voting")),
+    ) ?? interaction.channel;
+
+  if (
+    targetChannel &&
+    "send" in targetChannel &&
+    targetChannel.id !== interaction.channelId
+  ) {
+    const message = await targetChannel.send(payload);
+    await interaction.reply({
+      content: `✅ **Staff vote published!**\nPosted to <#${targetChannel.id}>: [Jump to Vote](${message.url})`,
+      flags: MessageFlags.Ephemeral,
+    });
+  } else {
+    await interaction.reply(payload);
+  }
 }
 
 export function buildStaffVoteEmbed(state: StaffVoteState): EmbedBuilder {
