@@ -138,7 +138,7 @@ export const SERVER_ROLES = [
   },
   {
     name: "🧪 Beta Tester",
-    color: 0x22c55e,
+    color: 0x9333ea,
     hoist: true,
     mentionable: true,
     permissions: [],

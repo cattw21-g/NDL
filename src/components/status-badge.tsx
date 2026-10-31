@@ -13,6 +13,9 @@ const toneByStatus: Record<string, string> = {
   REMOVED: "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200",
   ADMIN: "border-blue-300 bg-white text-blue-800 dark:border-blue-500/50 dark:bg-blue-950/40 dark:text-blue-200",
   MODERATOR: "border-cyan-300 bg-white text-cyan-800 dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-200",
+  LIST_MODERATOR: "border-cyan-400 bg-cyan-50 text-cyan-800 dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-200",
+  LIST_REVIEWER: "border-teal-400 bg-teal-50 text-teal-800 dark:border-teal-500/50 dark:bg-teal-950/40 dark:text-teal-200",
+  BETA_TESTER: "border-purple-400 bg-purple-50 text-purple-800 dark:border-purple-500/50 dark:bg-purple-950/40 dark:text-purple-200",
   PLAYER: "border-slate-300 bg-white text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200",
 };
 
