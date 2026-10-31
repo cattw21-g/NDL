@@ -6,6 +6,7 @@ import {
   notifyChangelogPosted,
   notifyLevelRanked,
   notifyLevelUpdated,
+  notifyNewBetaFeedback,
   notifyNewSubmission,
   notifyNewSuggestion,
   notifyRecordAccepted,
@@ -97,6 +98,25 @@ describe("Discord notification system and website actions integration", () => {
         points: 320,
       }),
     ).resolves.not.toThrow();
+
+    await expect(
+      notifyNewBetaFeedback({
+        feedbackId: "fb-123",
+        userName: "TestTester",
+        userHandle: "testtester",
+        type: "BUG",
+        title: "Submit button unresponsive on mobile",
+        description: "Tapping submit button doesn't trigger anything on iOS Safari.",
+        pageUrl: "/submit",
+        browserInfo: "Mozilla/5.0 iPhone OS",
+      }),
+    ).resolves.not.toThrow();
+  });
+
+  it("wires notifyNewBetaFeedback into applications action", () => {
+    const applicationsSource = source("actions/applications.ts");
+
+    expect(applicationsSource).toContain("notifyNewBetaFeedback");
   });
 
   it("wires notifyRecordAccepted and notifyNewSubmission into submissions action", () => {

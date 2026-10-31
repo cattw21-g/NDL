@@ -6,6 +6,7 @@ import { canManageApplications, isBetaTester } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { createUserNotification } from "@/lib/notifications";
+import { notifyNewBetaFeedback } from "@/lib/discord-notify";
 import { APPLICATION_TEMPLATES } from "@/lib/application-templates";
 import { hasApplicationAnswer } from "@/lib/application-answer-validation";
 import {
@@ -752,6 +753,19 @@ export async function submitBetaFeedbackAction(params: {
       browserInfo: params.browserInfo?.trim() || null,
       status: "NEW",
     },
+  });
+
+  await notifyNewBetaFeedback({
+    feedbackId: feedback.id,
+    userName: user.displayName || user.playerName,
+    userHandle: user.playerName,
+    type: params.type,
+    title: cleanTitle,
+    description: cleanDesc,
+    pageUrl: params.pageUrl?.trim() || null,
+    browserInfo: params.browserInfo?.trim() || null,
+  }).catch((err) => {
+    console.error("Failed to dispatch notifyNewBetaFeedback:", err);
   });
 
   revalidatePath("/beta/feedback");

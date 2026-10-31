@@ -773,3 +773,96 @@ function rankChangeFields(changes: ListRankChange[]) {
   }
   return fields;
 }
+
+/**
+ * Notify the beta bug reports channel when a tester or staff submits feedback/bug report
+ */
+export async function notifyNewBetaFeedback(data: {
+  feedbackId: string;
+  userName: string;
+  userHandle: string;
+  type: string;
+  title: string;
+  description: string;
+  pageUrl?: string | null;
+  browserInfo?: string | null;
+}) {
+  const adminUrl = absoluteSiteUrl("/admin/beta-feedback");
+  const isBug = data.type === "BUG";
+
+  const typeLabels: Record<string, string> = {
+    BUG: "🐛 Bug Report",
+    UI_UX: "🎨 UI / UX Glitch",
+    PERFORMANCE: "⚡ Performance Issue",
+    SUGGESTION: "💡 Feature Suggestion",
+    OTHER: "📝 General Feedback",
+  };
+
+  const label = typeLabels[data.type] || data.type;
+  const color = isBug ? 0xef4444 : 0x9333ea; // Red for bugs, purple for others
+
+  const fields: Array<{ name: string; value: string; inline?: boolean }> = [
+    {
+      name: "Category",
+      value: label,
+      inline: true,
+    },
+    {
+      name: "Submitted By",
+      value: `${data.userName} (@${data.userHandle})`,
+      inline: true,
+    },
+  ];
+
+  if (data.pageUrl) {
+    fields.push({
+      name: "Reported Page",
+      value: data.pageUrl,
+      inline: false,
+    });
+  }
+
+  if (data.browserInfo) {
+    fields.push({
+      name: "Browser / Environment",
+      value: data.browserInfo.length > 120 ? `${data.browserInfo.slice(0, 117)}...` : data.browserInfo,
+      inline: false,
+    });
+  }
+
+  const descSnippet =
+    data.description.length > 500
+      ? `${data.description.slice(0, 497)}...`
+      : data.description;
+
+  fields.push({
+    name: "Description",
+    value: descSnippet,
+    inline: false,
+  });
+
+  fields.push({
+    name: "Owner / Admin Triage",
+    value: `[Open Admin Beta Feedback](${adminUrl})`,
+    inline: false,
+  });
+
+  const embed = {
+    title: `${isBug ? "🐛" : "🧪"} New Beta Feedback — ${data.title}`,
+    description: `A new **${label}** has been submitted on the website.`,
+    url: adminUrl,
+    color,
+    fields,
+    footer: {
+      text: "NDL Beta Quality Assurance",
+    },
+    timestamp: new Date().toISOString(),
+  };
+
+  const token = process.env.DISCORD_BOT_TOKEN?.trim();
+  const guildId = process.env.DISCORD_GUILD_ID?.trim() || "1541532007304003595";
+  const mention = await resolveStaffMention(guildId, token);
+  const content = `${isBug ? "🚨" : "🧪"} ${mention} **New Beta ${label} Submitted!**`;
+
+  await sendDiscordEmbed("beta-bug-reports", embed, [], content);
+}

@@ -316,6 +316,21 @@ export async function provisionNdlServer(
     },
   ];
 
+  if (reviewerRole) {
+    staffOverwrites.push({
+      id: reviewerRole.id,
+      type: OverwriteType.Role,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.ReadMessageHistory,
+        PermissionFlagsBits.AttachFiles,
+        PermissionFlagsBits.EmbedLinks,
+      ],
+      deny: [],
+    });
+  }
+
   if (modRole) {
     staffOverwrites.push({
       id: modRole.id,
@@ -341,6 +356,58 @@ export async function provisionNdlServer(
         PermissionFlagsBits.ReadMessageHistory,
         PermissionFlagsBits.AttachFiles,
         PermissionFlagsBits.EmbedLinks,
+      ],
+      deny: [],
+    });
+  }
+
+  // Staff Announcements Overwrites: Only Owner/Admins can post, Reviewers & Mods view + react
+  const staffAnnounceOverwrites: OverwriteResolvable[] = [
+    {
+      id: guild.id, // @everyone
+      type: OverwriteType.Role,
+      deny: [PermissionFlagsBits.ViewChannel],
+      allow: [],
+    },
+  ];
+
+  if (reviewerRole) {
+    staffAnnounceOverwrites.push({
+      id: reviewerRole.id,
+      type: OverwriteType.Role,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.ReadMessageHistory,
+        PermissionFlagsBits.AddReactions,
+      ],
+      deny: [PermissionFlagsBits.SendMessages],
+    });
+  }
+
+  if (modRole) {
+    staffAnnounceOverwrites.push({
+      id: modRole.id,
+      type: OverwriteType.Role,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.ReadMessageHistory,
+        PermissionFlagsBits.AddReactions,
+      ],
+      deny: [PermissionFlagsBits.SendMessages],
+    });
+  }
+
+  if (ownerRole) {
+    staffAnnounceOverwrites.push({
+      id: ownerRole.id,
+      type: OverwriteType.Role,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.ReadMessageHistory,
+        PermissionFlagsBits.AttachFiles,
+        PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.MentionEveryone,
       ],
       deny: [],
     });
@@ -592,9 +659,30 @@ export async function provisionNdlServer(
       "Private discussion and testing feedback for Beta Testers and Staff.",
       betaChatOverwrites,
     );
+    await ensureChannel(
+      "🐛・beta-bug-reports",
+      ChannelType.GuildText,
+      catBeta.id,
+      "Log bugs, UI glitches, and beta feedback for NDL developers.",
+      betaChatOverwrites,
+    );
 
     // 7. Category: 🛡️ STAFF HQ (Private)
     const catStaff = await ensureCategory("🛡️ STAFF HQ", staffOverwrites);
+    await ensureChannel(
+      "📢・staff-announcements",
+      ChannelType.GuildText,
+      catStaff.id,
+      "Official internal announcements and administrative updates for staff members.",
+      staffAnnounceOverwrites,
+    );
+    await ensureChannel(
+      "🗳️・staff-voting",
+      ChannelType.GuildText,
+      catStaff.id,
+      "Staff voting on disputed records, physics edge cases, and demon placements.",
+      staffOverwrites,
+    );
     await ensureChannel(
       "🔒・staff-chat",
       ChannelType.GuildText,
