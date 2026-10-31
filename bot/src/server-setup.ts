@@ -164,6 +164,13 @@ export const SERVER_ROLES = [
     mentionable: true,
     permissions: [],
   },
+  {
+    name: "📰 GD News Ping",
+    color: 0xf59e0b,
+    hoist: false,
+    mentionable: true,
+    permissions: [],
+  },
 ];
 
 export async function provisionNdlServer(

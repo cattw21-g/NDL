@@ -256,6 +256,11 @@ export function createRolesSelectorEmbed(): EmbedBuilder {
         value: "Get notified whenever new nerfed demons are placed, verified, or adjusted on the list.",
         inline: false,
       },
+      {
+        name: "📰 GD News Ping",
+        value: "Get notified whenever major Geometry Dash achievements, records, or level milestones are posted in #📰・gd-news.",
+        inline: false,
+      },
     )
     .setFooter({
       text: "Nerfed Demonlist • Notification Ping System",
@@ -272,6 +277,10 @@ export function createRolesActionRow(): ActionRowBuilder<ButtonBuilder> {
       .setCustomId("toggle_role_updates")
       .setLabel("📰 List Updates Ping")
       .setStyle(ButtonStyle.Success),
+    new ButtonBuilder()
+      .setCustomId("toggle_role_gd_news")
+      .setLabel("📰 GD News Ping")
+      .setStyle(ButtonStyle.Secondary),
   );
 }
 

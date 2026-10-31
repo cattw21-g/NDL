@@ -571,6 +571,9 @@ async function handleMessageComponentInteraction(
   } else if (customId === "toggle_role_updates") {
     roleKeyword = "List Updates";
     roleLabel = "📰 List Updates Ping";
+  } else if (customId === "toggle_role_gd_news") {
+    roleKeyword = "GD News";
+    roleLabel = "📰 GD News Ping";
   } else {
     return messageResponse("Unknown button interaction.", true);
   }

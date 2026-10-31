@@ -186,6 +186,9 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
     } else if (customId === "toggle_role_updates") {
       targetRoleName = "List Updates Ping";
       roleLabel = "📰 List Updates Ping";
+    } else if (customId === "toggle_role_gd_news") {
+      targetRoleName = "GD News";
+      roleLabel = "📰 GD News Ping";
     } else {
       return;
     }
