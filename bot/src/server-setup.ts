@@ -450,6 +450,13 @@ export async function provisionNdlServer(
       "Demon additions, list placements, point adjustments, and leaderboard news.",
       readOnlyOverwrites,
     );
+    await ensureChannel(
+      "📰・gd-news",
+      ChannelType.GuildAnnouncement,
+      catInfo.id,
+      "Breaking Geometry Dash community news, verifications, milestones, and updates!",
+      readOnlyOverwrites,
+    );
     const chanLinks = await ensureChannel(
       "🔗・official-links",
       ChannelType.GuildText,
