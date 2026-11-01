@@ -666,6 +666,13 @@ export async function provisionNdlServer(
       "Log bugs, UI glitches, and beta feedback for NDL developers.",
       betaChatOverwrites,
     );
+    await ensureChannel(
+      "📋・tasks",
+      ChannelType.GuildText,
+      catBeta.id,
+      "Active QA testing objectives, checklists, and finished beta tasks.",
+      betaAnnounceOverwrites,
+    );
 
     // 7. Category: 🛡️ STAFF HQ (Private)
     const catStaff = await ensureCategory("🛡️ STAFF HQ", staffOverwrites);
