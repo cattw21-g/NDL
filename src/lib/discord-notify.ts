@@ -11,7 +11,13 @@ async function getChannelIdByName(
   guildId: string,
   botToken: string,
 ): Promise<string | null> {
-  const cached = channelIdCache.get(channelNameQuery);
+  const trimmed = channelNameQuery.trim();
+  // If a direct Discord snowflake ID is passed, return it immediately
+  if (/^\d{17,20}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  const cached = channelIdCache.get(trimmed);
   if (cached) return cached;
 
   try {
@@ -26,16 +32,28 @@ async function getChannelIdByName(
 
     const channels: Array<{ id: string; name: string; type: number }> =
       await res.json();
-    const cleanQuery = channelNameQuery.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    const cleanQuery = trimmed.toLowerCase().replace(/[^a-z0-9-]/g, "");
 
-    const match = channels.find((c) => {
+    // 1. Exact match has highest priority
+    const exactMatch = channels.find((c) => {
       const cleanName = c.name.toLowerCase().replace(/[^a-z0-9-]/g, "");
-      return cleanName.includes(cleanQuery) || cleanQuery.includes(cleanName);
+      return cleanName === cleanQuery;
     });
 
-    if (match) {
-      channelIdCache.set(channelNameQuery, match.id);
-      return match.id;
+    if (exactMatch) {
+      channelIdCache.set(trimmed, exactMatch.id);
+      return exactMatch.id;
+    }
+
+    // 2. Channel name containing query (e.g. "beta-bug-reports" matching "🐛・beta-bug-reports")
+    const partialMatch = channels.find((c) => {
+      const cleanName = c.name.toLowerCase().replace(/[^a-z0-9-]/g, "");
+      return cleanName.includes(cleanQuery);
+    });
+
+    if (partialMatch) {
+      channelIdCache.set(trimmed, partialMatch.id);
+      return partialMatch.id;
     }
   } catch (err) {
     console.error("Failed to query Discord channels:", err);
@@ -864,5 +882,8 @@ export async function notifyNewBetaFeedback(data: {
   const mention = await resolveStaffMention(guildId, token);
   const content = `${isBug ? "🚨" : "🧪"} ${mention} **New Beta ${label} Submitted!**`;
 
-  await sendDiscordEmbed("beta-bug-reports", embed, [], content);
+  const betaReportsChannelId =
+    process.env.DISCORD_BETA_BUG_REPORTS_CHANNEL_ID?.trim() ||
+    "1566212279110733834"; // 🐛・beta-bug-reports
+  await sendDiscordEmbed(betaReportsChannelId, embed, [], content);
 }
