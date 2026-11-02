@@ -222,7 +222,8 @@ export async function provisionNdlServer(
     }
   }
 
-  const modRole = createdRoles.get("🛡️ List Moderator") ?? guild.roles.cache.find((r) => r.name.includes("Moderator"));
+  const adminRole = createdRoles.get("🛡️ List Admin") ?? guild.roles.cache.find((r) => r.name.toLowerCase().includes("admin"));
+  const modRole = createdRoles.get("⚖️ List Moderator") ?? createdRoles.get("🛡️ List Moderator") ?? guild.roles.cache.find((r) => r.name.includes("Moderator"));
   const ownerRole = createdRoles.get("👑 List Owner") ?? guild.roles.cache.find((r) => r.name.includes("Owner"));
   const betaRole = createdRoles.get("🧪 Beta Tester") ?? guild.roles.cache.find((r) => r.name.toLowerCase().includes("beta"));
   const reviewerRole = createdRoles.get("✨ List Reviewer") ?? guild.roles.cache.find((r) => r.name.toLowerCase().includes("reviewer"));
@@ -346,6 +347,22 @@ export async function provisionNdlServer(
     });
   }
 
+  if (adminRole) {
+    staffOverwrites.push({
+      id: adminRole.id,
+      type: OverwriteType.Role,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.ReadMessageHistory,
+        PermissionFlagsBits.AttachFiles,
+        PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.AddReactions,
+      ],
+      deny: [],
+    });
+  }
+
   if (ownerRole) {
     staffOverwrites.push({
       id: ownerRole.id,
@@ -356,6 +373,7 @@ export async function provisionNdlServer(
         PermissionFlagsBits.ReadMessageHistory,
         PermissionFlagsBits.AttachFiles,
         PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.AddReactions,
       ],
       deny: [],
     });
@@ -456,7 +474,24 @@ export async function provisionNdlServer(
     });
   }
 
-  for (const staffRole of [reviewerRole, modRole, ownerRole]) {
+  // Explicitly deny List Reviewers from viewing the Beta Testing category/channels
+  if (reviewerRole) {
+    betaChatOverwrites.push({
+      id: reviewerRole.id,
+      type: OverwriteType.Role,
+      deny: [PermissionFlagsBits.ViewChannel],
+      allow: [],
+    });
+    betaAnnounceOverwrites.push({
+      id: reviewerRole.id,
+      type: OverwriteType.Role,
+      deny: [PermissionFlagsBits.ViewChannel],
+      allow: [],
+    });
+  }
+
+  // Only Admins, Moderators, and Owners can manage/view beta channels in addition to Beta Testers
+  for (const staffRole of [adminRole, modRole, ownerRole]) {
     if (staffRole) {
       betaChatOverwrites.push({
         id: staffRole.id,
