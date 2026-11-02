@@ -520,6 +520,52 @@ export async function provisionNdlServer(
     }
   }
 
+  // Bug Reports Overwrites: Private to List Owner, List Admin, List Moderator (hidden from Beta Testers & Reviewers)
+  const betaBugReportOverwrites: OverwriteResolvable[] = [
+    {
+      id: guild.id, // @everyone hidden
+      type: OverwriteType.Role,
+      deny: [PermissionFlagsBits.ViewChannel],
+      allow: [],
+    },
+  ];
+
+  if (reviewerRole) {
+    betaBugReportOverwrites.push({
+      id: reviewerRole.id,
+      type: OverwriteType.Role,
+      deny: [PermissionFlagsBits.ViewChannel],
+      allow: [],
+    });
+  }
+
+  if (betaRole) {
+    betaBugReportOverwrites.push({
+      id: betaRole.id,
+      type: OverwriteType.Role,
+      deny: [PermissionFlagsBits.ViewChannel],
+      allow: [],
+    });
+  }
+
+  for (const staffRole of [adminRole, modRole, ownerRole]) {
+    if (staffRole) {
+      betaBugReportOverwrites.push({
+        id: staffRole.id,
+        type: OverwriteType.Role,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ReadMessageHistory,
+          PermissionFlagsBits.AttachFiles,
+          PermissionFlagsBits.EmbedLinks,
+          PermissionFlagsBits.AddReactions,
+        ],
+        deny: [],
+      });
+    }
+  }
+
   try {
     // 3. Category: 📌 INFORMATION & WELCOME
     const catInfo = await ensureCategory("📌 INFORMATION & WELCOME", readOnlyOverwrites);
@@ -699,7 +745,7 @@ export async function provisionNdlServer(
       ChannelType.GuildText,
       catBeta.id,
       "Log bugs, UI glitches, and beta feedback for NDL developers.",
-      betaChatOverwrites,
+      betaBugReportOverwrites,
     );
     await ensureChannel(
       "📋・tasks",
