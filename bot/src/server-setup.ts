@@ -685,8 +685,8 @@ export async function provisionNdlServer(
       {
         id: guild.id,
         type: OverwriteType.Role,
-        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory],
-        deny: [PermissionFlagsBits.SendMessages],
+        allow: [],
+        deny: [PermissionFlagsBits.ViewChannel],
       },
     ];
 
