@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { SectionPanel } from "@/components/ui";
 import { APPLICATION_TEMPLATES } from "@/lib/application-templates";
+import type { ApplicationRole } from "@/generated/prisma/client";
 import {
   ShieldCheck,
   CheckCircle2,
@@ -15,8 +16,8 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Staff Applications — Nerfed Demonlist",
-  description: "Apply to join the Nerfed Demonlist team as a List Reviewer, List Moderator, or Beta Tester.",
+  title: "Staff & Role Applications — Nerfed Demonlist",
+  description: "Apply to join the Nerfed Demonlist team as a List Reviewer, List Moderator, Beta Tester, or Community Voter.",
 };
 
 export const revalidate = 60;
@@ -29,7 +30,7 @@ export default async function ApplicationsPage() {
     id: string;
     slug: string;
     title: string;
-    role: "LIST_REVIEWER" | "LIST_MODERATOR" | "BETA_TESTER";
+    role: ApplicationRole;
     description: string;
     requirements: string | null;
     status: string;
@@ -216,7 +217,9 @@ export default async function ApplicationsPage() {
               ? "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400"
               : item.role === "LIST_REVIEWER"
                 ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
-                : "border-purple-500/40 bg-purple-500/10 text-purple-600 dark:text-purple-400";
+                : item.role === "COMMUNITY_VOTER"
+                  ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
+                  : "border-purple-500/40 bg-purple-500/10 text-purple-600 dark:text-purple-400";
 
           return (
             <SectionPanel key={item.slug} className="overflow-hidden p-0">

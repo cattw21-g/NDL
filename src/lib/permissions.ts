@@ -4,6 +4,7 @@ export type AppRole =
   | "LIST_MODERATOR"
   | "LIST_REVIEWER"
   | "BETA_TESTER"
+  | "COMMUNITY_VOTER"
   | "PLAYER";
 
 export function isAdminRole(role?: string | null, playerName?: string | null): boolean {

@@ -22,6 +22,7 @@ import {
   staffPermissionDeniedMessage,
 } from "./permissions.js";
 import { createStaffVoteModal, isStaffMember } from "../staff-voting.js";
+import { createCommunityVoteModal } from "../community-voting.js";
 
 type StaffContext = {
   api: NdlApiClient;
@@ -157,6 +158,32 @@ export const staffCommands: BotCommand[] = [
       }
 
       const modal = createStaffVoteModal();
+      await interaction.showModal(modal);
+    },
+  },
+  {
+    data: new SlashCommandBuilder()
+      .setName("community-vote")
+      .setDescription(
+        "Open a popup window to easily create an interactive community vote in #community-votes.",
+      ),
+    async execute(interaction, context) {
+      if (
+        !isStaffMember(
+          interaction.member,
+          interaction.guild,
+          context.config.discordStaffRoleId,
+        )
+      ) {
+        await interaction.reply({
+          content:
+            "⛔ **Access Denied**: Only Nerfed Demonlist Staff members (Reviewers, Moderators, Admins) can start a community vote.",
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+
+      const modal = createCommunityVoteModal();
       await interaction.showModal(modal);
     },
   },

@@ -144,6 +144,13 @@ export const SERVER_ROLES = [
     permissions: [],
   },
   {
+    name: "🗳️ Community Voter",
+    color: 0x6366f1,
+    hoist: true,
+    mentionable: true,
+    permissions: [],
+  },
+  {
     name: "📜 Verified Member",
     color: 0x64748b,
     hoist: false,
@@ -227,6 +234,7 @@ export async function provisionNdlServer(
   const ownerRole = createdRoles.get("👑 List Owner") ?? guild.roles.cache.find((r) => r.name.includes("Owner"));
   const betaRole = createdRoles.get("🧪 Beta Tester") ?? guild.roles.cache.find((r) => r.name.toLowerCase().includes("beta"));
   const reviewerRole = createdRoles.get("✨ List Reviewer") ?? guild.roles.cache.find((r) => r.name.toLowerCase().includes("reviewer"));
+  const voterRole = createdRoles.get("🗳️ Community Voter") ?? guild.roles.cache.find((r) => r.name.toLowerCase().includes("voter"));
 
   // Helper to find or create category
   async function ensureCategory(name: string, permissionOverwrites: OverwriteResolvable[] = []) {
@@ -671,6 +679,55 @@ export async function provisionNdlServer(
       ChannelType.GuildText,
       catComm.id,
       "Use public slash commands: /top, /level, /player, /leaderboard, /rules, /search.",
+    );
+
+    const communityVoteOverwrites: OverwriteResolvable[] = [
+      {
+        id: guild.id,
+        type: OverwriteType.Role,
+        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory],
+        deny: [PermissionFlagsBits.SendMessages],
+      },
+    ];
+
+    if (voterRole) {
+      communityVoteOverwrites.push({
+        id: voterRole.id,
+        type: OverwriteType.Role,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.ReadMessageHistory,
+          PermissionFlagsBits.AddReactions,
+        ],
+        deny: [PermissionFlagsBits.SendMessages],
+      });
+    }
+
+    for (const staffRole of [reviewerRole, modRole, adminRole, ownerRole]) {
+      if (staffRole) {
+        communityVoteOverwrites.push({
+          id: staffRole.id,
+          type: OverwriteType.Role,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory,
+            PermissionFlagsBits.AttachFiles,
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.AddReactions,
+            PermissionFlagsBits.ManageMessages,
+          ],
+          deny: [],
+        });
+      }
+    }
+
+    await ensureChannel(
+      "🗳️・community-votes",
+      ChannelType.GuildText,
+      catComm.id,
+      "Official community votes and polls on nerfed demon placements, additions, and ratings.",
+      communityVoteOverwrites,
     );
 
     // 5. Category: 🏆 SUBMISSIONS & PROGRESS

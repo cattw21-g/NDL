@@ -13,6 +13,7 @@ enum Role {
   LIST_MODERATOR
   LIST_REVIEWER
   BETA_TESTER
+  COMMUNITY_VOTER
   PLAYER
 }
 
@@ -20,6 +21,7 @@ enum ApplicationRole {
   LIST_REVIEWER
   LIST_MODERATOR
   BETA_TESTER
+  COMMUNITY_VOTER
 }
 
 enum ApplicationOpeningStatus {

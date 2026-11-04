@@ -35,10 +35,13 @@ client.once(Events.ClientReady, (readyClient) => {
   // Automated 24/7 Role Syncing (runs immediately on startup, then every 2 minutes)
   async function runAutoSync() {
     try {
-      const { syncAllLinkedDiscordUsers } = await import("../../src/lib/discord-role-sync.js");
+      const syncPath = "../../src/lib/discord-role-sync.js";
+      const { syncAllLinkedDiscordUsers } = (await import(syncPath)) as {
+        syncAllLinkedDiscordUsers: () => Promise<{ totalSynced: number }>;
+      };
       const result = await syncAllLinkedDiscordUsers();
-      if (result.syncedCount > 0) {
-        console.log(`🔄 [AutoSync] Updated roles for ${result.syncedCount} / ${result.totalUsers} linked Discord users.`);
+      if (result && result.totalSynced > 0) {
+        console.log(`🔄 [AutoSync] Updated roles for ${result.totalSynced} linked Discord users.`);
       }
     } catch (err) {
       console.error("⚠️ [AutoSync] Note during automated role sync:", err);
@@ -103,6 +106,11 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
       await handleStaffVoteModalSubmit(interaction, config.discordStaffRoleId);
       return;
     }
+    if (interaction.customId === "community_vote_modal") {
+      const { handleCommunityVoteModalSubmit } = await import("./community-voting.js");
+      await handleCommunityVoteModalSubmit(interaction, config.discordStaffRoleId);
+      return;
+    }
   }
 
   if (interaction.isButton()) {
@@ -111,6 +119,12 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
     if (customId.startsWith("staff_vote_")) {
       const { handleStaffVoteButtonInteraction } = await import("./staff-voting.js");
       await handleStaffVoteButtonInteraction(interaction, config.discordStaffRoleId);
+      return;
+    }
+
+    if (customId.startsWith("community_vote_")) {
+      const { handleCommunityVoteButtonInteraction } = await import("./community-voting.js");
+      await handleCommunityVoteButtonInteraction(interaction, undefined, config.discordStaffRoleId);
       return;
     }
 
@@ -133,7 +147,8 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
       try {
-        const { prisma } = await import("../../src/lib/db.js");
+        const dbPath = "../../src/lib/db.js";
+        const { prisma } = (await import(dbPath)) as { prisma: any };
         await prisma.discordLinkToken.deleteMany({
           where: { discordUserId: interaction.user.id },
         }).catch(() => {});
@@ -158,8 +173,12 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
 
     if (customId === "sync_ndl_roles") {
       try {
-        const { prisma } = await import("../../src/lib/db.js");
-        const { syncDiscordRolesForUser } = await import("../../src/lib/discord-role-sync.js");
+        const dbPath = "../../src/lib/db.js";
+        const syncPath = "../../src/lib/discord-role-sync.js";
+        const { prisma } = (await import(dbPath)) as { prisma: any };
+        const { syncDiscordRolesForUser } = (await import(syncPath)) as {
+          syncDiscordRolesForUser: (userId: string) => Promise<any>;
+        };
 
         const user = await prisma.user.findUnique({
           where: { discordUserId: interaction.user.id },

@@ -30,6 +30,8 @@ export async function ensureApplicationSchemaAndOpenings(): Promise<SchemaEnsure
         `ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'LIST_MODERATOR';`,
         `ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'LIST_REVIEWER';`,
         `ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'BETA_TESTER';`,
+        `ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'COMMUNITY_VOTER';`,
+        `ALTER TYPE "ApplicationRole" ADD VALUE IF NOT EXISTS 'COMMUNITY_VOTER';`,
       ];
 
       for (const sql of enumAdditions) {
@@ -43,7 +45,7 @@ export async function ensureApplicationSchemaAndOpenings(): Promise<SchemaEnsure
       // 3. Create enum types
       const createEnums = [
         `DO $$ BEGIN
-          CREATE TYPE "ApplicationRole" AS ENUM ('LIST_REVIEWER', 'LIST_MODERATOR', 'BETA_TESTER');
+          CREATE TYPE "ApplicationRole" AS ENUM ('LIST_REVIEWER', 'LIST_MODERATOR', 'BETA_TESTER', 'COMMUNITY_VOTER');
         EXCEPTION WHEN duplicate_object THEN null;
         END $$;`,
         `DO $$ BEGIN
@@ -339,6 +341,12 @@ export async function ensureApplicationSchemaAndOpenings(): Promise<SchemaEnsure
     } catch (lvlErr) {
       console.warn("Could not auto-seed fallback levels into database:", lvlErr);
     }
+
+    // Ensure COMMUNITY_VOTER enum values exist in PostgreSQL for existing databases
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TYPE "Role" ADD VALUE IF NOT EXISTS 'COMMUNITY_VOTER';`);
+      await prisma.$executeRawUnsafe(`ALTER TYPE "ApplicationRole" ADD VALUE IF NOT EXISTS 'COMMUNITY_VOTER';`);
+    } catch {}
 
     for (const tmpl of Object.values(APPLICATION_TEMPLATES)) {
       const existing = await prisma.applicationOpening.findUnique({

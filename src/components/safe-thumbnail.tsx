@@ -17,9 +17,11 @@ function isOptimizableSource(src: string): boolean {
   try {
     const url = new URL(src);
     const host = url.hostname.toLowerCase();
+    // External CDNs (YouTube, Discord) already serve pre-optimized, CDN-cached images.
+    // Bypassing Next.js image optimization avoids burning Vercel Fluid Active CPU on image re-encoding.
+    if (host === "img.youtube.com" || host === "i.ytimg.com") return false;
+    if (host === "cdn.discordapp.com") return false;
     if (host.endsWith(".public.blob.vercel-storage.com")) return true;
-    if (host === "img.youtube.com" || host === "i.ytimg.com") return true;
-    if (host === "cdn.discordapp.com") return true;
   } catch {}
   return false;
 }

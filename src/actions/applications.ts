@@ -577,6 +577,7 @@ export async function executeApplicationDecision(
       LIST_REVIEWER: "LIST_REVIEWER",
       LIST_MODERATOR: "LIST_MODERATOR",
       BETA_TESTER: "BETA_TESTER",
+      COMMUNITY_VOTER: "COMMUNITY_VOTER",
     };
 
     const targetUserRole = roleMapping[submission.opening.role];
@@ -592,7 +593,10 @@ export async function executeApplicationDecision(
       },
     });
 
-    if (submission.user.role !== "ADMIN") {
+    const isStaff = ["ADMIN", "MODERATOR", "LIST_MODERATOR", "LIST_REVIEWER"].includes(submission.user.role);
+    const shouldUpdateRole = !isStaff || (targetUserRole !== "COMMUNITY_VOTER" && targetUserRole !== "BETA_TESTER");
+
+    if (submission.user.role !== "ADMIN" && shouldUpdateRole) {
       await tx.user.update({
         where: { id: submission.userId },
         data: {

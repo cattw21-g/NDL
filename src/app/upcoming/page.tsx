@@ -8,7 +8,7 @@ import { resolveUpcomingThumbnail } from "@/lib/media";
 
 export { parseUpcomingProgress };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 export const metadata = {
   title: "Upcoming Levels - Nerfed Demonlist",
   description:

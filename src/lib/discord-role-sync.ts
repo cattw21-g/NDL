@@ -76,6 +76,13 @@ export async function syncDiscordRolesForUser(
         where: { isDemo: false },
         select: { id: true },
       },
+      applications: {
+        where: {
+          status: "ACCEPTED",
+          opening: { role: "COMMUNITY_VOTER" },
+        },
+        select: { id: true },
+      },
     },
   });
 
@@ -141,6 +148,7 @@ export async function syncDiscordRolesForUser(
     else if (lower.includes("admin")) roleMap["admin"] = r.id;
     else if (lower.includes("moderator") || lower.includes("list mod")) roleMap["mod"] = r.id;
     else if (lower.includes("reviewer") || lower.includes("list reviewer")) roleMap["reviewer"] = r.id;
+    else if (lower.includes("voter") || lower.includes("community voter")) roleMap["voter"] = r.id;
     else if (lower.includes("beta") || lower.includes("tester")) roleMap["beta"] = r.id;
     else if (lower.includes("owner")) roleMap["owner"] = r.id;
   }
@@ -187,6 +195,13 @@ export async function syncDiscordRolesForUser(
     targetRoleKeys.add("reviewer");
   } else if (user.role === "BETA_TESTER") {
     targetRoleKeys.add("beta");
+  } else if (user.role === "COMMUNITY_VOTER") {
+    targetRoleKeys.add("voter");
+  }
+
+  // Also grant voter role if user has an accepted community voter application
+  if (user.applications && user.applications.length > 0) {
+    targetRoleKeys.add("voter");
   }
 
   // 3. Top Player Hierarchy (Mutually exclusive: only 1 top tier role)
@@ -231,6 +246,7 @@ export async function syncDiscordRolesForUser(
     "mod",
     "reviewer",
     "beta",
+    "voter",
   ];
 
   for (const key of rolesToManage) {
