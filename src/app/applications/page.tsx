@@ -64,7 +64,7 @@ export default async function ApplicationsPage() {
       },
     });
 
-    if (dbOpenings.length >= Object.keys(APPLICATION_TEMPLATES).length) {
+    if (dbOpenings.length > 0) {
       openings = dbOpenings;
     } else {
       const { ensureApplicationSchemaAndOpenings } = await import("@/lib/ensure-application-schema");

@@ -380,7 +380,7 @@ export async function createApplicationOpeningAction(params: {
       description: params.description.trim(),
       requirements: params.requirements ? JSON.stringify(params.requirements) : null,
       status: params.status || "DRAFT",
-      isPublished: params.status === "OPEN",
+      isPublished: params.status === "OPEN" || params.status === "CLOSED",
       openAt: params.openAt ? new Date(params.openAt) : new Date(),
       deadline: params.deadline ? new Date(params.deadline) : null,
       maxPositions: params.maxPositions || null,
@@ -424,7 +424,7 @@ export async function updateOpeningStatusAction(params: {
     where: { id: params.openingId },
     data: {
       status: params.status,
-      isPublished: params.status === "OPEN",
+      isPublished: params.status === "OPEN" || params.status === "CLOSED",
     },
   });
 

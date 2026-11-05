@@ -372,20 +372,9 @@ export async function ensureApplicationSchemaAndOpenings(): Promise<SchemaEnsure
         openingId = created.id;
         openingsCreated++;
       } else {
-        await prisma.applicationOpening.update({
-          where: { id: existing.id },
-          data: {
-            title: tmpl.title,
-            role: tmpl.role,
-            description: tmpl.description,
-            requirements: JSON.stringify(tmpl.requirements),
-            status: "OPEN",
-            isPublished: true,
-            maxPositions: tmpl.defaultMaxPositions ?? 5,
-          },
-        });
+        // Do NOT overwrite user-controlled status or isPublished.
+        // The administrator may have intentionally closed or archived this opening.
         openingId = existing.id;
-        openingsUpdated++;
       }
 
       // Check questions count
