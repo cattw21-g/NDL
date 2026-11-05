@@ -8,3 +8,9 @@
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
   SECRETS_SCAN_ENABLED = "false"
+  APP_URL = "https://www.nerfeddemonlist.net"
+  NEXT_PUBLIC_SITE_URL = "https://www.nerfeddemonlist.net"
+
+[context.branch-deploy.environment]
+  APP_URL = "https://beta.nerfeddemonlist.net"
+  NEXT_PUBLIC_SITE_URL = "https://beta.nerfeddemonlist.net"
