@@ -102,6 +102,9 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full">
+        {/* Netlify HUD Silencer: Exits Netlify HUD script immediately without rendering */}
+        <div id="nl-badge-frame" style={{ display: "none" }} aria-hidden="true" />
+        <div id="nl-hud-frame" style={{ display: "none" }} aria-hidden="true" />
         <div id="google_translate_element" style={{ display: "none" }} />
         <script dangerouslySetInnerHTML={{ __html: googleTranslateScript }} />
         <script

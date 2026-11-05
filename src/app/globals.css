@@ -192,3 +192,19 @@ body {
   background: none !important;
   box-shadow: none !important;
 }
+
+/* Netlify Badge & HUD Silencer */
+#nl-badge-frame,
+#nl-hud-frame,
+iframe[title="Powered by Netlify"],
+iframe[title="Netlify"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  clip-path: path("M0 0Z") !important;
+  position: absolute !important;
+  left: -99999px !important;
+}
