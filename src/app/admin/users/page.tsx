@@ -186,17 +186,12 @@ export default async function AdminUsersPage({
                           : "Awaiting next login/visit"
                     }
                   />
-                  {user.street ? (
-                    <FactPill label="Street" value={`🛣️ ${user.street}`} />
-                  ) : null}
                   <FactPill
-                    label="Accuracy"
+                    label="Street"
                     value={
-                      user.locationAccuracy === "GPS_HIGH_ACCURACY"
-                        ? "🎯 100% Exact (Device GPS)"
-                        : user.city || user.countryCode
-                          ? "🌐 Approximate (ISP Routing)"
-                          : "None"
+                      user.street
+                        ? `🛣️ ${user.street}`
+                        : "Awaiting next login/visit"
                     }
                   />
                 </div>
