@@ -1,227 +1,170 @@
+import os
 import math
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-def get_rounded_rect_points(num_points=180, w=512, h=512, margin=48, r=88):
-    """Generates continuous ordered (x, y) coordinates along the exact squircle neon track."""
-    x1, y1 = margin, margin
-    x2, y2 = w - margin, h - margin
-    
-    points = []
-    # 1. Top edge
-    for x in np.linspace(x1 + r, x2 - r, 25, endpoint=False):
-        points.append((float(x), float(y1)))
-    # 2. Top-right corner
-    for ang in np.linspace(-math.pi/2, 0, 20, endpoint=False):
-        points.append((float(x2 - r + r * math.cos(ang)), float(y1 + r + r * math.sin(ang))))
-    # 3. Right edge
-    for y in np.linspace(y1 + r, y2 - r, 25, endpoint=False):
-        points.append((float(x2), float(y)))
-    # 4. Bottom-right corner
-    for ang in np.linspace(0, math.pi/2, 20, endpoint=False):
-        points.append((float(x2 - r + r * math.cos(ang)), float(y2 - r + r * math.sin(ang))))
-    # 5. Bottom edge
-    for x in np.linspace(x2 - r, x1 + r, 25, endpoint=False):
-        points.append((float(x), float(y2)))
-    # 6. Bottom-left corner
-    for ang in np.linspace(math.pi/2, math.pi, 20, endpoint=False):
-        points.append((float(x1 + r + r * math.cos(ang)), float(y2 - r + r * math.sin(ang))))
-    # 7. Left edge
-    for y in np.linspace(y2 - r, y1 + r, 25, endpoint=False):
-        points.append((float(x1), float(y)))
-    # 8. Top-left corner
-    for ang in np.linspace(math.pi, 3*math.pi/2, 20, endpoint=False):
-        points.append((float(x1 + r + r * math.cos(ang)), float(y1 + r + r * math.sin(ang))))
-        
-    return points
+ART_DIR = r"C:\Users\cat97\.gemini\antigravity\brain\02297bf2-b1c1-4fa2-927a-5961238d30fc"
 
-def create_insane_animated_icon(output_path="public/server-icon-animated.gif", num_frames=36, fps=24):
-    print(f"[*] Generating {num_frames}-frame INSANE animated Discord server icon...")
-    base_img = Image.open('public/logo.png').convert('RGBA')
-    w, h = base_img.size
+def get_font(name, size):
+    font_dir = r"C:\Windows\Fonts"
+    for c in [name, "impact.ttf", "arialbd.ttf"]:
+        p = os.path.join(font_dir, c)
+        if os.path.exists(p):
+            return ImageFont.truetype(p, size)
+    return ImageFont.load_default()
 
-    base_arr = np.array(base_img, dtype=np.float32)
-    r = base_arr[:, :, 0]
-    g = base_arr[:, :, 1]
-    b = base_arr[:, :, 2]
-    a = base_arr[:, :, 3]
-    brightness = 0.299 * r + 0.587 * g + 0.114 * b
-
-    y_grid = np.arange(h)[:, None]
-    x_grid = np.arange(w)[None, :]
-
-    # Masks
-    ndl_mask = (brightness > 175) & (y_grid > 180) & (y_grid < 340) & (x_grid > 140) & (x_grid < 370)
-    crown_mask = (b > 140) & (g > 100) & (r < 140) & (y_grid > 110) & (y_grid < 230) & (x_grid > 150) & (x_grid < 360)
-    border_mask = (b > 140) & (g > 100) & (r < 140) & ((x_grid < 120) | (x_grid > 390) | (y_grid < 120) | (y_grid > 390))
-
-    # Pre-calculated 180 track points for the neon rail
-    track_points = get_rounded_rect_points(w=w, h=h, margin=48, r=88)
-    num_track = len(track_points)
-
-    # Pre-generate particles for deterministic looping
-    np.random.seed(77)
-    num_particles = 32
-    particles = []
-    for _ in range(num_particles):
-        px = np.random.uniform(70, w - 70)
-        py_start = np.random.uniform(h - 70, h - 15)
-        speed = np.random.uniform(160, 280)
-        drift_amp = np.random.uniform(10, 24)
-        drift_freq = np.random.uniform(1.0, 2.5)
-        size = np.random.uniform(2.0, 4.5)
-        color_type = np.random.choice(["cyan", "gold", "white"])
-        phase = np.random.uniform(0, 1)
-        particles.append({
-            "px": px,
-            "py_start": py_start,
-            "speed": speed,
-            "drift_amp": drift_amp,
-            "drift_freq": drift_freq,
-            "size": size,
-            "color_type": color_type,
-            "phase": phase
-        })
-
+def generate_animated_icon():
+    # Render at 512x512 with clean vector layers so there is ZERO background gradient banding in GIF!
+    W = 512
+    num_frames = 30
     frames = []
 
-    for f in range(num_frames):
-        t = f / num_frames # 0.0 to 1.0
-        frame_arr = base_arr.copy()
+    yy, xx = np.mgrid[0:W, 0:W].astype(np.float32)
+    cx, cy = 256.0, 256.0
 
-        # 1. Specular diamond sheen sweep across "NDL" letters
-        # Sheen line moves diagonally across the center
-        sheen_pos = -80 + (w + 160) * ((t * 1.5) % 1.0)
-        line_dist = (x_grid + 0.65 * y_grid - sheen_pos)
-        sheen_intensity = np.exp(-(line_dist ** 2) / (28.0 ** 2))
+    # Precompute rounded-square perimeter distance for the outer frame (x in 46..466, y in 46..466, radius=76)
+    # Using signed distance to a rounded box centered at (256, 256) with half-size b=(210, 210) and corner radius r=76
+    bx, by, br = 208.0, 208.0, 76.0
+    qx = np.abs(xx - cx) - (bx - br)
+    qy = np.abs(yy - cy) - (by - br)
+    sd_box = np.sqrt(np.maximum(qx, 0.0) ** 2 + np.maximum(qy, 0.0) ** 2) + np.minimum(np.maximum(qx, qy), 0.0) - br
 
-        sheen_active = ndl_mask & (sheen_intensity > 0.04)
-        frame_arr[sheen_active, 0] = np.clip(frame_arr[sheen_active, 0] + 190 * sheen_intensity[sheen_active], 0, 255)
-        frame_arr[sheen_active, 1] = np.clip(frame_arr[sheen_active, 1] + 240 * sheen_intensity[sheen_active], 0, 255)
-        frame_arr[sheen_active, 2] = np.clip(frame_arr[sheen_active, 2] + 255 * sheen_intensity[sheen_active], 0, 255)
+    # Border mask (thickness ~ 10px around sd_box == 0)
+    border_base = np.clip(1.0 - np.abs(sd_box) / 5.5, 0.0, 1.0)
+    border_glow_mask = np.exp(-(sd_box ** 2) / (2.0 * 14.0 ** 2))
+    inside_box = np.clip(0.5 - sd_box / 2.0, 0.0, 1.0)
 
-        # 2. Crown / Chevron Electric Energy Pulse
-        crown_glow = 0.5 + 0.5 * math.sin(t * 2 * math.pi)
-        crown_boost = crown_glow * 65
-        frame_arr[crown_mask, 0] = np.clip(frame_arr[crown_mask, 0] + crown_boost * 0.4, 0, 255)
-        frame_arr[crown_mask, 1] = np.clip(frame_arr[crown_mask, 1] + crown_boost * 0.85, 0, 255)
-        frame_arr[crown_mask, 2] = np.clip(frame_arr[crown_mask, 2] + crown_boost * 1.25, 0, 255)
+    # Angle around center for orbiting comet
+    angle_map = np.arctan2(yy - cy, xx - cx)  # -pi .. pi
 
-        # 3. Outer Neon Frame Pulse
-        border_glow = 0.5 + 0.5 * math.cos(t * 2 * math.pi)
-        border_boost = border_glow * 50
-        frame_arr[border_mask, 0] = np.clip(frame_arr[border_mask, 0] + border_boost * 0.35, 0, 255)
-        frame_arr[border_mask, 1] = np.clip(frame_arr[border_mask, 1] + border_boost * 0.75, 0, 255)
-        frame_arr[border_mask, 2] = np.clip(frame_arr[border_mask, 2] + border_boost * 1.05, 0, 255)
+    # Pre-render static crisp Crown + NDL + NERFED DEMONLIST at 4x (2048x2048 -> 512x512)
+    S = 2048
+    emblem_4x = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    edraw = ImageDraw.Draw(emblem_4x)
 
-        # Vector overlays on PIL Image
-        frame_img = Image.fromarray(np.uint8(frame_arr), mode="RGBA")
-        overlay = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(overlay)
+    # Crown polygon at 4x
+    crown_pts = [(500, 460), (1024, 730), (1548, 460), (1300, 880), (748, 880)]
+    crown_mask_4x = Image.new("L", (S, S), 0)
+    ImageDraw.Draw(crown_mask_4x).polygon(crown_pts, fill=255)
+    crown_mask_512 = np.array(crown_mask_4x.resize((W, W), Image.Resampling.LANCZOS)).astype(np.float32) / 255.0
 
-        # 4. Laser Comet riding precisely along the squircle neon rail
-        track_idx = int(t * num_track) % num_track
-        # Tail length: 12 segments
-        tail_len = 12
-        for tail in range(tail_len - 1, -1, -1):
-            tail_idx = (track_idx - tail) % num_track
-            bx, by = track_points[tail_idx]
-            tail_ratio = tail / float(tail_len)
-            r_size = 14.0 - tail_ratio * 9.0
-            alpha = int(220 * (1.0 - tail_ratio))
-            # Outer cyan glow
-            draw.ellipse([bx - r_size * 1.6, by - r_size * 1.6, bx + r_size * 1.6, by + r_size * 1.6], fill=(6, 182, 212, alpha // 3))
-            # Intense cyan body
-            draw.ellipse([bx - r_size, by - r_size, bx + r_size, by + r_size], fill=(56, 189, 248, alpha))
+    # NDL main text at 4x
+    f_ndl = get_font("impact.ttf", 610)
+    edraw.text((1024, 1175), "NDL", font=f_ndl, fill=(255, 255, 255, 255), anchor="mm", stroke_width=40, stroke_fill=(4, 12, 24, 255))
 
-        # Diamond white head of the comet
-        head_x, head_y = track_points[track_idx]
-        draw.ellipse([head_x - 5, head_y - 5, head_x + 5, head_y + 5], fill=(255, 255, 255, 255))
-        draw.ellipse([head_x - 9, head_y - 9, head_x + 9, head_y + 9], fill=(224, 242, 254, 180))
+    # NERFED DEMONLIST subtitle at 4x
+    f_sub = get_font("arialbd.ttf", 86)
+    edraw.text((1024, 1555), "N E R F E D   D E M O N L I S T", font=f_sub, fill=(56, 189, 248, 255), anchor="mm")
 
-        # 5. Star flare on the "D" when sheen crosses the center
-        sheen_cycle = (t * 1.5) % 1.0
-        if 0.40 <= sheen_cycle <= 0.60:
-            flare_int = math.sin((sheen_cycle - 0.40) / 0.20 * math.pi)
-            fx, fy = 256, 260
-            flare_len = int(28 * flare_int)
-            # 4-point star burst
-            draw.line([(fx - flare_len, fy), (fx + flare_len, fy)], fill=(255, 255, 255, int(230 * flare_int)), width=3)
-            draw.line([(fx, fy - flare_len), (fx, fy + flare_len)], fill=(255, 255, 255, int(230 * flare_int)), width=3)
-            draw.ellipse([fx - 6, fy - 6, fx + 6, fy + 6], fill=(56, 189, 248, int(255 * flare_int)))
-            draw.ellipse([fx - 3, fy - 3, fx + 3, fy + 3], fill=(255, 255, 255, int(255 * flare_int)))
+    emblem_512 = emblem_4x.resize((W, W), Image.Resampling.LANCZOS)
+    emblem_arr = np.array(emblem_512).astype(np.float32)
 
-        # 6. Seamless floating cyber-embers (avoiding the text zone to keep typography 100% crisp)
-        for p in particles:
-            p_prog = (t + p["phase"]) % 1.0
-            cur_y = p["py_start"] - p_prog * p["speed"]
-            cur_x = p["px"] + p["drift_amp"] * math.sin(p_prog * p["drift_freq"] * 2 * math.pi)
+    # Safe margin sparkles (strictly outside the center text/crown area!)
+    sparkles = [
+        (88, 130, 0.0),
+        (424, 140, 0.35),
+        (82, 290, 0.65),
+        (430, 285, 0.15),
+        (140, 102, 0.50),
+        (372, 105, 0.82),
+    ]
 
-            # Do not draw over the "NERFED DEMONLIST" text banner
-            if 345 <= cur_y <= 380 and 95 <= cur_x <= 415:
-                continue
+    for f_idx in range(num_frames):
+        t = f_idx / float(num_frames)
+        theta = t * 2.0 * math.pi
 
-            if p_prog < 0.2:
-                p_alpha = int(255 * (p_prog / 0.2))
-            elif p_prog > 0.75:
-                p_alpha = int(255 * ((1.0 - p_prog) / 0.25))
-            else:
-                p_alpha = 255
+        # 1. Clean solid deep navy background (#071526) -> zero gradient banding in GIF!
+        canvas = np.zeros((W, W, 3), dtype=np.float32)
+        canvas[:, :, 0] = 7.0
+        canvas[:, :, 1] = 21.0
+        canvas[:, :, 2] = 38.0
 
-            if p_alpha > 0 and 20 <= cur_y <= h - 20:
-                rad = p["size"]
-                if p["color_type"] == "cyan":
-                    p_col = (56, 189, 248, p_alpha)
-                    glow_col = (14, 165, 233, p_alpha // 2)
-                elif p["color_type"] == "gold":
-                    p_col = (250, 204, 21, p_alpha)
-                    glow_col = (234, 179, 8, p_alpha // 2)
-                else:
-                    p_col = (255, 255, 255, p_alpha)
-                    glow_col = (125, 211, 252, p_alpha // 2)
+        # 2. Breathing cyan aura right behind the Crown & NDL
+        pulse = 0.5 + 0.5 * math.sin(theta)
+        aura_dist = np.sqrt((xx - 256.0) ** 2 + ((yy - 235.0) * 1.15) ** 2)
+        aura = np.exp(-(aura_dist ** 2) / (2.0 * (95.0 + 12.0 * pulse) ** 2)) * (0.28 + 0.12 * pulse)
+        canvas[:, :, 0] += aura * 0.0
+        canvas[:, :, 1] += aura * 190.0
+        canvas[:, :, 2] += aura * 255.0
 
-                draw.ellipse([cur_x - rad * 1.8, cur_y - rad * 1.8, cur_x + rad * 1.8, cur_y + rad * 1.8], fill=glow_col)
-                draw.ellipse([cur_x - rad, cur_y - rad, cur_x + rad, cur_y + rad], fill=p_col)
+        # 3. Dual orbiting neon comets along the outer rounded-square border
+        # Comet 1 (Cyan-White) at theta, Comet 2 (Electric Sky Blue) at theta + pi
+        d_ang1 = np.angle(np.exp(1j * (angle_map - theta)))
+        d_ang2 = np.angle(np.exp(1j * (angle_map - (theta + math.pi))))
+        comet1 = np.exp(-(d_ang1 ** 2) / (2.0 * 0.42 ** 2))
+        comet2 = np.exp(-(d_ang2 ** 2) / (2.0 * 0.42 ** 2))
+        comet_total = np.clip(0.35 + 0.85 * (comet1 + comet2), 0.0, 1.3)
 
-        # 7. Animated 3 status indicator dots at bottom
-        dots_x = [216, 256, 296]
-        dot_y = 422
-        for idx, dx in enumerate(dots_x):
-            dot_phase = (t * 3.0 - idx) % 3.0
-            if 0 <= dot_phase < 1.0:
-                dot_glow = math.sin(dot_phase * math.pi)
-                d_rad = 5.0 + dot_glow * 3.5
-                d_alpha = int(180 + 75 * dot_glow)
-                draw.ellipse([dx - d_rad * 1.5, dot_y - d_rad * 1.5, dx + d_rad * 1.5, dot_y + d_rad * 1.5], fill=(56, 189, 248, int(d_alpha * 0.4)))
-                draw.ellipse([dx - d_rad, dot_y - d_rad, dx + d_rad, dot_y + d_rad], fill=(255, 255, 255, d_alpha))
+        # Soft border glow + crisp border core
+        b_glow = border_glow_mask * (0.35 + 0.65 * (comet1 + comet2))
+        canvas[:, :, 0] += b_glow * 20.0 + border_base * (40.0 + 180.0 * (comet1 + comet2))
+        canvas[:, :, 1] += b_glow * 185.0 + border_base * (195.0 + 60.0 * (comet1 + comet2))
+        canvas[:, :, 2] += b_glow * 255.0 + border_base * 255.0
 
-        # Composite overlay
-        composite = Image.alpha_composite(frame_img, overlay)
+        # 4. Composite Crown with animated diagonal light shimmer
+        tx = np.clip((xx - 125.0) / 262.0, 0.0, 1.0)
+        shimmer_pos = -0.4 + 1.8 * t
+        shimmer = np.exp(-((tx + (yy - 115.0) / 300.0 - shimmer_pos * 1.6) ** 2) / (2.0 * 0.14 ** 2))
+        c_r = 10.0 * (1.0 - tx) + 45.0 * tx + shimmer * 190.0
+        c_g = 235.0 * (1.0 - tx) + 175.0 * tx + shimmer * 55.0
+        c_b = 255.0
+        canvas[:, :, 0] = canvas[:, :, 0] * (1.0 - crown_mask_512) + np.clip(c_r, 0, 255) * crown_mask_512
+        canvas[:, :, 1] = canvas[:, :, 1] * (1.0 - crown_mask_512) + np.clip(c_g, 0, 255) * crown_mask_512
+        canvas[:, :, 2] = canvas[:, :, 2] * (1.0 - crown_mask_512) + np.clip(c_b, 0, 255) * crown_mask_512
 
-        # Breathing scale (1.00 to 1.018)
-        scale_factor = 1.00 + 0.018 * math.sin(t * 2 * math.pi)
-        scaled_w = int(w * scale_factor)
-        scaled_h = int(h * scale_factor)
-        scaled = composite.resize((scaled_w, scaled_h), Image.Resampling.BILINEAR)
+        # 5. Composite crisp NDL + NERFED DEMONLIST text + diagonal sheen on white NDL letters
+        em_a = emblem_arr[:, :, 3:4] / 255.0
+        em_rgb = emblem_arr[:, :, :3].copy()
+        # Subtle cyan-gold shimmer across white NDL letters
+        is_white = (em_rgb[:, :, 0] > 220) & (em_rgb[:, :, 1] > 220)
+        em_rgb[:, :, 0] = np.where(is_white, np.clip(255.0 - shimmer * 60.0, 195, 255), em_rgb[:, :, 0])
+        em_rgb[:, :, 1] = np.where(is_white, np.clip(255.0 - shimmer * 10.0, 240, 255), em_rgb[:, :, 1])
+        canvas = canvas * (1.0 - em_a) + em_rgb * em_a
 
-        crop_x = (scaled_w - w) // 2
-        crop_y = (scaled_h - h) // 2
-        final_frame = scaled.crop((crop_x, crop_y, crop_x + w, crop_y + h))
+        # 6. Twinkling 4-point star sparkles in the safe side margins
+        for sx, sy, phase in sparkles:
+            sp_age = (t + phase) % 1.0
+            sp_intensity = math.sin(sp_age * math.pi) ** 2
+            if sp_intensity > 0.05:
+                dx_s = np.abs(xx - sx)
+                dy_s = np.abs(yy - sy)
+                star_val = np.exp(-(dx_s ** 2 + dy_s ** 2) / (2.0 * 3.2 ** 2))
+                star_val += np.exp(-(dx_s ** 2) / 1.5 - (dy_s ** 2) / (2.0 * (9.0 * sp_intensity) ** 2))
+                star_val += np.exp(-(dy_s ** 2) / 1.5 - (dx_s ** 2) / (2.0 * (9.0 * sp_intensity) ** 2))
+                star_val = np.clip(star_val * sp_intensity, 0.0, 1.0)
+                canvas[:, :, 0] += star_val * 180.0
+                canvas[:, :, 1] += star_val * 240.0
+                canvas[:, :, 2] += star_val * 255.0
 
-        final_p = final_frame.convert("RGB").quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
-        frames.append(final_p)
+        # Mask outside rounded square cleanly to deep dark navy (#040c17)
+        canvas = canvas * inside_box[:, :, None] + np.array([4.0, 12.0, 23.0])[None, None, :] * (1.0 - inside_box[:, :, None])
 
-    duration_ms = int(1000 / fps)
-    print(f"[SAVE] Saving INSANE animated GIF to {output_path} ({len(frames)} frames, {duration_ms}ms/frame)...")
+        frame_rgb = Image.fromarray(np.clip(canvas, 0, 255).astype(np.uint8), "RGB")
+        if f_idx == 0:
+            frame_rgb.save(os.path.join(ART_DIR, "icon_frame_0_preview.png"))
+        # Quantize using MEDIANCUT with Floyd-Steinberg dithering so gradients are 100% smooth with zero stepping!
+        frame_p = frame_rgb.quantize(colors=256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.FLOYDSTEINBERG)
+        frames.append(frame_p)
+
+    out_gif = "public/server-icon-animated.gif"
+    art_gif = os.path.join(ART_DIR, "server-icon-animated.gif")
     frames[0].save(
-        output_path,
+        out_gif,
         save_all=True,
         append_images=frames[1:],
-        duration=duration_ms,
+        duration=50,
         loop=0,
-        optimize=True
+        optimize=False,
     )
-    print(f"[SUCCESS] Insane animated icon generated successfully at {output_path}!")
+    frames[0].save(
+        art_gif,
+        save_all=True,
+        append_images=frames[1:],
+        duration=50,
+        loop=0,
+        optimize=False,
+    )
+    print(f"Saved animated icon ({os.path.getsize(out_gif) // 1024} KB)")
 
 if __name__ == "__main__":
-    create_insane_animated_icon()
+    generate_animated_icon()

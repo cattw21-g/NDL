@@ -1,132 +1,177 @@
 import os
 import math
-import numpy as np
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont
 
-os.makedirs("public/emojis", exist_ok=True)
+OUT_DIR = "public/emojis"
+os.makedirs(OUT_DIR, exist_ok=True)
 
-def draw_glow_circle(draw, cx, cy, r, color, glow_r=8):
-    for i in range(glow_r, 0, -2):
-        alpha = int(color[3] * (1.0 - i / glow_r) * 0.4)
-        draw.ellipse([cx - r - i, cy - r - i, cx + r + i, cy + r + i], fill=(color[0], color[1], color[2], alpha))
-    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=color)
+def get_font(name, size):
+    font_dir = r"C:\Windows\Fonts"
+    for c in [name, "impact.ttf", "arialbd.ttf"]:
+        p = os.path.join(font_dir, c)
+        if os.path.exists(p):
+            return ImageFont.truetype(p, size)
+    return ImageFont.load_default()
 
-def generate_all_emojis():
-    emojis = {}
-    
-    # 1. ndl_verified
-    im = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    # Hexagon
-    cx, cy, r = 64, 64, 52
-    hex_pts = [(cx + r * math.cos(math.radians(a)), cy + r * math.sin(math.radians(a))) for a in range(30, 390, 60)]
-    d.polygon(hex_pts, fill=(6, 182, 212, 230), outline=(56, 189, 248, 255), width=4)
-    # Inner gold checkmark
-    d.line([(42, 66), (56, 82), (88, 48)], fill=(250, 204, 21, 255), width=10, joint="curve")
-    d.line([(42, 66), (56, 82), (88, 48)], fill=(255, 255, 255, 255), width=4, joint="curve")
-    im.save("public/emojis/ndl_verified.png")
-    emojis["ndl_verified"] = "public/emojis/ndl_verified.png"
+def star_polygon(cx, cy, r_out, r_in, points=5):
+    pts = []
+    for i in range(points * 2):
+        angle = i * math.pi / points - math.pi / 2.0
+        r = r_out if i % 2 == 0 else r_in
+        pts.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
+    return pts
 
-    # 2. ndl_cbf
-    im = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    d.rounded_rectangle([10, 36, 118, 92], radius=16, fill=(15, 23, 42, 240), outline=(56, 189, 248, 255), width=4)
-    d.text((24, 46), "CBF", fill=(56, 189, 248, 255), font=ImageFont.truetype("arialbd.ttf", 36))
-    im.save("public/emojis/ndl_cbf.png")
-    emojis["ndl_cbf"] = "public/emojis/ndl_cbf.png"
+def save_emoji(img_512, name):
+    final = img_512.resize((128, 128), Image.Resampling.LANCZOS)
+    path = os.path.join(OUT_DIR, f"{name}.png")
+    final.save(path, "PNG", optimize=True)
+    print(f"Saved emoji {name}.png")
 
-    # 3. ndl_gg
-    im = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    d.rounded_rectangle([12, 28, 116, 100], radius=18, fill=(16, 185, 129, 230), outline=(52, 211, 153, 255), width=4)
-    d.text((32, 40), "GG", fill=(255, 255, 255, 255), font=ImageFont.truetype("arialbd.ttf", 46))
-    im.save("public/emojis/ndl_gg.png")
-    emojis["ndl_gg"] = "public/emojis/ndl_gg.png"
+# 1. NDL Crown
+def make_ndl_crown():
+    W = 512
+    img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.ellipse([24, 24, 488, 488], fill=(8, 25, 48, 255), outline=(56, 189, 248, 255), width=24)
+    pts_outer = [(82, 148), (256, 256), (430, 148), (348, 365), (164, 365)]
+    pts_inner = [(106, 174), (256, 272), (406, 174), (336, 348), (176, 348)]
+    draw.polygon(pts_outer, fill=(224, 242, 254, 255))
+    draw.polygon(pts_inner, fill=(0, 225, 255, 255))
+    save_emoji(img, "ndl_crown")
 
-    # 4. ndl_100
-    im = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    d.ellipse([14, 14, 114, 114], fill=(234, 179, 8, 235), outline=(254, 240, 138, 255), width=4)
-    d.text((22, 48), "100%", fill=(15, 23, 42, 255), font=ImageFont.truetype("arialbd.ttf", 32))
-    im.save("public/emojis/ndl_100.png")
-    emojis["ndl_100"] = "public/emojis/ndl_100.png"
+# 2. NDL #1 Badge
+def make_ndl_top1():
+    W = 512
+    img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    pts_out = star_polygon(256, 256, 240, 195, points=12)
+    pts_in = star_polygon(256, 256, 224, 180, points=12)
+    draw.polygon(pts_out, fill=(254, 240, 138, 255))
+    draw.polygon(pts_in, fill=(234, 179, 8, 255))
+    draw.ellipse([86, 86, 426, 426], fill=(55, 28, 6, 255), outline=(250, 204, 21, 255), width=16)
+    f = get_font("impact.ttf", 215)
+    draw.text((256, 256), "#1", font=f, fill=(250, 204, 21, 255), anchor="mm", stroke_width=16, stroke_fill=(0, 0, 0, 255))
+    save_emoji(img, "ndl_top1")
 
-    # 5. ndl_crown
-    im = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    crown_pts = [(20, 92), (108, 92), (114, 42), (86, 68), (64, 26), (42, 68), (14, 42)]
-    d.polygon(crown_pts, fill=(250, 204, 21, 245), outline=(202, 138, 4, 255), width=4)
-    # Jewels
-    for jx in [20, 64, 108]:
-        d.ellipse([jx - 6, 92 - 6, jx + 6, 92 + 6], fill=(239, 68, 68, 255))
-    im.save("public/emojis/ndl_crown.png")
-    emojis["ndl_crown"] = "public/emojis/ndl_crown.png"
-
-    # 6. ndl_extreme_demon
-    im = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    # Extreme Demon face: Red circle with horns
-    # Horns
-    d.polygon([(26, 48), (12, 14), (54, 34)], fill=(185, 28, 28, 255), outline=(239, 68, 68, 255), width=2)
-    d.polygon([(102, 48), (116, 14), (74, 34)], fill=(185, 28, 28, 255), outline=(239, 68, 68, 255), width=2)
+# 3. NDL Extreme Demon Face
+def make_ndl_extreme():
+    W = 512
+    img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    # Curved horns (nested polygons for smooth edges)
+    draw.polygon([(85, 190), (20, 40), (185, 120)], fill=(255, 255, 255, 255))
+    draw.polygon([(95, 182), (42, 62), (175, 125)], fill=(185, 28, 28, 255))
+    draw.polygon([(427, 190), (492, 40), (327, 120)], fill=(255, 255, 255, 255))
+    draw.polygon([(417, 182), (470, 62), (337, 125)], fill=(185, 28, 28, 255))
     # Head
-    d.ellipse([22, 28, 106, 112], fill=(220, 38, 38, 255), outline=(153, 27, 27, 255), width=4)
+    draw.ellipse([64, 96, 448, 464], fill=(220, 38, 38, 255), outline=(255, 255, 255, 255), width=18)
     # Angry eyes
-    d.polygon([(36, 56), (56, 68), (38, 72)], fill=(255, 255, 255, 255))
-    d.polygon([(92, 56), (72, 68), (90, 72)], fill=(255, 255, 255, 255))
-    # Teeth / grimace
-    d.polygon([(46, 88), (64, 78), (82, 88), (74, 98), (54, 98)], fill=(15, 23, 42, 255))
-    d.polygon([(52, 88), (58, 96), (64, 88)], fill=(255, 255, 255, 255))
-    d.polygon([(64, 88), (70, 96), (76, 88)], fill=(255, 255, 255, 255))
-    im.save("public/emojis/ndl_extreme.png")
-    emojis["ndl_extreme"] = "public/emojis/ndl_extreme.png"
+    draw.polygon([(115, 205), (225, 250), (130, 275)], fill=(250, 204, 21, 255), outline=(40, 5, 5, 255), width=10)
+    draw.polygon([(397, 205), (287, 250), (382, 275)], fill=(250, 204, 21, 255), outline=(40, 5, 5, 255), width=10)
+    # Fanged mouth
+    draw.rounded_rectangle([135, 320, 377, 410], radius=32, fill=(45, 6, 6, 255), outline=(255, 255, 255, 255), width=10)
+    for fx in [165, 235, 305]:
+        draw.polygon([(fx, 326), (fx + 22, 375), (fx + 44, 326)], fill=(255, 255, 255, 255))
+    save_emoji(img, "ndl_extreme")
 
-    # 7. fire_in_the_hole
-    im = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    # Normal face (green circle, smile, big pupils)
-    d.ellipse([16, 16, 112, 112], fill=(34, 197, 94, 255), outline=(22, 163, 74, 255), width=4)
-    # Eyes
-    d.ellipse([34, 42, 56, 68], fill=(255, 255, 255, 255))
-    d.ellipse([72, 42, 94, 68], fill=(255, 255, 255, 255))
-    d.ellipse([42, 50, 52, 62], fill=(15, 23, 42, 255))
-    d.ellipse([80, 50, 90, 62], fill=(15, 23, 42, 255))
-    # Wide smile
-    d.arc([38, 62, 90, 96], start=0, end=180, fill=(15, 23, 42, 255), width=6)
-    im.save("public/emojis/fire_in_the_hole.png")
-    emojis["fire_in_the_hole"] = "public/emojis/fire_in_the_hole.png"
+# 4. NDL Verified Checkmark
+def make_ndl_verified():
+    W = 512
+    img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.rounded_rectangle([36, 36, 476, 476], radius=110, fill=(21, 128, 61, 255), outline=(134, 239, 172, 255), width=24)
+    draw.rounded_rectangle([66, 66, 446, 250], radius=75, fill=(34, 197, 94, 255))
+    draw.line([(135, 270), (220, 355), (382, 168)], fill=(6, 78, 59, 255), width=68, joint="curve")
+    draw.line([(135, 270), (220, 355), (382, 168)], fill=(255, 255, 255, 255), width=48, joint="curve")
+    save_emoji(img, "ndl_verified")
 
-    # 8. ndl_coin
-    im = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    d.ellipse([20, 20, 108, 108], fill=(202, 138, 4, 255), outline=(250, 204, 21, 255), width=5)
-    d.ellipse([34, 34, 94, 94], fill=(234, 179, 8, 255), outline=(161, 98, 7, 255), width=3)
-    # Star inside coin
-    d.text((46, 36), "★", fill=(255, 255, 255, 255), font=ImageFont.truetype("arialbd.ttf", 46))
-    im.save("public/emojis/ndl_coin.png")
-    emojis["ndl_coin"] = "public/emojis/ndl_coin.png"
+# 5. NDL CBF
+def make_ndl_cbf():
+    W = 512
+    img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.rounded_rectangle([24, 64, 488, 448], radius=84, fill=(46, 16, 101, 255), outline=(192, 132, 252, 255), width=24)
+    f = get_font("impact.ttf", 220)
+    draw.text((256, 256), "CBF", font=f, fill=(56, 189, 248, 255), anchor="mm", stroke_width=16, stroke_fill=(0, 0, 0, 255))
+    save_emoji(img, "ndl_cbf")
 
-    # 9. ndl_demon_key
-    im = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    # Skeleton Key
-    d.ellipse([24, 24, 64, 64], fill=(234, 179, 8, 255), outline=(250, 204, 21, 255), width=4)
-    d.ellipse([36, 36, 52, 52], fill=(0, 0, 0, 0))
-    d.line([(58, 52), (108, 102)], fill=(250, 204, 21, 255), width=8)
-    d.line([(96, 90), (108, 78)], fill=(250, 204, 21, 255), width=6)
-    d.line([(86, 100), (98, 88)], fill=(250, 204, 21, 255), width=6)
-    im.save("public/emojis/ndl_demon_key.png")
-    emojis["ndl_demon_key"] = "public/emojis/ndl_demon_key.png"
+# 6. NDL GG
+def make_ndl_gg():
+    W = 512
+    img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.ellipse([24, 24, 488, 488], fill=(161, 98, 7, 255), outline=(253, 224, 71, 255), width=24)
+    f = get_font("impact.ttf", 240)
+    draw.text((256, 256), "GG", font=f, fill=(254, 240, 138, 255), anchor="mm", stroke_width=18, stroke_fill=(0, 0, 0, 255))
+    save_emoji(img, "ndl_gg")
 
-    # 10. ndl_star
-    im = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    d.text((22, 18), "⭐", fill=(250, 204, 21, 255), font=ImageFont.truetype("seguiemj.ttf", 78) if os.path.exists("C:/Windows/Fonts/seguiemj.ttf") else ImageFont.truetype("arialbd.ttf", 64))
-    im.save("public/emojis/ndl_star.png")
-    emojis["ndl_star"] = "public/emojis/ndl_star.png"
+# 7. NDL 100%
+def make_ndl_100():
+    W = 512
+    img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.rounded_rectangle([16, 80, 496, 432], radius=80, fill=(8, 47, 73, 255), outline=(56, 189, 248, 255), width=22)
+    f = get_font("impact.ttf", 185)
+    draw.text((256, 256), "100%", font=f, fill=(250, 204, 21, 255), anchor="mm", stroke_width=16, stroke_fill=(0, 0, 0, 255))
+    save_emoji(img, "ndl_100")
 
-    print(f"[*] Generated {len(emojis)} custom emojis in public/emojis/")
-    return emojis
+# 8. NDL Coin (Pure mathematical vector star in center - ZERO missing font glyphs!)
+def make_ndl_coin():
+    W = 512
+    img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.ellipse([28, 28, 484, 484], fill=(234, 179, 8, 255), outline=(254, 240, 138, 255), width=24)
+    draw.ellipse([76, 76, 436, 436], fill=(161, 98, 7, 255), outline=(250, 204, 21, 255), width=14)
+    # Vector 5-point star in center
+    pts_out = star_polygon(256, 256, 135, 58, points=5)
+    pts_in = star_polygon(256, 256, 115, 48, points=5)
+    draw.polygon(pts_out, fill=(255, 255, 255, 255))
+    draw.polygon(pts_in, fill=(254, 240, 138, 255))
+    save_emoji(img, "ndl_coin")
+
+# 9. NDL Star (Pure mathematical 5-point GD Star centered at 256, 256!)
+def make_ndl_star():
+    W = 512
+    img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    pts_border = star_polygon(256, 268, 238, 105, points=5)
+    pts_outer = star_polygon(256, 268, 216, 94, points=5)
+    pts_inner = star_polygon(256, 268, 175, 76, points=5)
+    draw.polygon(pts_border, fill=(255, 255, 255, 255))
+    draw.polygon(pts_outer, fill=(234, 179, 8, 255))
+    draw.polygon(pts_inner, fill=(253, 224, 71, 255))
+    # Classic GD star eyes
+    draw.ellipse([205, 230, 235, 285], fill=(25, 20, 10, 255))
+    draw.ellipse([277, 230, 307, 285], fill=(25, 20, 10, 255))
+    draw.ellipse([212, 236, 226, 252], fill=(255, 255, 255, 255))
+    draw.ellipse([284, 236, 298, 252], fill=(255, 255, 255, 255))
+    save_emoji(img, "ndl_star")
+
+# 10. NDL Demon Key (Crisp vector key with genuine alpha cutout keyhole!)
+def make_ndl_demon_key():
+    W = 512
+    img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    # Key shaft and teeth
+    draw.rounded_rectangle([210, 150, 476, 220], radius=24, fill=(234, 179, 8, 255), outline=(254, 240, 138, 255), width=14)
+    draw.rounded_rectangle([350, 200, 405, 315], radius=14, fill=(234, 179, 8, 255), outline=(254, 240, 138, 255), width=12)
+    draw.rounded_rectangle([418, 200, 472, 345], radius=14, fill=(234, 179, 8, 255), outline=(254, 240, 138, 255), width=12)
+    # Ornate key bow (handle) on left
+    draw.ellipse([32, 75, 252, 295], fill=(234, 179, 8, 255), outline=(254, 240, 138, 255), width=18)
+    # Glowing crimson demon gem in center of key bow
+    draw.ellipse([86, 129, 198, 241], fill=(220, 38, 38, 255), outline=(255, 255, 255, 255), width=12)
+    draw.ellipse([112, 148, 150, 178], fill=(252, 165, 165, 200))
+    save_emoji(img, "ndl_demon_key")
 
 if __name__ == "__main__":
-    generate_all_emojis()
+    make_ndl_crown()
+    make_ndl_top1()
+    make_ndl_extreme()
+    make_ndl_verified()
+    make_ndl_cbf()
+    make_ndl_gg()
+    make_ndl_100()
+    make_ndl_coin()
+    make_ndl_star()
+    make_ndl_demon_key()
+    print("All 10 emojis regenerated at 4x supersampling!")
