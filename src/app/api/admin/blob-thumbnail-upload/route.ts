@@ -7,7 +7,7 @@ import { put as putBlob } from "@vercel/blob";
 import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth";
-import { isAdminRole } from "@/lib/permissions";
+import { isAdminRole, isModeratorRole } from "@/lib/permissions";
 import {
   blobReadWriteToken,
   imageUploadProvider,
@@ -49,8 +49,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
 
-  if (!isAdminRole(user.role)) {
-    return NextResponse.json({ error: "Admin access required." }, { status: 403 });
+  if (!isAdminRole(user.role, user.playerName) && !isModeratorRole(user.role)) {
+    return NextResponse.json({ error: "Staff access required." }, { status: 403 });
   }
 
   const token = blobReadWriteToken();
@@ -126,6 +126,7 @@ export async function POST(request: Request) {
           tokenPayload: user.id,
         };
       },
+      onUploadCompleted: async () => {},
     });
 
     return NextResponse.json(response);
