@@ -25,6 +25,7 @@
     "discord:register": "tsx scripts/register-discord-commands.ts",
     "discord:setup-server": "tsx scripts/setup-discord-server.ts",
     "discord:profile": "tsx scripts/update-bot-profile.ts",
+    "discord:tier1-sync": "tsx scripts/sync-discord-tier1-perks.ts",
     "postinstall": "prisma generate",
     "prebuild": "prisma generate",
     "build:worker": "opennextjs-cloudflare build",
