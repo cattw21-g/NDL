@@ -70,30 +70,19 @@ export default async function SettingsPage({
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <CountrySelectWithDetect
               initialCode={user.countryCode}
               countries={allCountries}
               inputClass={inputClass}
             />
 
-            <FieldLabel label="State / Region (Optional)">
+            <FieldLabel label="State / Province / Region (Optional)">
               <input
                 type="text"
                 name="subdivision"
                 defaultValue={user.subdivision ?? ""}
-                placeholder="e.g. California, Bavaria"
-                maxLength={50}
-                className={inputClass}
-              />
-            </FieldLabel>
-
-            <FieldLabel label="City (Optional — Private / Admin Only)">
-              <input
-                type="text"
-                name="city"
-                defaultValue={user.city ?? ""}
-                placeholder="e.g. Los Angeles, Berlin"
+                placeholder="e.g. California, Bavaria, Ontario"
                 maxLength={50}
                 className={inputClass}
               />

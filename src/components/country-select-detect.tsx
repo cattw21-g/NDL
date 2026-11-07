@@ -30,13 +30,6 @@ export function CountrySelectWithDetect({ initialCode, countries, inputClass }: 
       if (data.success && data.countryCode) {
         setSelectedCode(data.countryCode);
         let msg = `Detected: ${data.flag} ${data.countryName} (${data.countryCode})`;
-        if (data.city) {
-          msg += ` • ${data.city}`;
-          const cityInput = document.querySelector<HTMLInputElement>('input[name="city"]');
-          if (cityInput && !cityInput.value) {
-            cityInput.value = data.city;
-          }
-        }
         if (data.subdivision) {
           const regionInput = document.querySelector<HTMLInputElement>('input[name="subdivision"]');
           if (regionInput && !regionInput.value) {

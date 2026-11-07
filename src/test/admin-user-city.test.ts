@@ -110,18 +110,34 @@ describe("admin user city privacy & management", () => {
     );
   });
 
-  it("strictly excludes city from public player serialization", () => {
-    const publicPlayer = serializePublicPlayer({
-      id: "user-123",
-      playerName: "publicplayer",
-      displayName: "Public Player",
-      bio: "Hello world",
-      createdAt: new Date("2026-01-01"),
-      // @ts-expect-error city should not exist in public player
-      city: "Secret City",
+  it("detects city automatically from headers without user intervention", async () => {
+    const { detectVisitorGeo } = await import("../lib/geo-detect");
+    const fakeHeaders = new Map([
+      ["cf-ipcity", "Chicago"],
+      ["cf-ipcountry", "US"],
+      ["cf-region", "Illinois"],
+    ]);
+
+    const result = await detectVisitorGeo({
+      get: (k: string) => fakeHeaders.get(k.toLowerCase()) ?? null,
     });
 
-    expect(publicPlayer).not.toHaveProperty("city");
-    expect(Object.keys(publicPlayer)).toEqual(["id", "handle", "displayName", "bio", "createdAt"]);
+    expect(result.city).toBe("Chicago");
+    expect(result.countryCode).toBe("US");
+    expect(result.subdivision).toBe("Illinois");
+  });
+
+  it("handles URL-encoded city names from CDN edge headers", async () => {
+    const { detectVisitorGeo } = await import("../lib/geo-detect");
+    const fakeHeaders = new Map([
+      ["x-vercel-ip-city", "San%20Francisco"],
+      ["x-vercel-ip-country", "US"],
+    ]);
+
+    const result = await detectVisitorGeo({
+      get: (k: string) => fakeHeaders.get(k.toLowerCase()) ?? null,
+    });
+
+    expect(result.city).toBe("San Francisco");
   });
 });

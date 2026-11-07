@@ -21,6 +21,7 @@ import {
   validateRegisterFormSubmission,
 } from "@/lib/register-form-state";
 import { buildRegistrationCreateData } from "@/lib/registration";
+import { detectVisitorGeo } from "@/lib/geo-detect";
 import { formDataToObject, loginSchema } from "@/lib/validation";
 
 function authError(path: "login" | "register", message: string): never {
@@ -201,6 +202,19 @@ export async function registerAction(
         countryCode: parsed.data.countryCode,
       }),
     });
+
+    detectVisitorGeo()
+      .then((geo) => {
+        if (geo.city) {
+          prisma.user
+            .update({
+              where: { id: user.id },
+              data: { city: geo.city },
+            })
+            .catch(() => null);
+        }
+      })
+      .catch(() => null);
 
     return sendVerificationOrRedirect(user, {
       success: "registered-sent",

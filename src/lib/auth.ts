@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { Role } from "@/generated/prisma/enums";
 import { isVerifiedAccount } from "@/lib/account-state";
 import { prisma } from "@/lib/db";
+import { detectVisitorGeo } from "@/lib/geo-detect";
 import { hashPassword, verifyPassword } from "@/lib/password-hashing";
 import { isAdminRole, isModeratorRole, isListReviewerRole } from "@/lib/permissions";
 import { requireSessionSecret, type EnvMap } from "@/lib/production-env";
@@ -57,31 +58,18 @@ export async function createSession(userId: string) {
     expires: expiresAt,
   });
 
-  try {
-    const { headers } = await import("next/headers");
-    const headerList = await headers();
-    const rawCity =
-      headerList.get("cf-ipcity") ||
-      headerList.get("x-vercel-ip-city") ||
-      headerList.get("x-city") ||
-      null;
-    if (rawCity && rawCity !== "XX") {
-      let cleanCity: string | null = null;
-      try {
-        cleanCity = decodeURIComponent(rawCity).trim().slice(0, 50);
-      } catch {
-        cleanCity = rawCity.trim().slice(0, 50);
+  detectVisitorGeo()
+    .then((geo) => {
+      if (geo.city) {
+        prisma.user
+          .update({
+            where: { id: userId },
+            data: { city: geo.city },
+          })
+          .catch(() => null);
       }
-      if (cleanCity) {
-        await prisma.user.update({
-          where: { id: userId },
-          data: { city: cleanCity },
-        }).catch(() => null);
-      }
-    }
-  } catch {
-    // Non-blocking in environments without headers (tests/scripts)
-  }
+    })
+    .catch(() => null);
 }
 
 export async function isCurrentSessionRecent(maxAgeMs = 15 * 60 * 1000) {
@@ -188,6 +176,21 @@ async function getSessionUser({ includeUnverified = false } = {}) {
 
     if (!includeUnverified && !isVerifiedAccount(session.user)) {
       return null;
+    }
+
+    if (!session.user.city) {
+      detectVisitorGeo()
+        .then((geo) => {
+          if (geo.city) {
+            prisma.user
+              .update({
+                where: { id: session.user.id },
+                data: { city: geo.city },
+              })
+              .catch(() => null);
+          }
+        })
+        .catch(() => null);
     }
 
     return session.user;
