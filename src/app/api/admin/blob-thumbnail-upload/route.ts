@@ -126,7 +126,6 @@ export async function POST(request: Request) {
           tokenPayload: user.id,
         };
       },
-      onUploadCompleted: async () => {},
     });
 
     return NextResponse.json(response);

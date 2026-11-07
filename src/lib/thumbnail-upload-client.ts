@@ -7,7 +7,7 @@ export type UploadedThumbnail = {
   pathname?: string;
 };
 
-const THUMBNAIL_UPLOAD_TIMEOUT_MS = 120_000;
+const THUMBNAIL_UPLOAD_TIMEOUT_MS = 60_000;
 
 export async function uploadThumbnailFile(
   file: File,
@@ -21,13 +21,44 @@ export async function uploadThumbnailFile(
 
   try {
     const pathname = blobThumbnailPathname(nameHint, file);
-    const blob = await upload(pathname, file, {
-      access: "public",
-      handleUploadUrl: "/api/admin/blob-thumbnail-upload",
-      contentType: file.type || undefined,
-      abortSignal: controller.signal,
-    });
-    return blob;
+    try {
+      const blob = await upload(pathname, file, {
+        access: "public",
+        handleUploadUrl: "/api/admin/blob-thumbnail-upload",
+        contentType: file.type || undefined,
+        abortSignal: controller.signal,
+      });
+      return blob;
+    } catch (clientError) {
+      if (controller.signal.aborted) {
+        throw clientError;
+      }
+      console.warn("Direct blob client upload failed, attempting fallback:", clientError);
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("nameHint", nameHint);
+
+      const response = await fetch("/api/admin/blob-thumbnail-upload", {
+        method: "POST",
+        body: formData,
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || `Upload failed with status ${response.status}`);
+      }
+
+      const data = (await response.json()) as { blob?: UploadedThumbnail; url?: string };
+      if (data.blob?.url) {
+        return data.blob;
+      }
+      if (data.url) {
+        return { url: data.url };
+      }
+      throw new Error("Invalid response from upload server.");
+    }
   } catch (error) {
     const isAbort =
       (error instanceof DOMException && error.name === "AbortError") ||

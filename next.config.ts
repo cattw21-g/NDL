@@ -34,6 +34,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "**.blob.vercel-storage.com",
+      },
+      {
+        protocol: "https",
         hostname: "img.youtube.com",
       },
       {
@@ -59,11 +63,11 @@ const nextConfig: NextConfig = {
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://translate.google.com https://translate.googleapis.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://translate.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
-      "img-src 'self' data: blob: https://*.vercel-storage.com https://*.public.blob.vercel-storage.com https://img.youtube.com https://i.ytimg.com https://cdn.discordapp.com https://www.google.com https://translate.google.com https://translate.googleapis.com",
-      "media-src 'self' blob: https://*.vercel-storage.com https://*.public.blob.vercel-storage.com",
+      "img-src 'self' data: blob: https://*.vercel-storage.com https://*.public.blob.vercel-storage.com https://*.blob.vercel-storage.com https://blob.vercel-storage.com https://*.vercel.com https://vercel.com https://img.youtube.com https://i.ytimg.com https://cdn.discordapp.com https://www.google.com https://translate.google.com https://translate.googleapis.com",
+      "media-src 'self' blob: https://*.vercel-storage.com https://*.public.blob.vercel-storage.com https://*.blob.vercel-storage.com https://blob.vercel-storage.com https://*.vercel.com https://vercel.com",
       "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.twitch.tv https://translate.google.com",
       "frame-ancestors 'self'",
-      "connect-src 'self' https://translate.googleapis.com https://*.vercel-storage.com https://*.public.blob.vercel-storage.com",
+      "connect-src 'self' https://translate.googleapis.com https://*.vercel-storage.com https://*.public.blob.vercel-storage.com https://*.blob.vercel-storage.com https://blob.vercel-storage.com https://*.vercel.com https://vercel.com",
       "base-uri 'self'",
       "form-action 'self'",
     ].join("; ");
