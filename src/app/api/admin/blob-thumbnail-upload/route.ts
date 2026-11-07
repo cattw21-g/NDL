@@ -1,3 +1,4 @@
+import "@/lib/polyfills";
 import {
   handleUpload,
   type HandleUploadBody,
@@ -22,6 +23,7 @@ import {
 export const dynamic = "force-dynamic";
 
 function thumbnailUploadFailure(error: unknown) {
+  console.error("Direct thumbnail upload failed:", error);
   const message = error instanceof Error ? error.message : String(error);
 
   if (/suspended|inactive|usage threshold/i.test(message)) {
@@ -35,7 +37,7 @@ function thumbnailUploadFailure(error: unknown) {
   }
 
   return NextResponse.json(
-    { error: "Thumbnail upload failed. Try again or use an image URL." },
+    { error: `Thumbnail upload failed: ${message}` },
     { status: 400 },
   );
 }
@@ -78,9 +80,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: validationError }, { status: 400 });
       }
 
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
       const blob = await putBlob(
         blobThumbnailPathname(nameHint || file.name, file),
-        file,
+        fileBuffer,
         {
           access: "public",
           addRandomSuffix: true,

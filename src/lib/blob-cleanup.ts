@@ -1,3 +1,4 @@
+import "@/lib/polyfills";
 import { del, list } from "@vercel/blob";
 import { prisma } from "@/lib/db";
 

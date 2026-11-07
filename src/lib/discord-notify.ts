@@ -694,12 +694,26 @@ export async function notifyLevelUpdated(data: {
   points: number;
   thumbnailUrl?: string | null;
   rankChanges?: ListRankChange[];
+  oldStatus?: string | null;
 }) {
-  const levelUrl = absoluteSiteUrl(`/levels/${data.levelSlug}`);
   const isRankChange =
     data.oldRank !== null &&
     data.newRank !== null &&
     data.oldRank !== data.newRank;
+  const isRemoval = data.status === "REMOVED";
+  const isStatusChange =
+    typeof data.oldStatus === "string" && data.oldStatus !== data.status;
+  const isLegacy = data.status === "LEGACY" && (isStatusChange || (data.oldRank !== null && data.newRank === null));
+  const hasRankShifts = Boolean(data.rankChanges && data.rankChanges.length > 0);
+
+  // If there are no rank changes, no removals/legacy moves, and no list shifts,
+  // this is a cosmetic/metadata edit (e.g. updating image, credits, notes).
+  // Do not send unneeded messages to #list-updates or ping members.
+  if (!isRankChange && !isRemoval && !isStatusChange && !isLegacy && !hasRankShifts) {
+    return;
+  }
+
+  const levelUrl = absoluteSiteUrl(`/levels/${data.levelSlug}`);
   const oldRankStr = data.oldRank ? `#${data.oldRank}` : "Unranked";
   const newRankStr = data.newRank ? `#${data.newRank}` : data.status === "REMOVED" ? "Removed" : "Unranked";
 

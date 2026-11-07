@@ -107,4 +107,21 @@ describe("list update and staff notifications", () => {
     expect(sent[0].content).toBe(`<@&${listUpdateRoleId}>`);
     expect(sent[0].allowed_mentions).toEqual({ parse: [], users: [], roles: [listUpdateRoleId] });
   });
+
+  it("does not post to #list-updates when only cosmetic metadata (like image) is updated without rank change", async () => {
+    const { notifyLevelUpdated } = await import("../lib/discord-notify");
+    await notifyLevelUpdated({
+      levelName: "Existing Demon",
+      levelSlug: "existing-demon",
+      oldRank: 3,
+      newRank: 3,
+      status: "RANKED",
+      oldStatus: "RANKED",
+      points: 100,
+      thumbnailUrl: "https://example.com/new-thumb.webp",
+      rankChanges: [],
+    });
+
+    expect(sent).toHaveLength(0);
+  });
 });

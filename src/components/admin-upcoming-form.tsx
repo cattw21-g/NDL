@@ -93,7 +93,11 @@ export function AdminUpcomingLevelForm({
       formRef.current?.requestSubmit();
     } catch (error) {
       console.error("Blob thumbnail upload failed.", error);
-      setClientError("Thumbnail upload failed. Try again or use an image URL.");
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Thumbnail upload failed. Try again or use an image URL.";
+      setClientError(message);
     } finally {
       setBlobUploading(false);
     }
@@ -336,7 +340,11 @@ export function UpcomingThumbnailInlineEditor({
       setPreview(null);
     } catch (err) {
       console.error("Upload error", err);
-      setClientError("Failed to upload image. Please try an image URL.");
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to upload image. Please try an image URL.";
+      setClientError(message);
     } finally {
       setUploading(false);
     }

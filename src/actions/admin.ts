@@ -396,8 +396,15 @@ export async function updateLevelAction(
     return levelMutationErrorState(parsed.values, result.error);
   }
 
-  if (result.value.level.status === "RANKED" || result.value.level.status === "LEGACY" ||
-      (result.value.level.status === "REMOVED" && result.value.beforeStatus !== "REMOVED")) {
+  const hasRankChange = result.value.beforeRank !== result.value.level.rank;
+  const hasStatusChange = result.value.beforeStatus !== result.value.level.status;
+  const hasRankShifts = Boolean(result.value.rankChanges && result.value.rankChanges.length > 0);
+  const isMeaningfulListUpdate = hasRankChange || hasStatusChange || hasRankShifts;
+
+  if (isMeaningfulListUpdate && (
+      result.value.level.status === "RANKED" || result.value.level.status === "LEGACY" ||
+      (result.value.level.status === "REMOVED" && result.value.beforeStatus !== "REMOVED")
+  )) {
     await notifyLevelUpdated({
       levelName: result.value.level.name,
       levelSlug: result.value.level.slug,
@@ -407,6 +414,7 @@ export async function updateLevelAction(
       points: result.value.level.points,
       thumbnailUrl: result.value.level.thumbnailUrl,
       rankChanges: result.value.rankChanges,
+      oldStatus: result.value.beforeStatus,
     }).catch((err) => {
       console.error("Failed to dispatch notifyLevelUpdated:", err);
     });

@@ -118,7 +118,11 @@ export function AdminLevelForm({
       formRef.current?.requestSubmit();
     } catch (error) {
       console.error("Blob thumbnail upload failed.", error);
-      setClientError("Thumbnail upload failed. Try again or use an image URL.");
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Thumbnail upload failed. Try again or use an image URL.";
+      setClientError(message);
     } finally {
       setBlobUploading(false);
     }

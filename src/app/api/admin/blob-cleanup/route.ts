@@ -1,3 +1,4 @@
+import "@/lib/polyfills";
 import { NextResponse } from "next/server";
 import { requireApiAdmin } from "@/lib/api-admin-guard";
 import { cleanupOrphanBlobs } from "@/lib/blob-cleanup";
