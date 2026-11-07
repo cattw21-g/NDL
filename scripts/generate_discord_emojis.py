@@ -129,40 +129,6 @@ def make_ndl_coin():
     draw.polygon(pts_in, fill=(254, 240, 138, 255))
     save_emoji(img, "ndl_coin")
 
-# 9. NDL Star (Pure mathematical 5-point GD Star centered at 256, 256!)
-def make_ndl_star():
-    W = 512
-    img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    pts_border = star_polygon(256, 268, 238, 105, points=5)
-    pts_outer = star_polygon(256, 268, 216, 94, points=5)
-    pts_inner = star_polygon(256, 268, 175, 76, points=5)
-    draw.polygon(pts_border, fill=(255, 255, 255, 255))
-    draw.polygon(pts_outer, fill=(234, 179, 8, 255))
-    draw.polygon(pts_inner, fill=(253, 224, 71, 255))
-    # Classic GD star eyes
-    draw.ellipse([205, 230, 235, 285], fill=(25, 20, 10, 255))
-    draw.ellipse([277, 230, 307, 285], fill=(25, 20, 10, 255))
-    draw.ellipse([212, 236, 226, 252], fill=(255, 255, 255, 255))
-    draw.ellipse([284, 236, 298, 252], fill=(255, 255, 255, 255))
-    save_emoji(img, "ndl_star")
-
-# 10. NDL Demon Key (Crisp vector key with genuine alpha cutout keyhole!)
-def make_ndl_demon_key():
-    W = 512
-    img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Key shaft and teeth
-    draw.rounded_rectangle([210, 150, 476, 220], radius=24, fill=(234, 179, 8, 255), outline=(254, 240, 138, 255), width=14)
-    draw.rounded_rectangle([350, 200, 405, 315], radius=14, fill=(234, 179, 8, 255), outline=(254, 240, 138, 255), width=12)
-    draw.rounded_rectangle([418, 200, 472, 345], radius=14, fill=(234, 179, 8, 255), outline=(254, 240, 138, 255), width=12)
-    # Ornate key bow (handle) on left
-    draw.ellipse([32, 75, 252, 295], fill=(234, 179, 8, 255), outline=(254, 240, 138, 255), width=18)
-    # Glowing crimson demon gem in center of key bow
-    draw.ellipse([86, 129, 198, 241], fill=(220, 38, 38, 255), outline=(255, 255, 255, 255), width=12)
-    draw.ellipse([112, 148, 150, 178], fill=(252, 165, 165, 200))
-    save_emoji(img, "ndl_demon_key")
-
 if __name__ == "__main__":
     make_ndl_crown()
     make_ndl_top1()
@@ -172,6 +138,4 @@ if __name__ == "__main__":
     make_ndl_gg()
     make_ndl_100()
     make_ndl_coin()
-    make_ndl_star()
-    make_ndl_demon_key()
-    print("All 10 emojis regenerated at 4x supersampling!")
+    print("All emojis regenerated!")
