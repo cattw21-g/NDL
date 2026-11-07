@@ -36,6 +36,7 @@ export async function updateProfileAction(formData: FormData): Promise<void> {
 
   const rawCountryCode = formData.get("countryCode");
   const rawSubdivision = formData.get("subdivision");
+  const rawCity = formData.get("city");
   const rawDisplayName = formData.get("displayName");
   const rawBio = formData.get("bio");
 
@@ -52,6 +53,11 @@ export async function updateProfileAction(formData: FormData): Promise<void> {
   let subdivision: string | null = null;
   if (typeof rawSubdivision === "string" && rawSubdivision.trim().length > 0) {
     subdivision = rawSubdivision.trim().slice(0, 50);
+  }
+
+  let city: string | null = null;
+  if (typeof rawCity === "string" && rawCity.trim().length > 0) {
+    city = rawCity.trim().slice(0, 50);
   }
 
   let displayName = user.displayName;
@@ -85,6 +91,7 @@ export async function updateProfileAction(formData: FormData): Promise<void> {
     data: {
       countryCode,
       subdivision,
+      city,
       displayName,
       bio,
       youtubeUrl,

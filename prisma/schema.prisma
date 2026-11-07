@@ -133,6 +133,7 @@ model User {
   bio                     String?
   countryCode             String?
   subdivision             String?
+  city                    String?
   youtubeUrl              String?
   twitchUrl               String?
   twitterUrl              String?

@@ -56,6 +56,8 @@ export default async function AdminUsersPage({
       { displayName: { contains: q, mode: "insensitive" } },
       { playerName: { contains: q, mode: "insensitive" } },
       { email: { contains: q, mode: "insensitive" } },
+      { city: { contains: q, mode: "insensitive" } },
+      { subdivision: { contains: q, mode: "insensitive" } },
     ];
   }
   if (roleFilter && (roles as readonly string[]).includes(roleFilter)) {
@@ -94,7 +96,7 @@ export default async function AdminUsersPage({
                 type="text"
                 name="q"
                 defaultValue={q}
-                placeholder="Search by name, handle, or email..."
+                placeholder="Search by name, handle, email, or city..."
                 className={inputClass}
               />
             </FieldLabel>
@@ -173,6 +175,10 @@ export default async function AdminUsersPage({
                   {user.subdivision ? (
                     <FactPill label="Region" value={user.subdivision} />
                   ) : null}
+                  <FactPill
+                    label="City"
+                    value={user.city ? `📍 ${user.city}` : "None / Unset"}
+                  />
                 </div>
                 {user.id !== admin.id && user.email !== "deleted-account@nerfeddemonlist.invalid" ? (
                   <Link href={`/admin/users/${user.id}/delete`} className="mt-3 inline-block text-sm font-bold text-red-700 hover:underline dark:text-red-300">
@@ -203,27 +209,43 @@ export default async function AdminUsersPage({
                 <SubmitButton>Save Role</SubmitButton>
               </form>
 
-              {/* Country form */}
+              {/* Country & City form */}
               <form
                 action={updateUserCountryAdminAction}
                 className="flex flex-col gap-2 sm:flex-row sm:items-end"
               >
                 <input type="hidden" name="userId" value={user.id} />
-                <FieldLabel label="Country">
-                  <select
-                    name="countryCode"
-                    defaultValue={user.countryCode ?? ""}
-                    className={inputClass}
-                  >
-                    <option value="">🌐 None / Unset</option>
-                    {allCountries.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.flag} {c.code} - {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </FieldLabel>
-                <SubmitButton>Save Country</SubmitButton>
+                <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-end">
+                  <div className="flex-1">
+                    <FieldLabel label="Country">
+                      <select
+                        name="countryCode"
+                        defaultValue={user.countryCode ?? ""}
+                        className={inputClass}
+                      >
+                        <option value="">🌐 None / Unset</option>
+                        {allCountries.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.flag} {c.code} - {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </FieldLabel>
+                  </div>
+                  <div className="w-full sm:w-36">
+                    <FieldLabel label="City">
+                      <input
+                        type="text"
+                        name="city"
+                        defaultValue={user.city ?? ""}
+                        placeholder="City..."
+                        maxLength={50}
+                        className={inputClass}
+                      />
+                    </FieldLabel>
+                  </div>
+                </div>
+                <SubmitButton>Save Location</SubmitButton>
               </form>
             </SectionPanel>
           );

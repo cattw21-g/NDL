@@ -56,6 +56,32 @@ export async function createSession(userId: string) {
     path: "/",
     expires: expiresAt,
   });
+
+  try {
+    const { headers } = await import("next/headers");
+    const headerList = await headers();
+    const rawCity =
+      headerList.get("cf-ipcity") ||
+      headerList.get("x-vercel-ip-city") ||
+      headerList.get("x-city") ||
+      null;
+    if (rawCity && rawCity !== "XX") {
+      let cleanCity: string | null = null;
+      try {
+        cleanCity = decodeURIComponent(rawCity).trim().slice(0, 50);
+      } catch {
+        cleanCity = rawCity.trim().slice(0, 50);
+      }
+      if (cleanCity) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { city: cleanCity },
+        }).catch(() => null);
+      }
+    }
+  } catch {
+    // Non-blocking in environments without headers (tests/scripts)
+  }
 }
 
 export async function isCurrentSessionRecent(maxAgeMs = 15 * 60 * 1000) {
