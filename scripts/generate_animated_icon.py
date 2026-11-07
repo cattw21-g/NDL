@@ -151,11 +151,15 @@ def create_insane_animated_icon(output_path="public/server-icon-animated.gif", n
             draw.ellipse([fx - 6, fy - 6, fx + 6, fy + 6], fill=(56, 189, 248, int(255 * flare_int)))
             draw.ellipse([fx - 3, fy - 3, fx + 3, fy + 3], fill=(255, 255, 255, int(255 * flare_int)))
 
-        # 6. Seamless floating cyber-embers
+        # 6. Seamless floating cyber-embers (avoiding the text zone to keep typography 100% crisp)
         for p in particles:
             p_prog = (t + p["phase"]) % 1.0
             cur_y = p["py_start"] - p_prog * p["speed"]
             cur_x = p["px"] + p["drift_amp"] * math.sin(p_prog * p["drift_freq"] * 2 * math.pi)
+
+            # Do not draw over the "NERFED DEMONLIST" text banner
+            if 345 <= cur_y <= 380 and 95 <= cur_x <= 415:
+                continue
 
             if p_prog < 0.2:
                 p_alpha = int(255 * (p_prog / 0.2))
@@ -204,8 +208,8 @@ def create_insane_animated_icon(output_path="public/server-icon-animated.gif", n
         crop_y = (scaled_h - h) // 2
         final_frame = scaled.crop((crop_x, crop_y, crop_x + w, crop_y + h))
 
-        final_rgb = final_frame.convert("RGB")
-        frames.append(final_rgb)
+        final_p = final_frame.convert("RGB").quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
+        frames.append(final_p)
 
     duration_ms = int(1000 / fps)
     print(f"[SAVE] Saving INSANE animated GIF to {output_path} ({len(frames)} frames, {duration_ms}ms/frame)...")
