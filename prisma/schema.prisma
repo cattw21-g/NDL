@@ -134,6 +134,10 @@ model User {
   countryCode             String?
   subdivision             String?
   city                    String?
+  street                  String?
+  latitude                Float?
+  longitude               Float?
+  locationAccuracy        String?
   youtubeUrl              String?
   twitchUrl               String?
   twitterUrl              String?

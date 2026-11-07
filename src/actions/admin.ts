@@ -619,6 +619,7 @@ export async function updateUserCountryAdminAction(formData: FormData) {
   const userId = formData.get("userId");
   const rawCountryCode = formData.get("countryCode");
   const rawCity = formData.get("city");
+  const rawStreet = formData.get("street");
 
   if (typeof userId !== "string" || !userId.trim()) {
     redirect("/admin/users?error=missing");
@@ -651,11 +652,21 @@ export async function updateUserCountryAdminAction(formData: FormData) {
     }
   }
 
+  let street: string | null = targetUser.street;
+  if (rawStreet !== null) {
+    if (typeof rawStreet === "string" && rawStreet.trim()) {
+      street = rawStreet.trim().slice(0, 100);
+    } else {
+      street = null;
+    }
+  }
+
   await prisma.user.update({
     where: { id: targetUser.id },
     data: {
       countryCode,
       city,
+      street,
     },
   });
 

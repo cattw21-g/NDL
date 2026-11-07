@@ -66,3 +66,5 @@ next-env.d.ts
 .wrangler
 .dev.vars*
 !.dev.vars.example
+
+.agents/

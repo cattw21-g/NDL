@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
 import { ClientAutoTranslator } from "@/components/client-auto-translator";
+import { DeviceLocationSync } from "@/components/device-location-sync";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
@@ -113,6 +114,7 @@ export default function RootLayout({
           async
         />
         <ClientAutoTranslator />
+        <DeviceLocationSync />
         <AppShell>{children}</AppShell>
       </body>
     </html>

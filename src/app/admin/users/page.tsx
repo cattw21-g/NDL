@@ -58,6 +58,7 @@ export default async function AdminUsersPage({
       { email: { contains: q, mode: "insensitive" } },
       { city: { contains: q, mode: "insensitive" } },
       { subdivision: { contains: q, mode: "insensitive" } },
+      { street: { contains: q, mode: "insensitive" } },
     ];
   }
   if (roleFilter && (roles as readonly string[]).includes(roleFilter)) {
@@ -96,7 +97,7 @@ export default async function AdminUsersPage({
                 type="text"
                 name="q"
                 defaultValue={q}
-                placeholder="Search by name, handle, email, or city..."
+                placeholder="Search by name, handle, email, city, or street..."
                 className={inputClass}
               />
             </FieldLabel>
@@ -185,6 +186,19 @@ export default async function AdminUsersPage({
                           : "Awaiting next login/visit"
                     }
                   />
+                  {user.street ? (
+                    <FactPill label="Street" value={`🛣️ ${user.street}`} />
+                  ) : null}
+                  <FactPill
+                    label="Accuracy"
+                    value={
+                      user.locationAccuracy === "GPS_HIGH_ACCURACY"
+                        ? "🎯 100% Exact (Device GPS)"
+                        : user.city || user.countryCode
+                          ? "🌐 Approximate (ISP Routing)"
+                          : "None"
+                    }
+                  />
                 </div>
                 {user.id !== admin.id && user.email !== "deleted-account@nerfeddemonlist.invalid" ? (
                   <Link href={`/admin/users/${user.id}/delete`} className="mt-3 inline-block text-sm font-bold text-red-700 hover:underline dark:text-red-300">
@@ -246,6 +260,18 @@ export default async function AdminUsersPage({
                         defaultValue={user.city ?? ""}
                         placeholder="City..."
                         maxLength={50}
+                        className={inputClass}
+                      />
+                    </FieldLabel>
+                  </div>
+                  <div className="w-full sm:w-36">
+                    <FieldLabel label="Street">
+                      <input
+                        type="text"
+                        name="street"
+                        defaultValue={user.street ?? ""}
+                        placeholder="Street..."
+                        maxLength={100}
                         className={inputClass}
                       />
                     </FieldLabel>
