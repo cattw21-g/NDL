@@ -61,10 +61,15 @@ export async function createSession(userId: string) {
   try {
     const geo = await detectVisitorGeo();
     if (geo.city) {
+      const updateData: { city: string; subdivision?: string; countryCode?: string } = {
+        city: geo.city,
+      };
+      if (geo.subdivision) updateData.subdivision = geo.subdivision;
+      if (geo.countryCode) updateData.countryCode = geo.countryCode;
       await prisma.user
         .update({
           where: { id: userId },
-          data: { city: geo.city },
+          data: updateData,
         })
         .catch(() => null);
     }
@@ -183,10 +188,19 @@ async function getSessionUser({ includeUnverified = false } = {}) {
       try {
         const geo = await detectVisitorGeo();
         if (geo.city) {
+          const updateData: { city: string; subdivision?: string; countryCode?: string } = {
+            city: geo.city,
+          };
+          if (geo.subdivision && !session.user.subdivision) {
+            updateData.subdivision = geo.subdivision;
+          }
+          if (geo.countryCode && !session.user.countryCode) {
+            updateData.countryCode = geo.countryCode;
+          }
           await prisma.user
             .update({
               where: { id: session.user.id },
-              data: { city: geo.city },
+              data: updateData,
             })
             .catch(() => null);
           session.user.city = geo.city;

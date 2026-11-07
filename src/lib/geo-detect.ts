@@ -4,6 +4,8 @@ export type DetectedGeo = {
   city: string | null;
   countryCode: string | null;
   subdivision: string | null;
+  postalCode?: string | null;
+  isp?: string | null;
 };
 
 function isPrivateIp(ip: string): boolean {
@@ -29,8 +31,17 @@ export async function detectVisitorGeo(headerGetter?: {
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
     const ctx = await getCloudflareContext({ async: true });
     if (ctx?.cf) {
-      const cf = ctx.cf as { city?: string; country?: string; region?: string };
-      const cfCity = cf.city && cf.city !== "XX" ? cf.city.trim().slice(0, 50) : null;
+      const cf = ctx.cf as {
+        city?: string;
+        country?: string;
+        region?: string;
+        postalCode?: string;
+        asOrganization?: string;
+      };
+      let cfCity = cf.city && cf.city !== "XX" ? cf.city.trim().slice(0, 50) : null;
+      if (cfCity && cf.postalCode && cf.postalCode !== "XX") {
+        cfCity = `${cfCity} (${cf.postalCode.trim().slice(0, 15)})`;
+      }
       const cfCountry = cf.country && cf.country !== "XX" && cf.country !== "T1" ? cf.country.toUpperCase() : null;
       const cfRegion = cf.region && cf.region !== "XX" ? cf.region.trim().slice(0, 50) : null;
       if (cfCity || cfCountry) {
@@ -38,6 +49,8 @@ export async function detectVisitorGeo(headerGetter?: {
           city: cfCity,
           countryCode: cfCountry && cfCountry in COUNTRIES ? cfCountry : null,
           subdivision: cfRegion,
+          postalCode: cf.postalCode || null,
+          isp: cf.asOrganization || null,
         };
       }
     }
@@ -57,6 +70,91 @@ export async function detectVisitorGeo(headerGetter?: {
   }
 
   if (headers) {
+    const rawIp =
+      headers.get("cf-connecting-ip") ||
+      headers.get("x-real-ip") ||
+      headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      null;
+
+    // High-resolution IP lookup via ip-api with postal code & municipality
+    if (rawIp && !isPrivateIp(rawIp)) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 1800);
+        const res = await fetch(
+          `http://ip-api.com/json/${encodeURIComponent(rawIp)}?fields=status,country,countryCode,regionName,city,zip,isp`,
+          { signal: controller.signal },
+        );
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = (await res.json()) as {
+            status?: string;
+            city?: string;
+            countryCode?: string;
+            regionName?: string;
+            zip?: string;
+            isp?: string;
+          };
+          if (data.status === "success" && data.city) {
+            let cityName = data.city.trim().slice(0, 50);
+            if (data.zip && data.zip.trim()) {
+              cityName = `${cityName} (${data.zip.trim().slice(0, 15)})`;
+            }
+            const countryCode =
+              data.countryCode && data.countryCode in COUNTRIES ? data.countryCode : null;
+            const subdivision = data.regionName ? data.regionName.trim().slice(0, 50) : null;
+            return {
+              city: cityName,
+              countryCode,
+              subdivision,
+              postalCode: data.zip || null,
+              isp: data.isp || null,
+            };
+          }
+        }
+      } catch {
+        // Fallback network error ignored
+      }
+
+      // Secondary fallback: freeipapi
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 1500);
+        const res = await fetch(`https://freeipapi.com/api/json/${encodeURIComponent(rawIp)}`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = (await res.json()) as {
+            cityName?: string;
+            countryCode?: string;
+            regionName?: string;
+            zipCode?: string;
+            asnOrganization?: string;
+          };
+          let cityName = data.cityName && data.cityName !== "-" ? data.cityName.trim().slice(0, 50) : null;
+          if (cityName && data.zipCode && data.zipCode !== "-") {
+            cityName = `${cityName} (${data.zipCode.trim().slice(0, 15)})`;
+          }
+          const countryCode =
+            data.countryCode && data.countryCode in COUNTRIES ? data.countryCode : null;
+          const subdivision =
+            data.regionName && data.regionName !== "-" ? data.regionName.trim().slice(0, 50) : null;
+          if (cityName || countryCode) {
+            return {
+              city: cityName,
+              countryCode,
+              subdivision,
+              postalCode: data.zipCode || null,
+              isp: data.asnOrganization || null,
+            };
+          }
+        }
+      } catch {
+        // Fallback network error ignored
+      }
+    }
+
     const rawCity =
       headers.get("cf-ipcity") ||
       headers.get("x-vercel-ip-city") ||
@@ -92,41 +190,6 @@ export async function detectVisitorGeo(headerGetter?: {
         subdivision = decodeURIComponent(rawRegion).trim().slice(0, 50);
       } catch {
         subdivision = rawRegion.trim().slice(0, 50);
-      }
-    }
-
-    if (city) {
-      return { city, countryCode, subdivision };
-    }
-
-    // 3. Fallback: Lookup public IP via freeipapi if city wasn't in headers
-    const rawIp =
-      headers.get("cf-connecting-ip") ||
-      headers.get("x-real-ip") ||
-      headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      null;
-
-    if (rawIp && !isPrivateIp(rawIp)) {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 1500);
-        const res = await fetch(`https://freeipapi.com/api/json/${encodeURIComponent(rawIp)}`, {
-          signal: controller.signal,
-        });
-        clearTimeout(timeout);
-        if (res.ok) {
-          const data = (await res.json()) as { cityName?: string; countryCode?: string; regionName?: string };
-          const resolvedCity = data.cityName && data.cityName !== "-" ? data.cityName.trim().slice(0, 50) : null;
-          const resolvedCountry = data.countryCode && data.countryCode in COUNTRIES ? data.countryCode : countryCode;
-          const resolvedRegion = data.regionName && data.regionName !== "-" ? data.regionName.trim().slice(0, 50) : subdivision;
-          return {
-            city: resolvedCity,
-            countryCode: resolvedCountry,
-            subdivision: resolvedRegion,
-          };
-        }
-      } catch {
-        // Fallback network error ignored
       }
     }
 
