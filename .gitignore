@@ -60,3 +60,9 @@ next-env.d.ts
 
 # Local Netlify folder
 .netlify
+
+# OpenNext & Cloudflare
+.open-next
+.wrangler
+.dev.vars*
+!.dev.vars.example
