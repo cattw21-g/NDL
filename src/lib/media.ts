@@ -89,39 +89,6 @@ export const LEVEL_LOCAL_THUMBNAILS: Record<string, string> = {
   "acheron-nerfed-1q14d33k": "/thumbnails/levels/acheron-nerfed-1q14d33k.jpg",
   "sakupen-circles-nerf": "/thumbnails/levels/sakupen-circles-nerf.png",
   "sakupen-circles-nerf-mt3akbcy": "/thumbnails/levels/sakupen-circles-nerf-mt3akbcy.jpg",
-  "sakupen-circles-nerf-g2b36xca": "/thumbnails/levels/sakupen-circles-nerf-g2b36xca.jpg",
-  "silent-clubstep-nerfed": "/thumbnails/levels/silent-clubstep-nerfed.jpg",
-  "silent-clubstep-nerfed-70y72e7i": "/thumbnails/levels/silent-clubstep-nerfed-70y72e7i.jpg",
-  "silent-clubstep-easy-mt90m89e": "/thumbnails/levels/silent-clubstep-easy-mt90m89e.jpg",
-  "silent-clubstep-easy-sug4b11f": "/thumbnails/levels/silent-clubstep-easy-sug4b11f.jpg",
-  "nerfed-sakupen-hell": "/thumbnails/levels/nerfed-sakupen-hell.jpg",
-  "nerfed-sakupen-hell-mt7k1g21": "/thumbnails/levels/nerfed-sakupen-hell-mt7k1g21.jpg",
-  "nerfed-sakupen-hell-w1tpxm5v": "/thumbnails/levels/nerfed-sakupen-hell-w1tpxm5v.jpg",
-  "thinking-space-ii-easy": "/thumbnails/levels/thinking-space-ii-easy.jpg",
-  "thinking-space-ii-easy-mpvnhe2z": "/thumbnails/levels/thinking-space-ii-easy-mpvnhe2z.jpg",
-  "thinking-space-ii-easy-r2nv9vc3": "/thumbnails/levels/thinking-space-ii-easy-r2nv9vc3.jpg",
-  "boobawamba-nerfed": "/thumbnails/levels/boobawamba-nerfed.png",
-  "boobawamba-nerfed-mpvoceeh": "/thumbnails/levels/boobawamba-nerfed-mpvoceeh.jpg",
-  "boobawamba-nerfed-w1tpxm5v": "/thumbnails/levels/boobawamba-nerfed-w1tpxm5v.jpg",
-  "nerfed-cataclysm": "/thumbnails/levels/nerfed-cataclysm.png",
-  "nerfed-cataclysm-mshyd42i": "/thumbnails/levels/nerfed-cataclysm-mshyd42i.jpg",
-  "nerfed-cataclysm-w1tpxm5v": "/thumbnails/levels/nerfed-cataclysm-w1tpxm5v.jpg",
-
-  // Upcoming Demons
-  "grief-ii": "/thumbnails/grief-ii.jpg",
-  "grief-ii-aj4dmk4d": "/thumbnails/levels/grief-ii-aj4dmk4d.jpg",
-  "nerfbath": "/thumbnails/nerfbath.jpg",
-  "nerfbath-mt3d7p0f": "/thumbnails/nerfbath.jpg",
-  "nerfbath-hcsktaY3": "/thumbnails/levels/nerfbath-hcsktaY3.png",
-  "sakupen-circles-v": "/thumbnails/sakupen-circles-v.jpg",
-  "sakupen-circles-v-mt3bg2s3": "/thumbnails/sakupen-circles-v.jpg",
-  "sakupen-circles-v-iqvt0hck": "/thumbnails/levels/sakupen-circles-v-iqvt0hck.jpg",
-  "locked-tidal-heaven": "/thumbnails/locked-tidal-heaven.jpg",
-  "locked-tidal-heaven-mt3bg213": "/thumbnails/locked-tidal-heaven.jpg",
-  "locked-tidal-heaven-jmzmtkts": "/thumbnails/levels/locked-tidal-heaven-jmzmtkts.jpg",
-  "solar-flare-ii": "/thumbnails/solar-flare-ii.jpg",
-  "solar-flare-ii-mt3bg18q": "/thumbnails/solar-flare-ii.jpg",
-  "solar-flare-ii-p613stq2": "/thumbnails/levels/solar-flare-ii-p613stq2.jpg",
   "silent-clubstep": "/thumbnails/silent-clubstep-nerf.jpg",
   "silent-clubstep-nerf": "/thumbnails/silent-clubstep-nerf.jpg",
   "silent-clubstep-easy": "/thumbnails/levels/silent-clubstep-easy-sug4b11f.jpg",
@@ -178,28 +145,19 @@ export function safeThumbnailSrc(
     return trimmed;
   }
 
-  // Intercept suspended Vercel blob store URLs and map them to local thumbnails!
-  if (trimmed.includes("blob.vercel-storage.com")) {
-    const lowerUrl = trimmed.toLowerCase();
-    for (const [kw, localPath] of Object.entries(BLOB_THUMBNAIL_KEYWORD_MAP)) {
-      if (lowerUrl.includes(kw.toLowerCase())) {
-        return localPath;
-      }
-    }
-    if (lowerUrl.includes("demo-thumbnails-level-1-js5zoi")) {
-      return "/thumbnails/levels/amethyst-nerfed-mpvnpo7d.jpg";
-    }
-    if (lowerUrl.includes("demo-thumbnails-level-1-ynxyj9")) {
-      return "/thumbnails/levels/boobawamba-nerfed-mpvoceeh.jpg";
-    }
-    return FALLBACK_THUMBNAIL_SRC;
+  // Legacy fallback for old demo seed URLs
+  if (trimmed.includes("demo-thumbnails-level-1-js5zoi")) {
+    return "/thumbnails/levels/amethyst-nerfed-mpvnpo7d.jpg";
+  }
+  if (trimmed.includes("demo-thumbnails-level-1-ynxyj9")) {
+    return "/thumbnails/levels/boobawamba-nerfed-mpvoceeh.jpg";
   }
 
-  if (!isValidThumbnailSource(trimmed)) {
-    return FALLBACK_THUMBNAIL_SRC;
+  if (isValidThumbnailSource(trimmed)) {
+    return trimmed;
   }
 
-  return trimmed;
+  return FALLBACK_THUMBNAIL_SRC;
 }
 
 export function resolveLevelThumbnail(
@@ -208,38 +166,31 @@ export function resolveLevelThumbnail(
   showcaseUrl?: string | null,
   thumbnailUrl?: string | null,
 ): string {
-  // 1. Exact slug match in bundled local thumbnails
+  // 1. If thumbnailUrl is provided and valid, prioritize the database value!
+  if (thumbnailUrl && thumbnailUrl.trim()) {
+    const trimmed = thumbnailUrl.trim();
+    if (trimmed.includes("demo-thumbnails-level-1-js5zoi")) {
+      return "/thumbnails/levels/amethyst-nerfed-mpvnpo7d.jpg";
+    }
+    if (trimmed.includes("demo-thumbnails-level-1-ynxyj9")) {
+      return "/thumbnails/levels/boobawamba-nerfed-mpvoceeh.jpg";
+    }
+    if (isValidThumbnailSource(trimmed)) {
+      return trimmed;
+    }
+  }
+
+  // 2. Exact slug match in bundled local thumbnails (fallback when no valid thumbnailUrl in DB)
   if (slug && LEVEL_LOCAL_THUMBNAILS[slug]) {
     return LEVEL_LOCAL_THUMBNAILS[slug];
   }
 
-  // 2. Keyword match on name / slug
+  // 3. Keyword match on name / slug (fallback)
   const cleanKey = `${name || ""} ${slug || ""}`.toLowerCase().replace(/[^a-z0-9]/g, "");
   for (const [kw, localPath] of Object.entries(BLOB_THUMBNAIL_KEYWORD_MAP)) {
     const cleanKw = kw.toLowerCase().replace(/[^a-z0-9]/g, "");
     if (cleanKey.includes(cleanKw)) {
       return localPath;
-    }
-  }
-
-  // 3. If thumbnailUrl is provided:
-  if (thumbnailUrl && thumbnailUrl.trim()) {
-    const trimmed = thumbnailUrl.trim();
-    if (trimmed.includes("blob.vercel-storage.com")) {
-      const lowerUrl = trimmed.toLowerCase();
-      for (const [kw, localPath] of Object.entries(BLOB_THUMBNAIL_KEYWORD_MAP)) {
-        if (lowerUrl.includes(kw.toLowerCase())) {
-          return localPath;
-        }
-      }
-      if (lowerUrl.includes("demo-thumbnails-level-1-js5zoi")) {
-        return "/thumbnails/levels/amethyst-nerfed-mpvnpo7d.jpg";
-      }
-      if (lowerUrl.includes("demo-thumbnails-level-1-ynxyj9")) {
-        return "/thumbnails/levels/boobawamba-nerfed-mpvoceeh.jpg";
-      }
-    } else {
-      return trimmed;
     }
   }
 
@@ -253,5 +204,3 @@ export function resolveLevelThumbnail(
 }
 
 export const resolveUpcomingThumbnail = resolveLevelThumbnail;
-
-
