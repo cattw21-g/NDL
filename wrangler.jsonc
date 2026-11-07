@@ -9,6 +9,12 @@
 		"directory": ".open-next/assets",
 		"binding": "ASSETS"
 	},
+	"kv_namespaces": [
+		{
+			"binding": "NEXT_INC_CACHE_KV",
+			"id": "83ae0f251236416a8294d2bd6908ca65"
+		}
+	],
 	"vars": {
 		"APP_URL": "https://www.nerfeddemonlist.net",
 		"NEXT_PUBLIC_SITE_URL": "https://www.nerfeddemonlist.net"

@@ -7,7 +7,7 @@ export type UploadedThumbnail = {
   pathname?: string;
 };
 
-const THUMBNAIL_UPLOAD_TIMEOUT_MS = 15_000;
+const THUMBNAIL_UPLOAD_TIMEOUT_MS = 120_000;
 
 export async function uploadThumbnailFile(
   file: File,
@@ -29,7 +29,15 @@ export async function uploadThumbnailFile(
     });
     return blob;
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
+    const isAbort =
+      (error instanceof DOMException && error.name === "AbortError") ||
+      (error instanceof Error &&
+        (error.name === "BlobRequestAbortedError" ||
+          error.name === "AbortError" ||
+          error.message.toLowerCase().includes("aborted") ||
+          error.message.toLowerCase().includes("timed out")));
+
+    if (isAbort) {
       throw new Error("Thumbnail upload timed out. Check your internet connection or try a smaller image.");
     }
     const message = error instanceof Error ? error.message : "Thumbnail upload failed.";
