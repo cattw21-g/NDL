@@ -1,3 +1,4 @@
+import "@/lib/polyfills";
 import { cache } from "react";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaPg } from "@prisma/adapter-pg";

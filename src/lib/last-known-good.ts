@@ -1,9 +1,14 @@
+import "@/lib/polyfills";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { FALLBACK_RANKED_LEVELS, type FallbackLevel } from "./fallback-levels";
 import { logger } from "./logger";
+
+function isWorkerEnvironment(): boolean {
+  return typeof (globalThis as any).WebSocketPair !== "undefined" || !!process.env.CF_PAGES || !!process.env.WORKERS_ENV;
+}
 
 export const SNAPSHOT_SCHEMA_VERSION = 1;
 
@@ -132,6 +137,9 @@ function isValidLevelsData(levels: unknown): levels is FallbackLevel[] {
  * Local /tmp or .data is an ephemeral cache optimization, not cross-instance durability.
  */
 function writeLocalScratchSnapshot(snapshot: DurableDemonlistSnapshot): boolean {
+  if (isWorkerEnvironment()) {
+    return false;
+  }
   try {
     const { dir, file } = getLocalScratchLocation();
     if (!fs.existsSync(dir)) {
@@ -153,6 +161,9 @@ function writeLocalScratchSnapshot(snapshot: DurableDemonlistSnapshot): boolean 
  * Reads and validates the snapshot from the local scratch path.
  */
 function readLocalScratchSnapshot(): DurableDemonlistSnapshot | null {
+  if (isWorkerEnvironment()) {
+    return null;
+  }
   try {
     const { file } = getLocalScratchLocation();
     if (!fs.existsSync(file)) {
@@ -219,6 +230,9 @@ export async function syncSnapshotToDurableBlob(
   snapshot: DurableDemonlistSnapshot,
   maxRetries = 3,
 ): Promise<{ success: boolean; skippedReason?: string }> {
+  if (isWorkerEnvironment()) {
+    return { success: false, skippedReason: "edge_worker" };
+  }
   const authMode = getBlobAuthMode();
   if (authMode === "unavailable" && !process.env.VERCEL) {
     return { success: false, skippedReason: "no_blob_configured" };
