@@ -203,18 +203,19 @@ export async function registerAction(
       }),
     });
 
-    detectVisitorGeo()
-      .then((geo) => {
-        if (geo.city) {
-          prisma.user
-            .update({
-              where: { id: user.id },
-              data: { city: geo.city },
-            })
-            .catch(() => null);
-        }
-      })
-      .catch(() => null);
+    try {
+      const geo = await detectVisitorGeo();
+      if (geo.city) {
+        await prisma.user
+          .update({
+            where: { id: user.id },
+            data: { city: geo.city },
+          })
+          .catch(() => null);
+      }
+    } catch {
+      // Non-blocking
+    }
 
     return sendVerificationOrRedirect(user, {
       success: "registered-sent",

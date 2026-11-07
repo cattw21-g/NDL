@@ -58,18 +58,19 @@ export async function createSession(userId: string) {
     expires: expiresAt,
   });
 
-  detectVisitorGeo()
-    .then((geo) => {
-      if (geo.city) {
-        prisma.user
-          .update({
-            where: { id: userId },
-            data: { city: geo.city },
-          })
-          .catch(() => null);
-      }
-    })
-    .catch(() => null);
+  try {
+    const geo = await detectVisitorGeo();
+    if (geo.city) {
+      await prisma.user
+        .update({
+          where: { id: userId },
+          data: { city: geo.city },
+        })
+        .catch(() => null);
+    }
+  } catch {
+    // Non-blocking in headless environments
+  }
 }
 
 export async function isCurrentSessionRecent(maxAgeMs = 15 * 60 * 1000) {
@@ -179,18 +180,20 @@ async function getSessionUser({ includeUnverified = false } = {}) {
     }
 
     if (!session.user.city) {
-      detectVisitorGeo()
-        .then((geo) => {
-          if (geo.city) {
-            prisma.user
-              .update({
-                where: { id: session.user.id },
-                data: { city: geo.city },
-              })
-              .catch(() => null);
-          }
-        })
-        .catch(() => null);
+      try {
+        const geo = await detectVisitorGeo();
+        if (geo.city) {
+          await prisma.user
+            .update({
+              where: { id: session.user.id },
+              data: { city: geo.city },
+            })
+            .catch(() => null);
+          session.user.city = geo.city;
+        }
+      } catch {
+        // Non-blocking
+      }
     }
 
     return session.user;

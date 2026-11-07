@@ -177,7 +177,13 @@ export default async function AdminUsersPage({
                   ) : null}
                   <FactPill
                     label="City"
-                    value={user.city ? `📍 ${user.city}` : "None / Unset"}
+                    value={
+                      user.city
+                        ? `📍 ${user.city}`
+                        : user.subdivision
+                          ? `📍 ${user.subdivision}`
+                          : "Awaiting next login/visit"
+                    }
                   />
                 </div>
                 {user.id !== admin.id && user.email !== "deleted-account@nerfeddemonlist.invalid" ? (
