@@ -27,6 +27,10 @@
 		{
 			"pattern": "www.nerfeddemonlist.net",
 			"custom_domain": true
+		},
+		{
+			"pattern": "beta.nerfeddemonlist.net",
+			"custom_domain": true
 		}
 	]
 }
