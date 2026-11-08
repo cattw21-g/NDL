@@ -271,7 +271,16 @@ export async function createLevelAction(
     }
   }
 
-  revalidatePath("/", "layout");
+  revalidatePath("/");
+  revalidatePath("/admin/levels");
+  if (result.value.level.slug) {
+    revalidatePath(`/levels/${result.value.level.slug}`);
+  }
+  revalidatePath("/players");
+  revalidatePath("/countries");
+  revalidatePath("/creators");
+  revalidatePath("/archive");
+  revalidatePath("/time-machine");
   redirect(
     parsed.data.sourceSuggestionId
       ? "/admin/levels?converted=1"
@@ -419,7 +428,16 @@ export async function updateLevelAction(
     }
   }
 
-  revalidatePath("/", "layout");
+  revalidatePath("/");
+  revalidatePath("/admin/levels");
+  if (result.value.level.slug) {
+    revalidatePath(`/levels/${result.value.level.slug}`);
+  }
+  revalidatePath("/players");
+  revalidatePath("/countries");
+  revalidatePath("/creators");
+  revalidatePath("/archive");
+  revalidatePath("/time-machine");
   redirect("/admin/levels?updated=1");
 }
 
