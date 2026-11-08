@@ -34,7 +34,10 @@ import {
   notifyNewSubmission,
   notifyRecordAccepted,
 } from "@/lib/discord-notify";
-import { syncAllLinkedDiscordUsers } from "@/lib/discord-role-sync";
+import {
+  syncAllLinkedDiscordUsers,
+  syncDiscordRolesForUser,
+} from "@/lib/discord-role-sync";
 import { sendRecordStatusEmail } from "@/lib/email";
 import { calculateCurrentLevelPoints, getLevelTier } from "@/lib/points";
 import { absoluteSiteUrl } from "@/lib/site-url";
@@ -643,9 +646,11 @@ export async function reviewSubmissionAction(formData: FormData) {
       console.error("Failed to dispatch notifyRecordAccepted:", err);
     });
 
-    await syncAllLinkedDiscordUsers().catch((err) => {
-      console.error("Failed to sync Discord roles on record acceptance:", err);
-    });
+    if (submission.playerId) {
+      await syncDiscordRolesForUser(submission.playerId).catch((err) => {
+        console.error("Failed to sync Discord roles on record acceptance:", err);
+      });
+    }
   }
 
   revalidatePath("/");

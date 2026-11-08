@@ -44,7 +44,10 @@ import {
   notifyLevelUpdated,
   notifyRecordAccepted,
 } from "@/lib/discord-notify";
-import { syncAllLinkedDiscordUsers } from "@/lib/discord-role-sync";
+import {
+  syncAllLinkedDiscordUsers,
+  syncDiscordRolesForUser,
+} from "@/lib/discord-role-sync";
 import { cleanupOrphanBlobs } from "@/lib/blob-cleanup";
 import { absoluteSiteUrl } from "@/lib/site-url";
 import { slugify } from "@/lib/slug";
@@ -261,24 +264,14 @@ export async function createLevelAction(
       console.error("Failed to dispatch notifyLevelRanked:", err);
     });
 
-    await syncAllLinkedDiscordUsers().catch((err) => {
-      console.error("Failed to sync Discord roles on level addition:", err);
-    });
+    if (parsed.data.verifierUserId) {
+      await syncDiscordRolesForUser(parsed.data.verifierUserId).catch((err) => {
+        console.error("Failed to sync verifier Discord roles on level addition:", err);
+      });
+    }
   }
 
-  revalidatePath("/");
-  revalidatePath("/players");
-  revalidatePath("/countries");
-  revalidatePath("/creators");
-  revalidatePath("/archive");
-  revalidatePath("/time-machine");
-  revalidatePath("/moderation");
-  revalidatePath("/level-suggestions");
-  revalidatePath("/admin");
-  revalidatePath("/admin/levels");
-  for (const slug of result.value.affectedSlugs) {
-    revalidatePath(`/levels/${slug}`);
-  }
+  revalidatePath("/", "layout");
   redirect(
     parsed.data.sourceSuggestionId
       ? "/admin/levels?converted=1"
@@ -419,21 +412,14 @@ export async function updateLevelAction(
       console.error("Failed to dispatch notifyLevelUpdated:", err);
     });
 
-    await syncAllLinkedDiscordUsers().catch((err) => {
-      console.error("Failed to sync Discord roles on level update:", err);
-    });
+    if (parsed.data.verifierUserId) {
+      await syncDiscordRolesForUser(parsed.data.verifierUserId).catch((err) => {
+        console.error("Failed to sync verifier Discord roles on level update:", err);
+      });
+    }
   }
 
-  revalidatePath("/");
-  revalidatePath("/players");
-  revalidatePath("/countries");
-  revalidatePath("/creators");
-  revalidatePath("/archive");
-  revalidatePath("/time-machine");
-  revalidatePath("/admin/levels");
-  for (const slug of result.value.affectedSlugs) {
-    revalidatePath(`/levels/${slug}`);
-  }
+  revalidatePath("/", "layout");
   redirect("/admin/levels?updated=1");
 }
 
@@ -1535,9 +1521,11 @@ export async function createAdminRecordAction(formData: FormData) {
     console.error("Failed to dispatch notifyRecordAccepted:", err);
   });
 
-  await syncAllLinkedDiscordUsers().catch((err) => {
-    console.error("Failed to sync Discord roles on admin record creation:", err);
-  });
+  if (player.id) {
+    await syncDiscordRolesForUser(player.id).catch((err) => {
+      console.error("Failed to sync Discord roles on admin record creation:", err);
+    });
+  }
 
   revalidatePath("/");
   revalidatePath(`/levels/${level.slug}`);
@@ -2014,8 +2002,8 @@ export async function rollbackModeratorAction(formData: FormData) {
     });
   });
 
-  // Re-sync Discord roles across all users
-  await syncAllLinkedDiscordUsers().catch((err) => {
+  // Re-sync Discord roles across all users in background
+  void syncAllLinkedDiscordUsers().catch((err) => {
     console.error("Failed to sync Discord roles on emergency rollback:", err);
   });
 

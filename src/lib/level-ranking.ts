@@ -140,7 +140,12 @@ export async function createLevelWithRank(
     (level) => level.status === LevelStatus.RANKED,
   );
 
-  await moveToTemporaryRanks(tx, currentRanked);
+  const changedLevels = currentRanked.filter((level) => {
+    const planned = plan.ranked.find((item) => item.id === level.id);
+    return !planned || planned.rank !== level.rank;
+  });
+
+  await moveToTemporaryRanks(tx, changedLevels);
 
   const finalRank =
     plan.ranked.find((item) => item.id === NEW_LEVEL_ID)?.rank ?? null;
@@ -231,7 +236,12 @@ export async function updateLevelWithRank(
   const finalRank = plan.ranked.find((item) => item.id === id)?.rank ?? null;
   const points = calculateLevelPoints(finalRank, input.status);
 
-  await moveToTemporaryRanks(tx, currentRanked);
+  const changedLevels = currentRanked.filter((level) => {
+    const planned = plan.ranked.find((item) => item.id === level.id);
+    return !planned || planned.rank !== level.rank;
+  });
+
+  await moveToTemporaryRanks(tx, changedLevels);
 
   const level = await tx.level.update({
     where: {
@@ -362,6 +372,11 @@ async function applyRankPlan(
       continue;
     }
 
+    const current = levels.find((l) => l.id === item.id);
+    if (current && current.status === LevelStatus.RANKED && current.rank === item.rank) {
+      continue;
+    }
+
     const points = calculateLevelPoints(item.rank, LevelStatus.RANKED);
 
     await tx.level.update({
@@ -381,6 +396,10 @@ async function applyRankPlan(
 
   for (const level of levels) {
     if (!rankedIds.has(level.id) && level.id !== skippedId) {
+      if (level.rank === null) {
+        continue;
+      }
+
       const points = calculateLevelPoints(null, level.status);
 
       await tx.level.update({

@@ -341,7 +341,7 @@ export async function promoteUpcomingLevelAction(formData: FormData) {
     console.error("Failed to dispatch notifyLevelRanked:", err);
   });
 
-  await syncAllLinkedDiscordUsers().catch((err) => {
+  void syncAllLinkedDiscordUsers().catch((err) => {
     console.error("Failed to sync Discord roles on upcoming promotion:", err);
   });
 
